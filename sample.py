@@ -1,26 +1,42 @@
+import math
 import numpy as np
 
 from os import urandom
 from numba import objmode, uint8, njit
 
-BPF = 53
-RECIP_BPF = 2**-BPF
+BITS_PER_FLOAT = 53
+BYTES_PER_FLOAT = math.ceil(BITS_PER_FLOAT / 8)
+SHIFT_AMOUNT = 8*BYTES_PER_FLOAT - BITS_PER_FLOAT
+NORMALIZER = 2**-BITS_PER_FLOAT
 
 @njit
 def _int_from_bytes(bs):
-    accum = 0
+    """
+    Converts bytes into an integer.
+
+    :param bs: a bytes object to converted into an integer.
+    :return: an big-endian integer representation of the input bytes.
+    """
+    accumulator = 0
     for i,b in enumerate(bs[::-1]):
-        accum += b*(256)**i
-    return accum
+        accumulator += b*(256)**i
+    return accumulator
 
 @njit
-def _unifs_from_bytes(bs, n):
+def _floats_from_bytes(bs):
+    """
+    Converts bytes into floats in the interval [0,1).
+
+    :param bs: a bytes object to be converted into floats.
+    :return: a 1D numpy array of length `bs//BYTES_PER_FLOAT` of floats in the interval [0,1).
+    """
+    n = len(bs) // BYTES_PER_FLOAT
     unifs = np.zeros(n)
     for i in range(n):
-        start_index = 7*i
-        stop_index = 7*(i+1)
-        unifs[i] = _int_from_bytes(bs[start_index:stop_index]) >> 3
-    unifs *= RECIP_BPF
+        start_index = BYTES_PER_FLOAT*i
+        stop_index = BYTES_PER_FLOAT*(i+1)
+        unifs[i] = _int_from_bytes(bs[start_index:stop_index]) >> SHIFT_AMOUNT
+    unifs *= NORMALIZER
     return unifs
 
 @njit
@@ -36,7 +52,7 @@ def uniform(n, a=0, b=1):
     bs = np.zeros(7*n, dtype=np.uint8)
     with objmode(bs='uint8[:]'):
         bs = np.frombuffer(urandom(7*n), dtype=np.uint8)
-    unifs_01 = _unifs_from_bytes(bs, n)
+    unifs_01 = _floats_from_bytes(bs)
     unifs_ab = (b-a)*unifs_01 + a
     return unifs_ab
 
