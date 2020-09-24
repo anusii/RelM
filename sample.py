@@ -59,8 +59,8 @@ def laplace(n, b=1):
     """
     Samples from the Laplace(b) distribution.
 
-    :param b: parameter that determines the spread of the distribution.
     :param n: the number of samples to draw.
+    :param b: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Laplace(b) distribution.
     """
     xs = uniform(n, a=-0.5, b=0.5)
@@ -86,8 +86,8 @@ def two_sided_geometric(n, q=0.5):
     """
     Samples from the TwoSidedGeometric(q) distribution.
 
-    :param q: parameter that determines the spread of the distribution.
     :param n: the number of samples to draw.
+    :param q: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the TwoSidedGeometric(q) distribution.
     """
     xs = uniform(n, a=-0.5, b=0.5)
@@ -98,12 +98,26 @@ def two_sided_geometric(n, q=0.5):
 
 @njit
 def simple_laplace(n, b=1):
+    """
+    Samples from the Laplace(b) distribution.
+
+    :param n: the number of samples to draw.
+    :param b: parameter that determines the spread of the distribution.
+    :return: a 1D numpy array of length `n` of samples from the Laplace(b) distribution.
+    """
     xs = [exponential(n, b) for i in range(2)]
     ys = xs[0] - xs[1]
     return ys
 
 @njit
 def simple_two_sided_geometric(n, q=0.5):
+    """
+    Samples from the TwoSidedGeometric(q) distribution.
+
+    :param n: the number of samples to draw.
+    :param q: parameter that determines the spread of the distribution.
+    :return: a 1D numpy array of length `n` of samples from the TwoSidedGeometric(q) distribution.
+    """
     p = 1-q
     xs = [geometric(n,p) for i in range(2)]
     ys = xs[0] - xs[1]
