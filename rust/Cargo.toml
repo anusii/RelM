@@ -1,0 +1,16 @@
+[package]
+name = "primitives"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+name = "primitives"
+crate-type = ["cdylib"]
+
+[dependencies.pyo3]
+version = "0.12.1"
+features = ["extension-module"]
+
+[dependencies]
+rand = "0.7.3"
+rayon = "1.4.0"
