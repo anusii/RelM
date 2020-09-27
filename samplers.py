@@ -71,7 +71,6 @@ def exponential(n, b):
     return ys
 
 
-@njit
 def laplace(n, b=1):
     """
     Samples from the Laplace(b) distribution.
@@ -80,10 +79,7 @@ def laplace(n, b=1):
     :param b: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Laplace(b) distribution.
     """
-    xs = uniform(n, a=-0.5, b=0.5)
-    sgn = np.sign(xs)
-    ys = sgn * np.log(2 * sgn * xs) * b
-    return ys
+    return np.array(primitives.py_laplace(b, n))
 
 @njit
 def geometric(n, p=0.5):
