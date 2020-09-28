@@ -9,7 +9,6 @@ Then:
 
 ```
 $ git clone 
-$ cd rust
-$ cargo build --release
-$ cp target/release/libprimitives.dylib ../primitives.so 
+$ cd differential-privacy
+$ pip install -e .
 ```

@@ -1,17 +1,14 @@
 [package]
-name = "primitives"
+name = "differential-privacy"
 version = "0.1.0"
 edition = "2018"
 
 [lib]
-name = "primitives"
+name = "differential_privacy"
 crate-type = ["cdylib"]
 
-[dependencies.pyo3]
-version = "0.11.1"
-features = ["extension-module"]
-
 [dependencies]
+pyo3 = { version = "0.11.1", features = ["extension-module"] }
 rand = "0.7.3"
 rayon = "1.4.0"
 numpy = "0.11.0"

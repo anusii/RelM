@@ -33,7 +33,7 @@ fn laplace(scale: f64, num: usize) -> Vec<f64> {
 ///// A Python module implemented in Rust.
 //// Exports the rust functions to python.
 #[pymodule]
-fn primitives(py: Python, m: &PyModule) -> PyResult<()> {
+fn differential_privacy(py: Python, m: &PyModule) -> PyResult<()> {
 
     #[pyfn(m, "laplace")]
     fn py_laplace(py: Python, scale: f64, num: usize) -> &PyArray1<f64>{
