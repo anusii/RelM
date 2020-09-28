@@ -57,7 +57,7 @@ def uniform(n, a=0, b=1):
     unifs_ab = (b-a)*unifs_01 + a
     return unifs_ab
 
-@njit
+
 def exponential(n, b):
     """
     Samples from the Exponential(b) distribution.
@@ -79,7 +79,7 @@ def laplace(n, b=1):
     """
     return dp.laplace(b, n)
 
-@njit
+
 def geometric(n, p=0.5):
     """
     Samples from the Geometric(p) distribution.
@@ -90,7 +90,7 @@ def geometric(n, p=0.5):
     """
     return dp.geometric(p, n)
 
-@njit
+
 def two_sided_geometric(n, q=0.5):
     """
     Samples from the TwoSidedGeometric(q) distribution.
@@ -101,7 +101,7 @@ def two_sided_geometric(n, q=0.5):
     """
     return dp.two_sided_geometric(q, n)
 
-@njit
+
 def simple_laplace(n, b=1):
     """
     Samples from the Laplace(b) distribution.
@@ -114,7 +114,7 @@ def simple_laplace(n, b=1):
     ys = xs[0] - xs[1]
     return ys
 
-@njit
+
 def simple_two_sided_geometric(n, q=0.5):
     """
     Samples from the TwoSidedGeometric(q) distribution.
