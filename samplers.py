@@ -79,7 +79,7 @@ def laplace(n, b=1):
     :param b: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Laplace(b) distribution.
     """
-    return np.array(primitives.py_laplace(b, n))
+    return primitives.laplace(b, n)
 
 @njit
 def geometric(n, p=0.5):
