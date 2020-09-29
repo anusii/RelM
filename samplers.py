@@ -30,7 +30,6 @@ def _significands_from_bytes(bs, shift_amount = SHIFT_AMOUNT):
         start_index = BYTES_PER_FLOAT*i
         stop_index = BYTES_PER_FLOAT*(i+1)
         significands[i] = _int_from_bytes(bs[start_index:stop_index]) >> shift_amount
-    #significands = significand_ints >> shift_amount
     return significands
 
 @njit
