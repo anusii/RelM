@@ -12,3 +12,11 @@ $ git clone
 $ cd differential-privacy
 $ pip install -e .
 ```
+
+Check the tests run:
+
+```
+$ pytest tests
+```
+
+That's it!
