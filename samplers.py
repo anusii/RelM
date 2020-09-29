@@ -3,6 +3,7 @@ import numpy as np
 
 from os import urandom
 from numba import objmode, uint8, njit
+from crlibm import log_rn
 
 BITS_PER_FLOAT = 53
 BYTES_PER_FLOAT = math.ceil(BITS_PER_FLOAT / 8)
