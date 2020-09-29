@@ -25,7 +25,7 @@ def _int_from_bytes(bs):
 @njit
 def _significands_from_bytes(bs, shift_amount = SHIFT_AMOUNT):
     n = len(bs) // BYTES_PER_FLOAT
-    significands = np.zeros(n)
+    significands = np.zeros(n, dtype=np.int64)
     for i in range(n):
         start_index = BYTES_PER_FLOAT*i
         stop_index = BYTES_PER_FLOAT*(i+1)
@@ -65,7 +65,7 @@ def uniform(n, a=0.0, b=1.0):
     return unifs_ab
 
 @njit
-def exponential(n, b):
+def exponential(n, b=1):
     """
     Samples from the Exponential(b) distribution.
 
@@ -159,10 +159,8 @@ def uniform_double(n):
     with objmode(bs='uint8[:]'):
         bs = np.frombuffer(urandom(7*n), dtype=np.uint8)
     significands = _significands_from_bytes(bs, shift_amount = (SHIFT_AMOUNT+1))
-    # Cast the significands as ints to prevent overflow problems in later operations.
-    significand_ints = np.array([int(s) for s in significands])
     # Add the implicit leading 1 to the significands.
-    significand_ints ^= 2**52
+    significands ^= 2**52
     # Generate the exponent for floats in the range [0,1].
     # Note that these exponents will take negative integer values.  While
     # this could technically overflow, the probability of that happening is
@@ -172,6 +170,6 @@ def uniform_double(n):
     # are represented here as ints rather than as floats in the interval [1,2)
     # as described in the IEEE standard.
     exponents += 52
-    unifs = significand_ints * (2.0 ** (-exponents))
+    unifs = significands * (2.0 ** (-exponents))
     # print(unifs)
     return unifs
