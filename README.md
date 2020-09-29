@@ -10,7 +10,7 @@ Then:
 ```
 $ git clone 
 $ cd differential-privacy
-$ pip install -e .
+$ python ./setup.py install
 ```
 
 Check the tests run:
