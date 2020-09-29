@@ -162,7 +162,7 @@ def uniform_double(n):
     # Add the implicit leading 1 to the significands.
     significands ^= 2**52
     # Generate the exponent for floats in the range [0,1].
-    # Note that these exponents will take negative integer values.  While
+    # Note that these exponents will take positive integer values.  While
     # this could technically overflow, the probability of that happening is
     # negligible (much less than 2**-512).
     exponents = geometric(n, p=0.5) + 1
