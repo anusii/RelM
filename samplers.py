@@ -101,7 +101,18 @@ def geometric(n, p=0.5):
     :param p: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Geometric(p) distribution.
     """
+    # Notice that it is important that xs are chosen by uniform rather than by
+    # uniform_double to prevent a circular dependency. Because the geometric
+    # distribution is supported on the intervals it is not vulnerable to the
+    # kinds of floating-point vulnerabilities that plague the Laplace
+    # distribution and therefore the extra precision provided by uniform_double
+    # is not required in this case.
     xs = uniform(n)
+    # We want the geometric distribution to return an array of integers.
+    # We use the math functions instead of the numpy functions here to produce
+    # integer-type output that numba can understand.  Because this
+    # function will be compiled in nopython mode these operations should not
+    # slow things down too badly.
     ys = np.array([math.floor(math.log(x) / math.log(1-p)) for x in xs])
     return ys
 
@@ -114,9 +125,18 @@ def two_sided_geometric(n, q=0.5):
     :param q: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the TwoSidedGeometric(q) distribution.
     """
+    # Notice that we use uniform instead of uniform_double to sample from the
+    # Uniform(0,1) distribution in this function.  Because the TwoSidedGeometric
+    # is supported on the integers we don't need the extra precision offered by
+    # uniform_double.  So, we use uniform here because it is faster.
     xs = uniform(n, a=-0.5, b=0.5)
     xs *= (1 + q)
     sgn = np.sign(xs)
+    # We want the two_sided_geometric distribution to return an array of integers.
+    # We use the math functions instead of the numpy functions here to produce
+    # integer-type output that numba can understand.  Because this
+    # function will be compiled in nopython mode these operations should not
+    # slow things down too badly.
     ys = np.array([int(sgn[i])*math.floor(math.log(sgn[i]*xs[i]) / math.log(q)) for i in range(n)])
     return ys
 
@@ -171,5 +191,4 @@ def uniform_double(n):
     # as described in the IEEE standard.
     exponents += 52
     unifs = significands * (2.0 ** (-exponents))
-    # print(unifs)
     return unifs
