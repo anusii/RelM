@@ -4,6 +4,7 @@ from differential_privacy import backend
 
 from os import urandom
 from numba import objmode, uint8, njit
+from crlibm import log_rn
 
 BITS_PER_FLOAT = 53
 BYTES_PER_FLOAT = math.ceil(BITS_PER_FLOAT / 8)
@@ -24,6 +25,16 @@ def _int_from_bytes(bs):
     return accumulator
 
 @njit
+def _significands_from_bytes(bs, shift_amount = SHIFT_AMOUNT):
+    n = len(bs) // BYTES_PER_FLOAT
+    significands = np.zeros(n, dtype=np.int64)
+    for i in range(n):
+        start_index = BYTES_PER_FLOAT*i
+        stop_index = BYTES_PER_FLOAT*(i+1)
+        significands[i] = _int_from_bytes(bs[start_index:stop_index]) >> shift_amount
+    return significands
+
+@njit
 def _floats_from_bytes(bs):
     """
     Converts bytes into floats in the interval [0,1).
@@ -32,16 +43,13 @@ def _floats_from_bytes(bs):
     :return: a 1D numpy array of length `bs//BYTES_PER_FLOAT` of floats in the interval [0,1).
     """
     n = len(bs) // BYTES_PER_FLOAT
-    unifs = np.zeros(n)
-    for i in range(n):
-        start_index = BYTES_PER_FLOAT*i
-        stop_index = BYTES_PER_FLOAT*(i+1)
-        unifs[i] = _int_from_bytes(bs[start_index:stop_index]) >> SHIFT_AMOUNT
-    unifs *= NORMALIZER
+    significands = np.zeros(n)
+    significands = _significands_from_bytes(bs)
+    unifs = significands * NORMALIZER
     return unifs
 
 @njit
-def uniform(n, a=0, b=1):
+def uniform(n, a=0.0, b=1.0):
     """
     Samples from the uniform distribution on the interval [a,b).
 
@@ -88,7 +96,7 @@ def geometric(n, p=0.5):
     :param p: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Geometric(p) distribution.
     """
-    return backend.geometric(p, n)
+    return backend.geometric(p, n).astype(np.int64)
 
 
 def two_sided_geometric(n, q=0.5):
@@ -99,7 +107,7 @@ def two_sided_geometric(n, q=0.5):
     :param q: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the TwoSidedGeometric(q) distribution.
     """
-    return backend.two_sided_geometric(q, n)
+    return backend.two_sided_geometric(q, n).astype(np.int64)
 
 
 def simple_laplace(n, b=1):
@@ -127,3 +135,29 @@ def simple_two_sided_geometric(n, q=0.5):
     xs = [geometric(n,p) for i in range(2)]
     ys = xs[0] - xs[1]
     return ys
+
+@njit
+def uniform_double(n):
+    """
+    Samples a double-precision float uniformly from the interval [0,1).
+
+    :param n: the number of samples to draw.
+    :return: a 1D numpy array of length `n` of samples from the Uniform(0,1) distribution.
+    """
+    bs = np.zeros(7*n, dtype=np.uint8)
+    with objmode(bs='uint8[:]'):
+        bs = np.frombuffer(urandom(7*n), dtype=np.uint8)
+    significands = _significands_from_bytes(bs, shift_amount = (SHIFT_AMOUNT+1))
+    # Add the implicit leading 1 to the significands.
+    significands ^= 2**52
+    # Generate the exponent for floats in the range [0,1].
+    # Note that these exponents will take positive integer values.  While
+    # this could technically overflow, the probability of that happening is
+    # negligible (much less than 2**-512).
+    exponents = geometric(n, p=0.5) + 1
+    # Adjust the exponents to account for the fact that the significands
+    # are represented here as ints rather than as floats in the interval [1,2)
+    # as described in the IEEE standard.
+    exponents += 52
+    unifs = significands * (2.0 ** (-exponents))
+    return unifs
