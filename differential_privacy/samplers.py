@@ -8,8 +8,9 @@ from crlibm import log_rn
 
 BITS_PER_FLOAT = 53
 BYTES_PER_FLOAT = math.ceil(BITS_PER_FLOAT / 8)
-SHIFT_AMOUNT = 8*BYTES_PER_FLOAT - BITS_PER_FLOAT
-NORMALIZER = 2**-BITS_PER_FLOAT
+SHIFT_AMOUNT = 8 * BYTES_PER_FLOAT - BITS_PER_FLOAT
+NORMALIZER = 2 ** -BITS_PER_FLOAT
+
 
 @njit
 def _int_from_bytes(bs):
@@ -20,19 +21,21 @@ def _int_from_bytes(bs):
     :return: an big-endian integer representation of the input bytes.
     """
     accumulator = 0
-    for i,b in enumerate(bs[::-1]):
-        accumulator += b*(256)**i
+    for i, b in enumerate(bs[::-1]):
+        accumulator += b * (256) ** i
     return accumulator
 
+
 @njit
-def _significands_from_bytes(bs, shift_amount = SHIFT_AMOUNT):
+def _significands_from_bytes(bs, shift_amount=SHIFT_AMOUNT):
     n = len(bs) // BYTES_PER_FLOAT
     significands = np.zeros(n, dtype=np.int64)
     for i in range(n):
-        start_index = BYTES_PER_FLOAT*i
-        stop_index = BYTES_PER_FLOAT*(i+1)
+        start_index = BYTES_PER_FLOAT * i
+        stop_index = BYTES_PER_FLOAT * (i + 1)
         significands[i] = _int_from_bytes(bs[start_index:stop_index]) >> shift_amount
     return significands
+
 
 @njit
 def _floats_from_bytes(bs):
@@ -48,6 +51,7 @@ def _floats_from_bytes(bs):
     unifs = significands * NORMALIZER
     return unifs
 
+
 @njit
 def uniform(n, a=0.0, b=1.0):
     """
@@ -58,11 +62,11 @@ def uniform(n, a=0.0, b=1.0):
     :param b: the upper bound of the interval to draw from.
     :return: a 1D numpy array of length `n` of samples from the Uniform(0,1) distribution.
     """
-    bs = np.zeros(7*n, dtype=np.uint8)
-    with objmode(bs='uint8[:]'):
-        bs = np.frombuffer(urandom(7*n), dtype=np.uint8)
+    bs = np.zeros(7 * n, dtype=np.uint8)
+    with objmode(bs="uint8[:]"):
+        bs = np.frombuffer(urandom(7 * n), dtype=np.uint8)
     unifs_01 = _floats_from_bytes(bs)
-    unifs_ab = (b-a)*unifs_01 + a
+    unifs_ab = (b - a) * unifs_01 + a
     return unifs_ab
 
 
@@ -131,10 +135,11 @@ def simple_two_sided_geometric(n, q=0.5):
     :param q: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the TwoSidedGeometric(q) distribution.
     """
-    p = 1-q
-    xs = [geometric(n,p) for i in range(2)]
+    p = 1 - q
+    xs = [geometric(n, p) for i in range(2)]
     ys = xs[0] - xs[1]
     return ys
+
 
 @njit
 def uniform_double(n):
@@ -144,12 +149,12 @@ def uniform_double(n):
     :param n: the number of samples to draw.
     :return: a 1D numpy array of length `n` of samples from the Uniform(0,1) distribution.
     """
-    bs = np.zeros(7*n, dtype=np.uint8)
-    with objmode(bs='uint8[:]'):
-        bs = np.frombuffer(urandom(7*n), dtype=np.uint8)
-    significands = _significands_from_bytes(bs, shift_amount = (SHIFT_AMOUNT+1))
+    bs = np.zeros(7 * n, dtype=np.uint8)
+    with objmode(bs="uint8[:]"):
+        bs = np.frombuffer(urandom(7 * n), dtype=np.uint8)
+    significands = _significands_from_bytes(bs, shift_amount=(SHIFT_AMOUNT + 1))
     # Add the implicit leading 1 to the significands.
-    significands ^= 2**52
+    significands ^= 2 ** 52
     # Generate the exponent for floats in the range [0,1].
     # Note that these exponents will take positive integer values.  While
     # this could technically overflow, the probability of that happening is

@@ -1,4 +1,10 @@
-from differential_privacy.samplers import uniform, exponential, laplace, geometric, two_sided_geometric
+from differential_privacy.samplers import (
+    uniform,
+    exponential,
+    laplace,
+    geometric,
+    two_sided_geometric,
+)
 import numpy as np
 
 
@@ -46,7 +52,9 @@ def test_geometric(benchmark):
     scale = np.random.random()
     large_sample = geometric(10000000, scale)
     assert np.isclose(large_sample.mean(), (1 - scale) / scale, rtol=0.01, atol=0.01)
-    assert np.isclose(large_sample.var(), (1 - scale) / scale ** 2, rtol=0.01, atol=0.01)
+    assert np.isclose(
+        large_sample.var(), (1 - scale) / scale ** 2, rtol=0.01, atol=0.01
+    )
     benchmark(lambda: geometric(1000000, 1.0))
 
 
@@ -58,6 +66,8 @@ def test_two_sided_geometric(benchmark):
     scale = 0.5
     large_sample = two_sided_geometric(10000000, scale)
     assert np.isclose(large_sample.mean(), 0, rtol=0.01, atol=0.01)
-    assert np.isclose(large_sample.var(), 2 * (scale) / (1 - scale) ** 2, rtol=0.01, atol=0.01)
+    assert np.isclose(
+        large_sample.var(), 2 * (scale) / (1 - scale) ** 2, rtol=0.01, atol=0.01
+    )
 
     benchmark(lambda: two_sided_geometric(1000000, 1.0))
