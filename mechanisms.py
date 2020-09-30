@@ -137,6 +137,10 @@ class Snapping(ReleaseMechanism):
     def round_pow2(self, x):
         ret = self.Lam * np.round((x / self.Lam))
         return ret
+    def double_to_uint64(self, x):
+        s = struct.pack('>d', x)
+        i = struct.unpack('>Q', s)[0]
+        return i
     def release(self, values):
         if self._is_valid():
             self.current_count += 1
