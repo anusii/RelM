@@ -138,6 +138,17 @@ def simple_two_sided_geometric(n, q=0.5):
 
 
 @njit
+def _uniform_double(n):
+    bs = np.zeros(7 * n, dtype=np.uint8)
+    with objmode(bs="uint8[:]"):
+        bs = np.frombuffer(urandom(7 * n), dtype=np.uint8)
+    significands = _significands_from_bytes(bs, shift_amount=(SHIFT_AMOUNT + 1))
+    # Add the implicit leading 1 to the significands.
+    significands ^= 2 ** 52
+
+    return significands
+
+
 def uniform_double(n):
     """
     Samples a double-precision float uniformly from the interval [0,1).
@@ -145,12 +156,7 @@ def uniform_double(n):
     :param n: the number of samples to draw.
     :return: a 1D numpy array of length `n` of samples from the Uniform(0,1) distribution.
     """
-    bs = np.zeros(7 * n, dtype=np.uint8)
-    with objmode(bs="uint8[:]"):
-        bs = np.frombuffer(urandom(7 * n), dtype=np.uint8)
-    significands = _significands_from_bytes(bs, shift_amount=(SHIFT_AMOUNT + 1))
-    # Add the implicit leading 1 to the significands.
-    significands ^= 2 ** 52
+    significands = _uniform_double(n)
     # Generate the exponent for floats in the range [0,1].
     # Note that these exponents will take positive integer values.  While
     # this could technically overflow, the probability of that happening is
