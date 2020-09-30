@@ -16,7 +16,9 @@ except ImportError:
         from setuptools_rust import RustExtension
 
 setup_requires = ["setuptools-rust>=0.10.1", "wheel"]
-install_requires = ["numpy", "numba", "pytest", "pytest-benchmark"]
+install_requires = [
+    "numpy", "numba", "pytest", "pytest-benchmark", "crlibm", "black"
+]
 
 setup(
     name="differential-privacy",
