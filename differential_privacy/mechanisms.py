@@ -5,7 +5,7 @@ import struct
 import numpy as np
 from numba import jitclass, float64, int64
 
-import samplers
+from . import samplers
 
 class ReleaseMechanism:
     def __init__(self, epsilon):

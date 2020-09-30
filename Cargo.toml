@@ -1,0 +1,15 @@
+[package]
+name = "differential-privacy"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+name = "backend"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.11.1", features = ["extension-module"] }
+rand = "0.7.3"
+rayon = "1.4.0"
+numpy = "0.11.0"
+

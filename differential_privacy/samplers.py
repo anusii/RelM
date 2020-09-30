@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from differential_privacy import backend
 
 from os import urandom
 from numba import objmode, uint8, njit
@@ -64,8 +65,8 @@ def uniform(n, a=0.0, b=1.0):
     unifs_ab = (b-a)*unifs_01 + a
     return unifs_ab
 
-@njit
-def exponential(n, b=1):
+
+def exponential(n, b):
     """
     Samples from the Exponential(b) distribution.
 
@@ -73,12 +74,9 @@ def exponential(n, b=1):
     :param b: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Exponential(b) distribution.
     """
-    xs = uniform(n)
-    ys = -b*np.log(xs)
-    return ys
+    return backend.exponential(b, n)
 
 
-@njit
 def laplace(n, b=1):
     """
     Samples from the Laplace(b) distribution.
@@ -87,12 +85,9 @@ def laplace(n, b=1):
     :param b: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Laplace(b) distribution.
     """
-    xs = uniform(n, a=-0.5, b=0.5)
-    sgn = np.sign(xs)
-    ys = sgn * np.log(2 * sgn * xs) * b
-    return ys
+    return backend.laplace(b, n)
 
-@njit
+
 def geometric(n, p=0.5):
     """
     Samples from the Geometric(p) distribution.
@@ -101,17 +96,9 @@ def geometric(n, p=0.5):
     :param p: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Geometric(p) distribution.
     """
-    # Notice that it is important that xs are chosen by uniform rather than by
-    # uniform_double to prevent a circular dependency. Because the geometric
-    # distribution is supported on the intervals it is not vulnerable to the
-    # kinds of floating-point vulnerabilities that plague the Laplace
-    # distribution and therefore the extra precision provided by uniform_double
-    # is not required in this case.
-    xs = uniform(n)
-    ys = np.floor(np.log(xs) / np.log(1-p)).astype(np.int64)
-    return ys
+    return backend.geometric(p, n).astype(np.int64)
 
-@njit
+
 def two_sided_geometric(n, q=0.5):
     """
     Samples from the TwoSidedGeometric(q) distribution.
@@ -120,17 +107,9 @@ def two_sided_geometric(n, q=0.5):
     :param q: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the TwoSidedGeometric(q) distribution.
     """
-    # Notice that we use uniform instead of uniform_double to sample from the
-    # Uniform(0,1) distribution in this function.  Because the TwoSidedGeometric
-    # is supported on the integers we don't need the extra precision offered by
-    # uniform_double.  So, we use uniform here because it is faster.
-    xs = uniform(n, a=-0.5, b=0.5)
-    xs *= (1 + q)
-    sgn = np.sign(xs)
-    ys = (sgn * np.floor(np.log(sgn*xs) / np.log(q))).astype(np.int64)
-    return ys
+    return backend.two_sided_geometric(q, n).astype(np.int64)
 
-@njit
+
 def simple_laplace(n, b=1):
     """
     Samples from the Laplace(b) distribution.
@@ -143,7 +122,7 @@ def simple_laplace(n, b=1):
     ys = xs[0] - xs[1]
     return ys
 
-@njit
+
 def simple_two_sided_geometric(n, q=0.5):
     """
     Samples from the TwoSidedGeometric(q) distribution.
