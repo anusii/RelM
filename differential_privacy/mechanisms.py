@@ -7,6 +7,7 @@ from numba import jitclass, float64, int64
 
 from . import samplers
 
+
 class ReleaseMechanism:
     def __init__(self, epsilon):
         self.epsilon = epsilon
@@ -14,7 +15,7 @@ class ReleaseMechanism:
         self.current_count = 0
 
     def _is_valid(self):
-        return (self.current_count < self.cutoff)
+        return self.current_count < self.cutoff
 
     def release(self):
         raise NotImplementedError()
@@ -39,7 +40,8 @@ class LaplaceMechanism(ReleaseMechanism):
 
         return perturbed_values
 
-#@jitclass(spec)
+
+# @jitclass(spec)
 class GeometricMechanism(ReleaseMechanism):
     def release(self, values):
         if self._is_valid():
@@ -53,6 +55,7 @@ class GeometricMechanism(ReleaseMechanism):
 
         return perturbed_values
 
+
 class Sparse(ReleaseMechanism):
     def __init__(self, epsilon, threshold, cutoff):
         super(Sparse, self).__init__(epsilon)
@@ -61,9 +64,9 @@ class Sparse(ReleaseMechanism):
 
     def next_above_threshold(self, values):
         n = len(values)
-        threshold_perturbation = samplers.laplace(1, b=2.0*self.cutoff/self.epsilon)
+        threshold_perturbation = samplers.laplace(1, b=2.0 * self.cutoff / self.epsilon)
         perturbed_threshold = self.threshold + threshold_perturbation
-        value_perturbations = samplers.laplace(n, b=4.0*self.cutoff/self.epsilon)
+        value_perturbations = samplers.laplace(n, b=4.0 * self.cutoff / self.epsilon)
         perturbed_values = values + value_perturbations
         indicators = perturbed_values > perturbed_threshold
         if np.any(indicators):
@@ -95,15 +98,17 @@ class Sparse(ReleaseMechanism):
 
         return indices
 
+
 class AboveThreshold(Sparse):
     def __init__(self, epsilon, threshold):
         super(AboveThreshold, self).__init__(epsilon, threshold, 1)
 
+
 class SparseNumeric(Sparse):
     def __init__(self, epsilon, threshold, cutoff):
         super(SparseNumeric, self).__init__(epsilon, threshold, cutoff)
-        self.epsilon = (8/9)*epsilon
-        self.epsilon2 = (2/9)*epsilon
+        self.epsilon = (8 / 9) * epsilon
+        self.epsilon2 = (2 / 9) * epsilon
 
     def release(self, values):
         if self._is_valid():
@@ -113,35 +118,40 @@ class SparseNumeric(Sparse):
             self.current_count += len(indices)
             sliced_values = values[indices]
             n = len(sliced_values)
-            b = 2*self.cutoff / self.epsilon2
-            perturbations = samplers.laplace(n,b)
+            b = 2 * self.cutoff / self.epsilon2
+            perturbations = samplers.laplace(n, b)
             perturbed_values = sliced_values + perturbations
         else:
             raise RuntimeError()
 
         return indices, perturbed_values
 
+
 class Snapping(ReleaseMechanism):
     def __init__(self, epsilon, B):
-        lam = (1 + 2**(-49)*B)/epsilon
-        if ((B <= lam) or (B >= (2**46 * lam))):
+        lam = (1 + 2 ** (-49) * B) / epsilon
+        if (B <= lam) or (B >= (2 ** 46 * lam)):
             raise ValueError()
         self.lam = lam
-        self.Lam = 2**math.ceil(math.log2(self.lam))
+        self.Lam = 2 ** math.ceil(math.log2(self.lam))
         self.B = B
         super(Snapping, self).__init__(epsilon)
+
     def clamp(self, x):
         n = x.size
         clamp_vals = self.B * np.ones(n)
         ret = np.sign(x) * np.min((np.abs(x), clamp_vals), axis=0)
         return ret
+
     def round_pow2(self, x):
         ret = self.Lam * np.round((x / self.Lam))
         return ret
+
     def double_to_uint64(self, x):
-        s = struct.pack('>d', x)
-        i = struct.unpack('>Q', s)[0]
+        s = struct.pack(">d", x)
+        i = struct.unpack(">Q", s)[0]
         return i
+
     def release(self, values):
         if self._is_valid():
             self.current_count += 1
@@ -150,7 +160,7 @@ class Snapping(ReleaseMechanism):
             log_unifs = np.array([crlibm.log_rn(u) for u in unifs])
             perturbations = self.lam * log_unifs
             sgn = np.sign(samplers.uniform(n, a=-0.5, b=0.5))
-            perturbed_values = self.clamp(values) + sgn*perturbations
+            perturbed_values = self.clamp(values) + sgn * perturbations
             rounded_values = self.round_pow2(perturbed_values)
             release_values = self.clamp(rounded_values)
         else:

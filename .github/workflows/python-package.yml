@@ -33,4 +33,4 @@ jobs:
         pytest
     - name: Check formatting with black
       run: |
-        black --check differential_privacy
+        black --check differential_privacy tests
