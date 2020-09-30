@@ -108,12 +108,7 @@ def geometric(n, p=0.5):
     # distribution and therefore the extra precision provided by uniform_double
     # is not required in this case.
     xs = uniform(n)
-    # We want the geometric distribution to return an array of integers.
-    # We use the math functions instead of the numpy functions here to produce
-    # integer-type output that numba can understand.  Because this
-    # function will be compiled in nopython mode these operations should not
-    # slow things down too badly.
-    ys = np.array([math.floor(math.log(x) / math.log(1-p)) for x in xs])
+    ys = np.floor(np.log(xs) / np.log(1-p)).astype(np.int64)
     return ys
 
 @njit
@@ -132,12 +127,7 @@ def two_sided_geometric(n, q=0.5):
     xs = uniform(n, a=-0.5, b=0.5)
     xs *= (1 + q)
     sgn = np.sign(xs)
-    # We want the two_sided_geometric distribution to return an array of integers.
-    # We use the math functions instead of the numpy functions here to produce
-    # integer-type output that numba can understand.  Because this
-    # function will be compiled in nopython mode these operations should not
-    # slow things down too badly.
-    ys = np.array([int(sgn[i])*math.floor(math.log(sgn[i]*xs[i]) / math.log(q)) for i in range(n)])
+    ys = (sgn * np.floor(np.log(sgn*xs) / np.log(q))).astype(np.int64)
     return ys
 
 @njit
