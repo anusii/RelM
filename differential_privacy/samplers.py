@@ -1,10 +1,7 @@
 import math
 import numpy as np
 from differential_privacy import backend
-
-from os import urandom
 from numba import objmode, uint8, njit
-from crlibm import log_rn
 
 BITS_PER_FLOAT = 53
 BYTES_PER_FLOAT = math.ceil(BITS_PER_FLOAT / 8)
@@ -46,7 +43,6 @@ def _floats_from_bytes(bs):
     :return: a 1D numpy array of length `bs//BYTES_PER_FLOAT` of floats in the interval [0,1).
     """
     n = len(bs) // BYTES_PER_FLOAT
-    significands = np.zeros(n)
     significands = _significands_from_bytes(bs)
     unifs = significands * NORMALIZER
     return unifs
