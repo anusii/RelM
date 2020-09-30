@@ -32,5 +32,5 @@ jobs:
       run: |
         pytest
     - name: Check formatting with black
-        run: |
-          black --check
+      run: |
+        black --check
