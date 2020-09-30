@@ -77,7 +77,7 @@ fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 ///// A Python module implemented in Rust.
 ///// Exports the rust functions to python.
 #[pymodule]
-fn differential_privacy(py: Python, m: &PyModule) -> PyResult<()> {
+fn backend(py: Python, m: &PyModule) -> PyResult<()> {
 
     #[pyfn(m, "exponential")]
     fn py_exponential(py: Python, scale: f64, num: usize) -> &PyArray1<f64>{

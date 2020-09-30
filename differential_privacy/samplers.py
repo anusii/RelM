@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from differential_privacy import differential_privacy as dp
+from differential_privacy import backend
 
 from os import urandom
 from numba import objmode, uint8, njit
@@ -66,7 +66,7 @@ def exponential(n, b):
     :param b: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Exponential(b) distribution.
     """
-    return dp.exponential(b, n)
+    return backend.exponential(b, n)
 
 
 def laplace(n, b=1):
@@ -77,7 +77,7 @@ def laplace(n, b=1):
     :param b: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Laplace(b) distribution.
     """
-    return dp.laplace(b, n)
+    return backend.laplace(b, n)
 
 
 def geometric(n, p=0.5):
@@ -88,7 +88,7 @@ def geometric(n, p=0.5):
     :param p: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Geometric(p) distribution.
     """
-    return dp.geometric(p, n)
+    return backend.geometric(p, n)
 
 
 def two_sided_geometric(n, q=0.5):
@@ -99,7 +99,7 @@ def two_sided_geometric(n, q=0.5):
     :param q: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the TwoSidedGeometric(q) distribution.
     """
-    return dp.two_sided_geometric(q, n)
+    return backend.two_sided_geometric(q, n)
 
 
 def simple_laplace(n, b=1):

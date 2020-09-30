@@ -31,7 +31,7 @@ setup(
         "Operating System :: MacOS :: MacOS X",
     ],
     packages=["differential_privacy"],
-    rust_extensions=[RustExtension("differential_privacy.differential_privacy")],
+    rust_extensions=[RustExtension("differential_privacy.backend")],
     install_requires=install_requires,
     setup_requires=setup_requires,
     include_package_data=True,
