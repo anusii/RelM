@@ -1,5 +1,6 @@
 import crlibm
 import math
+import struct
 
 import numpy as np
 from numba import jitclass, float64, int64
