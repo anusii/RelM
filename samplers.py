@@ -3,6 +3,7 @@ import numpy as np
 
 from os import urandom
 from numba import objmode, uint8, njit
+from crlibm import log_rn
 
 BITS_PER_FLOAT = 53
 BYTES_PER_FLOAT = math.ceil(BITS_PER_FLOAT / 8)
@@ -23,6 +24,16 @@ def _int_from_bytes(bs):
     return accumulator
 
 @njit
+def _significands_from_bytes(bs, shift_amount = SHIFT_AMOUNT):
+    n = len(bs) // BYTES_PER_FLOAT
+    significands = np.zeros(n, dtype=np.int64)
+    for i in range(n):
+        start_index = BYTES_PER_FLOAT*i
+        stop_index = BYTES_PER_FLOAT*(i+1)
+        significands[i] = _int_from_bytes(bs[start_index:stop_index]) >> shift_amount
+    return significands
+
+@njit
 def _floats_from_bytes(bs):
     """
     Converts bytes into floats in the interval [0,1).
@@ -31,16 +42,13 @@ def _floats_from_bytes(bs):
     :return: a 1D numpy array of length `bs//BYTES_PER_FLOAT` of floats in the interval [0,1).
     """
     n = len(bs) // BYTES_PER_FLOAT
-    unifs = np.zeros(n)
-    for i in range(n):
-        start_index = BYTES_PER_FLOAT*i
-        stop_index = BYTES_PER_FLOAT*(i+1)
-        unifs[i] = _int_from_bytes(bs[start_index:stop_index]) >> SHIFT_AMOUNT
-    unifs *= NORMALIZER
+    significands = np.zeros(n)
+    significands = _significands_from_bytes(bs)
+    unifs = significands * NORMALIZER
     return unifs
 
 @njit
-def uniform(n, a=0, b=1):
+def uniform(n, a=0.0, b=1.0):
     """
     Samples from the uniform distribution on the interval [a,b).
 
@@ -57,7 +65,7 @@ def uniform(n, a=0, b=1):
     return unifs_ab
 
 @njit
-def exponential(n, b):
+def exponential(n, b=1):
     """
     Samples from the Exponential(b) distribution.
 
@@ -93,8 +101,14 @@ def geometric(n, p=0.5):
     :param p: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the Geometric(p) distribution.
     """
+    # Notice that it is important that xs are chosen by uniform rather than by
+    # uniform_double to prevent a circular dependency. Because the geometric
+    # distribution is supported on the intervals it is not vulnerable to the
+    # kinds of floating-point vulnerabilities that plague the Laplace
+    # distribution and therefore the extra precision provided by uniform_double
+    # is not required in this case.
     xs = uniform(n)
-    ys = np.floor(np.log(xs) / np.log(1-p))
+    ys = np.floor(np.log(xs) / np.log(1-p)).astype(np.int64)
     return ys
 
 @njit
@@ -106,10 +120,14 @@ def two_sided_geometric(n, q=0.5):
     :param q: parameter that determines the spread of the distribution.
     :return: a 1D numpy array of length `n` of samples from the TwoSidedGeometric(q) distribution.
     """
+    # Notice that we use uniform instead of uniform_double to sample from the
+    # Uniform(0,1) distribution in this function.  Because the TwoSidedGeometric
+    # is supported on the integers we don't need the extra precision offered by
+    # uniform_double.  So, we use uniform here because it is faster.
     xs = uniform(n, a=-0.5, b=0.5)
     xs *= (1 + q)
     sgn = np.sign(xs)
-    ys = sgn * np.floor(np.log(sgn * xs) / np.log(q))
+    ys = (sgn * np.floor(np.log(sgn*xs) / np.log(q))).astype(np.int64)
     return ys
 
 @njit
@@ -138,3 +156,29 @@ def simple_two_sided_geometric(n, q=0.5):
     xs = [geometric(n,p) for i in range(2)]
     ys = xs[0] - xs[1]
     return ys
+
+@njit
+def uniform_double(n):
+    """
+    Samples a double-precision float uniformly from the interval [0,1).
+
+    :param n: the number of samples to draw.
+    :return: a 1D numpy array of length `n` of samples from the Uniform(0,1) distribution.
+    """
+    bs = np.zeros(7*n, dtype=np.uint8)
+    with objmode(bs='uint8[:]'):
+        bs = np.frombuffer(urandom(7*n), dtype=np.uint8)
+    significands = _significands_from_bytes(bs, shift_amount = (SHIFT_AMOUNT+1))
+    # Add the implicit leading 1 to the significands.
+    significands ^= 2**52
+    # Generate the exponent for floats in the range [0,1].
+    # Note that these exponents will take positive integer values.  While
+    # this could technically overflow, the probability of that happening is
+    # negligible (much less than 2**-512).
+    exponents = geometric(n, p=0.5) + 1
+    # Adjust the exponents to account for the fact that the significands
+    # are represented here as ints rather than as floats in the interval [1,2)
+    # as described in the IEEE standard.
+    exponents += 52
+    unifs = significands * (2.0 ** (-exponents))
+    return unifs
