@@ -4,12 +4,12 @@ from differential_privacy.samplers import (
     laplace,
     geometric,
     two_sided_geometric,
-    uniform_double
+    uniform_double,
 )
 import numpy as np
 
 
-def _test_distribution(benchmark, func, mean, var):
+def _test_distribution(benchmark, func, mean, var, name=None):
 
     for num in [1, 20, 100, 1000]:
         samples = func(num)
@@ -18,6 +18,8 @@ def _test_distribution(benchmark, func, mean, var):
     large_sample = func(10000000)
     assert np.isclose(large_sample.mean(), mean, rtol=0.01, atol=0.01)
     assert np.isclose(large_sample.var(), var, rtol=0.01, atol=0.01)
+    if name is not None:
+        pass
     benchmark(lambda: func(1000000))
 
 
