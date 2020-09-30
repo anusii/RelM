@@ -79,6 +79,15 @@ fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 #[pymodule]
 fn backend(py: Python, m: &PyModule) -> PyResult<()> {
 
+    #[pyfn(m, "uniform")]
+    fn py_uniform(py: Python, num: usize) -> &PyArray1<f64>{
+        /// Simple python wrapper of the exponential function. Converts
+        /// the rust vector into a numpy array
+        let mut samples: Vec<f64> = vec![0.0; num];
+        samples.par_iter_mut().for_each(|p| *p = uniform());
+        samples.to_pyarray(py)
+    }
+
     #[pyfn(m, "exponential")]
     fn py_exponential(py: Python, scale: f64, num: usize) -> &PyArray1<f64>{
         /// Simple python wrapper of the exponential function. Converts
