@@ -65,6 +65,7 @@ fn two_sided_geometric(scale: f64) -> f64 {
 fn double_uniform() -> f64 {
     /// Returns a sample from the [0, 1) uniform distribution
     ///
+    
     let mut rng = rand::thread_rng();
     let exponent: f64 = geometric(0.5) + 53.0;
     let mut significand = (rng.gen::<u64>() >> 11) | (2 << 51);
