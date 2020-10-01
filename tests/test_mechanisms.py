@@ -40,3 +40,8 @@ def test_sparse_numeric(benchmark):
     mechanism = Sparse(epsilon=1, threshold=0.01, cutoff=100)
     data = np.random.random(1000)
     assert len(mechanism.release(data) == 100)
+
+
+def test_snapping(benchmark):
+    mechanism = Snapping(epsilon=1.0, B=10)
+    _test_mechanism(benchmark, mechanism)
