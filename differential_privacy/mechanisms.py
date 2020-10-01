@@ -133,32 +133,10 @@ class Snapping(ReleaseMechanism):
         self.B = B
         super(Snapping, self).__init__(epsilon)
 
-    def clamp(self, x):
-        n = x.size
-        clamp_vals = self.B * np.ones(n)
-        ret = np.sign(x) * np.min((np.abs(x), clamp_vals), axis=0)
-        return ret
-
-    def round_pow2(self, x):
-        ret = self.Lam * np.round((x / self.Lam))
-        return ret
-
-    def double_to_uint64(self, x):
-        s = struct.pack(">d", x)
-        i = struct.unpack(">Q", s)[0]
-        return i
-
     def release(self, values):
         if self._is_valid():
             self.current_count += 1
-            n = len(values)
-            unifs = samplers.uniform_double(n)
-            log_unifs = np.array([crlibm.log_rn(u) for u in unifs])
-            perturbations = self.lam * log_unifs
-            sgn = np.sign(samplers.uniform(n, a=-0.5, b=0.5))
-            perturbed_values = self.clamp(values) + sgn * perturbations
-            rounded_values = self.round_pow2(perturbed_values)
-            release_values = self.clamp(rounded_values)
+            release_values = backend.snapping(values, self.B, self.lam, self.Lam)
         else:
             raise RuntimeError
 

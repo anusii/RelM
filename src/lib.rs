@@ -95,6 +95,29 @@ fn all_above_threshold(
 }
 
 
+fn clamp(x: f64, B: f64) -> f64 {
+    if x < -B {
+        -B
+    } else if x > B {
+        B
+    } else {
+        x
+    }
+}
+
+
+fn snapping(
+    data: Vec<f64>, B: f64, lam: f64, Lam: f64
+) -> Vec<f64> {
+    data.par_iter()
+        .map(|&p| clamp(p, B))
+        .map(|p| p + lam * double_uniform().ln() * (uniform() - 0.5).signum())
+        .map(|p| Lam * (p / Lam).round())
+        .map(|p| clamp(p, B))
+        .collect()
+}
+
+
 ///// A Python module implemented in Rust.
 ///// Exports the rust functions to python.
 #[pymodule]
@@ -159,6 +182,18 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         /// the rust vector into a numpy array
         let data = data.to_vec().unwrap();
         all_above_threshold(data, scale, threshold).to_pyarray(py)
+    }
+
+
+    #[pyfn(m, "snapping")]
+    fn py_snapping<'a>(
+        py: Python<'a>, data: &'a PyArray1<f64>,
+        B: f64, lam: f64, Lam: f64
+    ) -> &'a PyArray1<f64> {
+        /// Simple python wrapper of the exponential function. Converts
+        /// the rust vector into a numpy array
+        let data = data.to_vec().unwrap();
+        snapping(data, B, lam, Lam).to_pyarray(py)
     }
 
     Ok(())
