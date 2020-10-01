@@ -5,6 +5,7 @@ import struct
 import numpy as np
 
 from . import samplers
+from differential_privacy import backend
 
 
 class ReleaseMechanism:
@@ -75,16 +76,12 @@ class Sparse(ReleaseMechanism):
         return index
 
     def all_above_threshold(self, values):
-        indices = []
-        current_start = 0
-        while current_start < len(values):
-            index = self.next_above_threshold(values[current_start:])
-            if index is not None:
-                indices.append(current_start + index)
-                current_start += index + 1
-            else:
-                break
-        return np.array(indices)
+        threshold = self.threshold + samplers.laplace(
+            1, b=2.0 * self.cutoff / self.epsilon
+        )
+        return backend.all_above_threshold(
+            values, 4.0 * self.cutoff / self.epsilon, threshold
+        )
 
     def release(self, values):
         if self._is_valid():

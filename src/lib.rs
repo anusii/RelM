@@ -88,6 +88,13 @@ fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 }
 
 
+fn all_above_threshold(
+    data: Vec<f64>, scale: f64, threshold: f64
+) -> Vec<usize>{
+    data.par_iter().positions(|&p| p + laplace(scale) > threshold).collect()
+}
+
+
 ///// A Python module implemented in Rust.
 ///// Exports the rust functions to python.
 #[pymodule]
@@ -143,5 +150,17 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         samples.to_pyarray(py)
     }
 
+    #[pyfn(m, "all_above_threshold")]
+    fn py_all_above_threshold<'a>(
+        py: Python<'a>, data: &'a PyArray1<f64>,
+        scale: f64, threshold: f64
+    ) -> &'a PyArray1<usize> {
+        /// Simple python wrapper of the exponential function. Converts
+        /// the rust vector into a numpy array
+        let data = data.to_vec().unwrap();
+        all_above_threshold(data, scale, threshold).to_pyarray(py)
+    }
+
     Ok(())
+
 }
