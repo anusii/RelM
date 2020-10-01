@@ -27,7 +27,7 @@ class ReleaseMechanism:
 # ]
 # @jitclass(spec)
 class LaplaceMechanism(ReleaseMechanism):
-    def release(self, values, sensitivity):
+    def release(self, values, sensitivity=1):
         if self._is_valid():
             self.current_count += 1
             n = len(values)
