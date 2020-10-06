@@ -6,7 +6,9 @@ from differential_privacy.samplers import (
     two_sided_geometric,
     uniform_double,
 )
+from differential_privacy import backend
 import numpy as np
+from crlibm import log_rn
 
 
 def _test_distribution(benchmark, func, mean, var, name=None):
@@ -63,3 +65,9 @@ def test_two_sided_geometric(benchmark):
 def test_uniform_double(benchmark):
     func = uniform_double
     _test_distribution(benchmark, func, 0.5, 1 / 12)
+
+
+def test_ln_rn():
+    for _ in range(100000):
+        x = np.random.random() / np.random.random()
+        assert backend.ln_rn(x) == log_rn(x)
