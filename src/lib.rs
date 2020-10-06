@@ -4,10 +4,7 @@ use rayon::prelude::*;
 use numpy::{PyArray, PyArray1, ToPyArray};
 
 
-fn uniform() -> f64 {
-    /// Returns a sample from the [0, 1) uniform distribution
-    ///
-
+fn uniform(scale: f64) -> f64 {
     let mut rng = rand::thread_rng();
     rng.gen::<f64>()
 }
@@ -20,7 +17,7 @@ fn exponential(scale: f64) -> f64 {
     ///
     /// * `scale` - The scale parameter of the exponential distribution
 
-    let sample = -scale * uniform().ln();
+    let sample = -scale * uniform(1.0).ln();
     sample
 }
 
@@ -32,7 +29,7 @@ fn laplace(scale: f64) -> f64 {
     ///
     /// * `scale` - The scale parameter of the Laplace distribution
 
-    let y = uniform() - 0.5;
+    let y = uniform(1.0) - 0.5;
     let sgn = y.signum();
     sgn * (2.0 * sgn * y).ln() * scale
 }
@@ -45,7 +42,7 @@ fn geometric(scale: f64) -> f64 {
     ///
     /// * `scale` - The scale parameter of the geometric distribution
 
-    (uniform().ln() / (1.0 - scale).ln()).floor()
+    (uniform(1.0).ln() / (1.0 - scale).ln()).floor()
 }
 
 
@@ -56,7 +53,7 @@ fn two_sided_geometric(scale: f64) -> f64 {
     ///
     /// * `scale` - The scale parameter of the two sided geometric distribution
 
-    let y = (uniform() - 0.5) * (1.0 + scale);
+    let y = (uniform(1.0) - 0.5) * (1.0 + scale);
     let sgn = y.signum();
     sgn * ((sgn * y).ln() / scale.ln()).floor()
 }
@@ -65,7 +62,7 @@ fn two_sided_geometric(scale: f64) -> f64 {
 fn double_uniform() -> f64 {
     /// Returns a sample from the [0, 1) uniform distribution
     ///
-    
+
     let mut rng = rand::thread_rng();
     let exponent: f64 = geometric(0.5) + 53.0;
     let mut significand = (rng.gen::<u64>() >> 11) | (1 << 52);
@@ -97,9 +94,8 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
     fn py_uniform(py: Python, num: usize) -> &PyArray1<f64>{
         /// Simple python wrapper of the exponential function. Converts
         /// the rust vector into a numpy array
-        let mut samples: Vec<f64> = vec![0.0; num];
-        samples.par_iter_mut().for_each(|p| *p = uniform());
-        samples.to_pyarray(py)
+
+        vectorize(1.0, num, uniform).to_pyarray(py)
     }
 
     #[pyfn(m, "exponential")]
