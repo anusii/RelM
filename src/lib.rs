@@ -108,7 +108,7 @@ fn clamp(x: f64, bound: f64) -> f64 {
 
 
 fn ln_rn(x: f64) -> f64 {
-    let mut y = Float::with_val(64, x);
+    let mut y = Float::with_val(53, x);
     let dir = y.ln_round(Round::Nearest);
     y.to_f64()
 }
