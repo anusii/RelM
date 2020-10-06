@@ -5,6 +5,9 @@ use numpy::{PyArray, PyArray1, ToPyArray};
 
 
 fn uniform(scale: f64) -> f64 {
+    /// Returns a sample from the [0, scale) uniform distribution
+    ///
+
     let mut rng = rand::thread_rng();
     rng.gen::<f64>()
 }
@@ -60,7 +63,7 @@ fn two_sided_geometric(scale: f64) -> f64 {
 
 
 fn double_uniform(scale: f64) -> f64 {
-    /// Returns a sample from the [0, 1) uniform distribution
+    /// Returns a sample from the [0, scale) uniform distribution
     ///
 
     let mut rng = rand::thread_rng();
