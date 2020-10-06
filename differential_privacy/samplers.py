@@ -52,7 +52,6 @@ def _floats_from_bytes(bs):
     return unifs
 
 
-@njit
 def uniform(n, a=0.0, b=1.0):
     """
     Samples from the uniform distribution on the interval [a,b).
@@ -62,10 +61,7 @@ def uniform(n, a=0.0, b=1.0):
     :param b: the upper bound of the interval to draw from.
     :return: a 1D numpy array of length `n` of samples from the Uniform(0,1) distribution.
     """
-    bs = np.zeros(7 * n, dtype=np.uint8)
-    with objmode(bs="uint8[:]"):
-        bs = np.frombuffer(urandom(7 * n), dtype=np.uint8)
-    unifs_01 = _floats_from_bytes(bs)
+    unifs_01 = backend.uniform(n)
     unifs_ab = (b - a) * unifs_01 + a
     return unifs_ab
 

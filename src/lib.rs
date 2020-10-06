@@ -4,7 +4,7 @@ use rayon::prelude::*;
 use numpy::{PyArray, PyArray1, ToPyArray};
 
 
-fn uniform() -> f64 {
+fn uniform(scale: f64) -> f64 {
     let mut rng = rand::thread_rng();
     rng.gen::<f64>()
 }
@@ -17,7 +17,7 @@ fn exponential(scale: f64) -> f64 {
     ///
     /// * `scale` - The scale parameter of the exponential distribution
 
-    let sample = -scale * uniform().ln();
+    let sample = -scale * uniform(1.0).ln();
     sample
 }
 
@@ -29,7 +29,7 @@ fn laplace(scale: f64) -> f64 {
     ///
     /// * `scale` - The scale parameter of the Laplace distribution
 
-    let y = uniform() - 0.5;
+    let y = uniform(1.0) - 0.5;
     let sgn = y.signum();
     sgn * (2.0 * sgn * y).ln() * scale
 }
@@ -42,7 +42,7 @@ fn geometric(scale: f64) -> f64 {
     ///
     /// * `scale` - The scale parameter of the geometric distribution
 
-    (uniform().ln() / (1.0 - scale).ln()).floor()
+    (uniform(1.0).ln() / (1.0 - scale).ln()).floor()
 }
 
 
@@ -53,7 +53,7 @@ fn two_sided_geometric(scale: f64) -> f64 {
     ///
     /// * `scale` - The scale parameter of the two sided geometric distribution
 
-    let y = (uniform() - 0.5) * (1.0 + scale);
+    let y = (uniform(1.0) - 0.5) * (1.0 + scale);
     let sgn = y.signum();
     sgn * ((sgn * y).ln() / scale.ln()).floor()
 }
@@ -78,6 +78,14 @@ fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 ///// Exports the rust functions to python.
 #[pymodule]
 fn backend(py: Python, m: &PyModule) -> PyResult<()> {
+
+    #[pyfn(m, "uniform")]
+    fn py_uniform(py: Python, num: usize) -> &PyArray1<f64>{
+        /// Simple python wrapper of the exponential function. Converts
+        /// the rust vector into a numpy array
+
+        vectorize(1.0, num, uniform).to_pyarray(py)
+    }
 
     #[pyfn(m, "exponential")]
     fn py_exponential(py: Python, scale: f64, num: usize) -> &PyArray1<f64>{
