@@ -129,14 +129,14 @@ class Snapping(ReleaseMechanism):
         if (B <= lam) or (B >= (2 ** 46 * lam)):
             raise ValueError()
         self.lam = lam
-        self.Lam = 2 ** math.ceil(math.log2(self.lam))
+        self.quanta = 2 ** math.ceil(math.log2(self.lam))
         self.B = B
         super(Snapping, self).__init__(epsilon)
 
     def release(self, values):
         if self._is_valid():
             self.current_count += 1
-            release_values = backend.snapping(values, self.B, self.lam, self.Lam)
+            release_values = backend.snapping(values, self.B, self.lam, self.quanta)
         else:
             raise RuntimeError
 

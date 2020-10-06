@@ -95,11 +95,11 @@ fn all_above_threshold(
 }
 
 
-fn clamp(x: f64, B: f64) -> f64 {
-    if x < -B {
-        -B
-    } else if x > B {
-        B
+fn clamp(x: f64, bound: f64) -> f64 {
+    if x < -bound {
+        -bound
+    } else if x > bound {
+        bound
     } else {
         x
     }
@@ -107,13 +107,13 @@ fn clamp(x: f64, B: f64) -> f64 {
 
 
 fn snapping(
-    data: Vec<f64>, B: f64, lam: f64, Lam: f64
+    data: Vec<f64>, bound: f64, lambda: f64, quanta: f64
 ) -> Vec<f64> {
     data.par_iter()
-        .map(|&p| clamp(p, B))
-        .map(|p| p + lam * double_uniform(1.0).ln() * (uniform(1.0) - 0.5).signum())
-        .map(|p| Lam * (p / Lam).round())
-        .map(|p| clamp(p, B))
+        .map(|&p| clamp(p, bound))
+        .map(|p| p + lambda * double_uniform(1.0).ln() * (uniform(1.0) - 0.5).signum())
+        .map(|p| quanta * (p / quanta).round())
+        .map(|p| clamp(p, bound))
         .collect()
 }
 
@@ -185,12 +185,12 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
     #[pyfn(m, "snapping")]
     fn py_snapping<'a>(
         py: Python<'a>, data: &'a PyArray1<f64>,
-        B: f64, lam: f64, Lam: f64
+        bound: f64, lambda: f64, quanta: f64
     ) -> &'a PyArray1<f64> {
         /// Simple python wrapper of the exponential function. Converts
         /// the rust vector into a numpy array
         let data = data.to_vec().unwrap();
-        snapping(data, B, lam, Lam).to_pyarray(py)
+        snapping(data, bound, lambda, quanta).to_pyarray(py)
     }
 
     Ok(())
