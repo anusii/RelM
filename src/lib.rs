@@ -181,7 +181,6 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         all_above_threshold(data, scale, threshold).to_pyarray(py)
     }
 
-
     #[pyfn(m, "snapping")]
     fn py_snapping<'a>(
         py: Python<'a>, data: &'a PyArray1<f64>,
