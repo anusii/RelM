@@ -111,7 +111,7 @@ fn snapping(
 ) -> Vec<f64> {
     data.par_iter()
         .map(|&p| clamp(p, B))
-        .map(|p| p + lam * double_uniform().ln() * (uniform() - 0.5).signum())
+        .map(|p| p + lam * double_uniform(1.0).ln() * (uniform(1.0) - 0.5).signum())
         .map(|p| Lam * (p / Lam).round())
         .map(|p| clamp(p, B))
         .collect()
