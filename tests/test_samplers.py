@@ -4,70 +4,62 @@ from differential_privacy.samplers import (
     laplace,
     geometric,
     two_sided_geometric,
+    uniform_double,
 )
 import numpy as np
 
 
-def test_uniform(benchmark):
+def _test_distribution(benchmark, func, mean, var, name=None):
+
     for num in [1, 20, 100, 1000]:
-        samples = uniform(num)
+        samples = func(num)
         assert samples.shape == (num,)
 
-    large_sample = uniform(10000000)
-    assert np.isclose(large_sample.mean(), 0.5, rtol=0.01, atol=0.01)
-    assert np.isclose(large_sample.var(), 1 / 12, rtol=0.01, atol=0.01)
-    benchmark(lambda: uniform(1000000, 1.0))
+    large_sample = func(10000000)
+    assert np.isclose(large_sample.mean(), mean, rtol=0.01, atol=0.01)
+    assert np.isclose(large_sample.var(), var, rtol=0.01, atol=0.01)
+    if name is not None:
+        pass
+    benchmark(lambda: func(1000000))
+
+
+def test_uniform(benchmark):
+    func = uniform
+    _test_distribution(benchmark, func, 0.5, 1 / 12)
 
 
 def test_exponential(benchmark):
-    for num in [1, 20, 100, 1000]:
-        samples = exponential(num, 1.0)
-        assert samples.shape == (num,)
-
     scale = np.random.random() * 10
-    large_sample = exponential(10000000, scale)
-    assert np.isclose(large_sample.mean(), scale, rtol=0.01, atol=0.01)
-    assert np.isclose(large_sample.var(), scale ** 2, rtol=0.01, atol=0.01)
-    benchmark(lambda: exponential(1000000, 1.0))
+    mean = scale
+    var = scale ** 2
+    func = lambda n: exponential(n, scale)
+    _test_distribution(benchmark, func, mean, var)
 
 
 def test_laplace(benchmark):
-    for num in [1, 20, 100, 1000]:
-        samples = laplace(num, 1.0)
-        assert samples.shape == (num,)
-
     scale = np.random.random() * 10
-    large_sample = laplace(10000000, scale)
-    assert np.isclose(large_sample.mean(), 0, rtol=0.01, atol=0.01)
-    assert np.isclose(large_sample.var(), 2 * scale ** 2, rtol=0.01, atol=0.01)
-    benchmark(lambda: laplace(1000000, 1.0))
+    mean = 0
+    var = 2 * scale ** 2
+    func = lambda n: laplace(n, scale)
+    _test_distribution(benchmark, func, mean, var)
 
 
-# @pytest.mark.xfail(reason="possible bug in implementation")
 def test_geometric(benchmark):
-    for num in [1, 20, 100, 1000]:
-        samples = geometric(num, 0.5)
-        assert samples.shape == (num,)
-
     scale = np.random.random()
-    large_sample = geometric(10000000, scale)
-    assert np.isclose(large_sample.mean(), (1 - scale) / scale, rtol=0.01, atol=0.01)
-    assert np.isclose(
-        large_sample.var(), (1 - scale) / scale ** 2, rtol=0.01, atol=0.01
-    )
-    benchmark(lambda: geometric(1000000, 1.0))
+    mean = (1 - scale) / scale
+    var = (1 - scale) / scale ** 2
+    func = lambda n: geometric(n, scale)
+    _test_distribution(benchmark, func, mean, var)
 
 
 def test_two_sided_geometric(benchmark):
-    for num in [1, 20, 100, 1000]:
-        samples = two_sided_geometric(num, 0.5)
-        assert samples.shape == (num,)
+    scale = np.random.random()
+    mean = 0
+    var = 2 * scale / (1 - scale) ** 2
+    func = lambda n: two_sided_geometric(n, scale)
+    _test_distribution(benchmark, func, mean, var)
 
-    scale = 0.5
-    large_sample = two_sided_geometric(10000000, scale)
-    assert np.isclose(large_sample.mean(), 0, rtol=0.01, atol=0.01)
-    assert np.isclose(
-        large_sample.var(), 2 * (scale) / (1 - scale) ** 2, rtol=0.01, atol=0.01
-    )
 
-    benchmark(lambda: two_sided_geometric(1000000, 1.0))
+def test_uniform_double(benchmark):
+    func = uniform_double
+    _test_distribution(benchmark, func, 0.5, 1 / 12)
