@@ -68,7 +68,7 @@ fn double_uniform() -> f64 {
     
     let mut rng = rand::thread_rng();
     let exponent: f64 = geometric(0.5) + 53.0;
-    let mut significand = (rng.gen::<u64>() >> 11) | (2 << 51);
+    let mut significand = (rng.gen::<u64>() >> 11) | (1 << 52);
     (significand as f64) * 2.0_f64.powf(-exponent)
 }
 
