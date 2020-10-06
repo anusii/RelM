@@ -2,6 +2,7 @@ use pyo3::prelude::{pymodule, PyModule, PyResult, Python};
 use rand::prelude::*;
 use rayon::prelude::*;
 use numpy::{PyArray, PyArray1, ToPyArray};
+use rug::{float::Round, Float};
 
 
 fn uniform(scale: f64) -> f64 {
@@ -106,12 +107,19 @@ fn clamp(x: f64, bound: f64) -> f64 {
 }
 
 
+fn ln_rn(x: f64) -> f64 {
+    let mut y = Float::with_val(64, x);
+    let dir = y.ln_round(Round::Nearest);
+    y.to_f64()
+}
+
+
 fn snapping(
     data: Vec<f64>, bound: f64, lambda: f64, quanta: f64
 ) -> Vec<f64> {
     data.par_iter()
         .map(|&p| clamp(p, bound))
-        .map(|p| p + lambda * double_uniform(1.0).ln() * (uniform(1.0) - 0.5).signum())
+        .map(|p| p + lambda * (double_uniform(1.0)).ln() * (uniform(1.0) - 0.5).signum())
         .map(|p| quanta * (p / quanta).round())
         .map(|p| clamp(p, bound))
         .collect()
@@ -191,6 +199,13 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         /// the rust vector into a numpy array
         let data = data.to_vec().unwrap();
         snapping(data, bound, lambda, quanta).to_pyarray(py)
+    }
+
+    #[pyfn(m, "ln_rn")]
+    fn py_ln_rn(x: f64) -> f64 {
+        /// Simple python wrapper of the exponential function. Converts
+        /// the rust vector into a numpy array
+        ln_rn(x)
     }
 
     Ok(())
