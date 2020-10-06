@@ -59,14 +59,14 @@ fn two_sided_geometric(scale: f64) -> f64 {
 }
 
 
-fn double_uniform() -> f64 {
+fn double_uniform(scale: f64) -> f64 {
     /// Returns a sample from the [0, 1) uniform distribution
     ///
 
     let mut rng = rand::thread_rng();
     let exponent: f64 = geometric(0.5) + 53.0;
     let mut significand = (rng.gen::<u64>() >> 11) | (1 << 52);
-    (significand as f64) * 2.0_f64.powf(-exponent)
+    scale * (significand as f64) * 2.0_f64.powf(-exponent)
 }
 
 
@@ -134,9 +134,7 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
     fn py_double_uniform(py: Python, num: usize) -> &PyArray1<f64>{
         /// Simple python wrapper of the exponential function. Converts
         /// the rust vector into a numpy array
-        let mut samples: Vec<f64> = vec![0.0; num];
-        samples.par_iter_mut().for_each(|p| *p = double_uniform());
-        samples.to_pyarray(py)
+        vectorize(1.0, num, double_uniform).to_pyarray(py)
     }
 
     Ok(())
