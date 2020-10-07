@@ -113,14 +113,20 @@ fn ln_rn(x: f64) -> f64 {
     y.to_f64()
 }
 
+fn quantize(x: f64, log2_quanta: i32) -> f64 {
+    let f = Float::with_val(53, x);
+    let g = ((f >> log2_quanta).round()) << log2_quanta;
+    g.to_f64()
+}
 
 fn snapping(
-    data: Vec<f64>, bound: f64, lambda: f64, quanta: f64
+    data: Vec<f64>, bound: f64, lambda: f64, log2_quanta: i32
 ) -> Vec<f64> {
     data.par_iter()
         .map(|&p| clamp(p, bound))
-        .map(|p| p + lambda * (double_uniform(1.0)).ln() * (uniform(1.0) - 0.5).signum())
-        .map(|p| quanta * (p / quanta).round())
+//        .map(|p| p + lambda * (double_uniform(1.0)).ln() * (uniform(1.0) - 0.5).signum())
+        .map(|p| p + lambda * ln_rn(double_uniform(1.0)) * (uniform(1.0) - 0.5).signum())
+        .map(|p| quantize(p, log2_quanta))
         .map(|p| clamp(p, bound))
         .collect()
 }
@@ -192,12 +198,12 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
     #[pyfn(m, "snapping")]
     fn py_snapping<'a>(
         py: Python<'a>, data: &'a PyArray1<f64>,
-        bound: f64, lambda: f64, quanta: f64
+        bound: f64, lambda: f64, log2_quanta: i32
     ) -> &'a PyArray1<f64> {
         /// Simple python wrapper of the exponential function. Converts
         /// the rust vector into a numpy array
         let data = data.to_vec().unwrap();
-        snapping(data, bound, lambda, quanta).to_pyarray(py)
+        snapping(data, bound, lambda, log2_quanta).to_pyarray(py)
     }
 
     #[pyfn(m, "ln_rn")]
@@ -205,6 +211,11 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         /// Simple python wrapper of the exponential function. Converts
         /// the rust vector into a numpy array
         ln_rn(x)
+    }
+
+    #[pyfn(m, "quantize")]
+    fn py_quantize(x: f64, log2_quanta: i32) -> f64 {
+        quantize(x, log2_quanta)
     }
 
     Ok(())
