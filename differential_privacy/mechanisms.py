@@ -136,7 +136,9 @@ class Snapping(ReleaseMechanism):
     def release(self, values):
         if self._is_valid():
             self.current_count += 1
-            release_values = backend.snapping(values, self.B, self.lam, self.log2_quanta)
+            release_values = backend.snapping(
+                values, self.B, self.lam, self.log2_quanta
+            )
         else:
             raise RuntimeError
 
