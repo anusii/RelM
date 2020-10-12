@@ -38,7 +38,9 @@ class LaplaceMechanism(ReleaseMechanism):
             sensitivity = (sensitivity + self.PRECISION) / self.PRECISION
             q = 1.0 / np.exp(self.epsilon / sensitivity)
             perturbations = samplers.geometric(n, q).astype(float) * sensitivity
-            perturbed_values = backend.round_array(values, self.PRECISION) + perturbations
+            perturbed_values = (
+                backend.round_array(values, self.PRECISION) + perturbations
+            )
         else:
             raise RuntimeError()
 
