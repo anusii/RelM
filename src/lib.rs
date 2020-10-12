@@ -50,7 +50,21 @@ fn geometric(scale: f64) -> f64 {
 }
 
 
-fn two_sided_geometric(scale: f64, log_scale: f64) -> f64 {
+fn two_sided_geometric(scale: f64) -> f64 {
+    /// Returns a sample from the two sided geometric distribution
+    ///
+    /// # Arguments
+    ///
+    /// * `scale` - The scale parameter of the two sided geometric distribution
+
+    let log_scale = scale.ln();
+    let y = (uniform(1.0) - 0.5) * (1.0 + scale);
+    let sgn = y.signum();
+    sgn * ((sgn * y).ln() / log_scale).floor()
+}
+
+
+fn optimized_two_sided_geometric(scale: f64, log_scale: f64) -> f64 {
     /// Returns a sample from the two sided geometric distribution
     ///
     /// # Arguments
@@ -184,7 +198,7 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         /// Simple python wrapper of the two sided geometric function. Converts
         /// the rust vector into a numpy array
 
-        vectorize_2(scale, num, two_sided_geometric).to_pyarray(py)
+        vectorize_2(scale, num, optimized_two_sided_geometric).to_pyarray(py)
     }
 
     #[pyfn(m, "double_uniform")]
@@ -250,7 +264,7 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         let vec = array.to_vec().unwrap();
         let vec: Vec<f64> = vec.par_iter()
             .map(|&p| quanta * (p / quanta).round())
-            .map(|p| p + two_sided_geometric(scale, log_scale) * quanta)
+            .map(|p| p + optimized_two_sided_geometric(scale, log_scale) * quanta)
             .collect();
         vec.to_pyarray(py)
     }
