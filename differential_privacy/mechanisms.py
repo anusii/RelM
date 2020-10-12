@@ -197,7 +197,11 @@ class AboveThreshold(SparseIndicator):
 
     def release(self, values):
         indices = super(AboveThreshold, self).release(values)
-        return int(indices[0])
+        if len(indices) > 0:
+            index = int(indices[0])
+        else:
+            index = None
+        return index
 
 
 class Snapping(ReleaseMechanism):
