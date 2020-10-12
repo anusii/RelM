@@ -207,6 +207,19 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         ln_rn(x)
     }
 
+    #[pyfn(m, "round_array")]
+    fn py_round_array<'a>(
+        py: Python<'a>,
+        array: &'a PyArray1<f64>,
+        quanta: f64,
+    ) -> &'a PyArray1<f64> {
+        /// Simple python wrapper of the exponential function. Converts
+        /// the rust vector into a numpy array
+        let vec = array.to_vec().unwrap();
+        let vec: Vec<f64> = vec.par_iter().map(|&p| quanta * (p / quanta).round()).collect();
+        vec.to_pyarray(py)
+    }
+
     Ok(())
 
 }
