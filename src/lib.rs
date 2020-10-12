@@ -50,7 +50,7 @@ fn geometric(scale: f64) -> f64 {
 }
 
 
-fn two_sided_geometric(scale: f64) -> f64 {
+fn two_sided_geometric(scale: f64, log_scale: f64) -> f64 {
     /// Returns a sample from the two sided geometric distribution
     ///
     /// # Arguments
@@ -59,7 +59,7 @@ fn two_sided_geometric(scale: f64) -> f64 {
 
     let y = (uniform(1.0) - 0.5) * (1.0 + scale);
     let sgn = y.signum();
-    sgn * ((sgn * y).ln() / scale.ln()).floor()
+    sgn * ((sgn * y).ln() / log_scale).floor()
 }
 
 
@@ -85,6 +85,22 @@ fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 
     let mut samples: Vec<f64> = vec![0.0; num];
     samples.par_iter_mut().for_each(|p| *p = func(scale));
+    samples
+}
+
+
+fn vectorize_2(scale: f64, num: usize, func: fn(f64, f64) -> f64) -> Vec<f64> {
+    /// Vectorize a distribution sampler
+    ///
+    /// # Arguments
+    ///
+    /// * `scale` - The scale parameter of the distribution
+    /// * `num` - The number of samples to draw
+    /// * `func` - The distribution function
+
+    let mut samples: Vec<f64> = vec![0.0; num];
+    let log_scale = scale.ln();
+    samples.par_iter_mut().for_each(|p| *p = func(scale, log_scale));
     samples
 }
 
@@ -168,7 +184,7 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         /// Simple python wrapper of the two sided geometric function. Converts
         /// the rust vector into a numpy array
 
-        vectorize(scale, num, two_sided_geometric).to_pyarray(py)
+        vectorize_2(scale, num, two_sided_geometric).to_pyarray(py)
     }
 
     #[pyfn(m, "double_uniform")]
@@ -217,6 +233,25 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         /// the rust vector into a numpy array
         let vec = array.to_vec().unwrap();
         let vec: Vec<f64> = vec.par_iter().map(|&p| quanta * (p / quanta).round()).collect();
+        vec.to_pyarray(py)
+    }
+
+    #[pyfn(m, "release_fp_laplace")]
+    fn py_release_fp_laplace<'a>(
+        py: Python<'a>,
+        array: &'a PyArray1<f64>,
+        quanta: f64,
+        epsilon: f64,
+        sensitivity: f64
+    ) -> &'a PyArray1<f64> {
+        let sensitivity = (sensitivity + quanta) / quanta;
+        let scale = 1.0 / (quanta / sensitivity).exp();
+        let log_scale = scale.ln();
+        let vec = array.to_vec().unwrap();
+        let vec: Vec<f64> = vec.par_iter()
+            .map(|&p| quanta * (p / quanta).round())
+            .map(|p| p + two_sided_geometric(scale, log_scale) * quanta)
+            .collect();
         vec.to_pyarray(py)
     }
 

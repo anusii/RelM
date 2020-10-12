@@ -34,13 +34,7 @@ class LaplaceMechanism(ReleaseMechanism):
     def release(self, values, sensitivity=1):
         if self._is_valid():
             self.current_count += 1
-            n = len(values)
-            sensitivity = (sensitivity + self.PRECISION) / self.PRECISION
-            q = 1.0 / np.exp(self.epsilon / sensitivity)
-            perturbations = samplers.geometric(n, q).astype(float) * sensitivity
-            perturbed_values = (
-                backend.round_array(values, self.PRECISION) + perturbations
-            )
+            perturbed_values = backend.release_fp_laplace(values, self.PRECISION, self.epsilon, sensitivity)
         else:
             raise RuntimeError()
 
