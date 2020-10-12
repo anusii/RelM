@@ -28,27 +28,27 @@ def test_geometric(benchmark):
 
 
 def test_above_threshold(benchmark):
-    mechanism = AboveThreshold(epsilon=1, threshold=0.1)
+    mechanism = AboveThreshold(epsilon=1, sensitivity=1.0, threshold=0.1)
     _test_mechanism(benchmark, mechanism)
-    mechanism = AboveThreshold(epsilon=1000, threshold=0.01)
+    mechanism = AboveThreshold(epsilon=1, sensitivity=1.0, threshold=0.01)
     data = np.random.random(1000)
     index = mechanism.release(data)
     assert type(index) == int
 
 
 def test_sparse_indicator(benchmark):
-    mechanism = SparseIndicator(epsilon=1, threshold=0.1, cutoff=100)
+    mechanism = SparseIndicator(epsilon=1, sensitivity=1.0, threshold=0.1, cutoff=100)
     _test_mechanism(benchmark, mechanism)
-    mechanism = SparseIndicator(epsilon=1000, threshold=0.01, cutoff=100)
+    mechanism = SparseIndicator(epsilon=1, sensitivity=1.0, threshold=0.01, cutoff=100)
     data = np.random.random(1000)
     indices = mechanism.release(data)
     assert len(indices) == 100
 
 
 def test_sparse_numeric(benchmark):
-    mechanism = SparseNumeric(epsilon=1, threshold=0.1, cutoff=100)
+    mechanism = SparseNumeric(epsilon=1, sensitivity=1.0, threshold=0.1, cutoff=100)
     _test_mechanism(benchmark, mechanism)
-    mechanism = SparseNumeric(epsilon=1000, threshold=0.01, cutoff=100)
+    mechanism = SparseNumeric(epsilon=1, sensitivity=1.0, threshold=0.01, cutoff=100)
     data = np.random.random(1000)
     indices, values = mechanism.release(data)
     assert len(indices) == 100
