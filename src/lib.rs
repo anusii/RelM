@@ -32,10 +32,12 @@ fn laplace(scale: f64) -> f64 {
     /// # Arguments
     ///
     /// * `scale` - The scale parameter of the Laplace distribution
-
-    let y = uniform(1.0) - 0.5;
-    let sgn = y.signum();
-    sgn * (2.0 * sgn * y).ln() * scale
+    ///
+    let precision = 2.0f64.powf(-4.0);
+    let scale = scale / precision;
+    let scale = 1.0 / (1.0 / scale).exp();
+    let y = two_sided_geometric(scale);
+    (y as f64) * precision
 }
 
 
