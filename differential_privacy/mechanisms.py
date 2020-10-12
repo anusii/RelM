@@ -28,13 +28,17 @@ class ReleaseMechanism:
 # ]
 # @jitclass(spec)
 class LaplaceMechanism(ReleaseMechanism):
+
+    PRECISION = 2.0 ** (-32)
+
     def release(self, values, sensitivity=1):
         if self._is_valid():
             self.current_count += 1
             n = len(values)
-            b = sensitivity / self.epsilon
-            perturbations = samplers.laplace(n, b)
-            perturbed_values = values + perturbations
+            sensitivity = (sensitivity + self.PRECISION) / self.PRECISION
+            q = 1.0 / np.exp(sensitivity / self.epsilon)
+            perturbations = samplers.geometric(n, q).astype(float) * sensitivity
+            perturbed_values = np.round(values / sensitivity) * sensitivity + perturbations
         else:
             raise RuntimeError()
 
