@@ -36,7 +36,7 @@ class LaplaceMechanism(ReleaseMechanism):
             self.current_count += 1
             n = len(values)
             sensitivity = (sensitivity + self.PRECISION) / self.PRECISION
-            q = 1.0 / np.exp(sensitivity / self.epsilon)
+            q = 1.0 / np.exp(self.epsilon / sensitivity)
             perturbations = samplers.geometric(n, q).astype(float) * sensitivity
             perturbed_values = np.round(values / sensitivity) * sensitivity + perturbations
         else:
