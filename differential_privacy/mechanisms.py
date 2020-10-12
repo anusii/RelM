@@ -34,7 +34,9 @@ class LaplaceMechanism(ReleaseMechanism):
     def release(self, values, sensitivity=1):
         if self._is_valid():
             self.current_count += 1
-            perturbed_values = backend.release_fp_laplace(values, self.PRECISION, self.epsilon, sensitivity)
+            perturbed_values = backend.release_fp_laplace(
+                values, self.PRECISION, self.epsilon, sensitivity
+            )
         else:
             raise RuntimeError()
 
