@@ -245,7 +245,7 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         sensitivity: f64
     ) -> &'a PyArray1<f64> {
         let sensitivity = (sensitivity + quanta) / quanta;
-        let scale = 1.0 / (quanta / sensitivity).exp();
+        let scale = 1.0 / (epsilon / sensitivity).exp();
         let log_scale = scale.ln();
         let vec = array.to_vec().unwrap();
         let vec: Vec<f64> = vec.par_iter()
