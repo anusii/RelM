@@ -74,13 +74,13 @@ class SparseGeneric(ReleaseMechanism):
         self.epsilon3 = epsilon3
         self.sensitivity = sensitivity
         self.threshold = threshold
+        self.rho = samplers.laplace(1, b=sensitivity / epsilon1)
         self.cutoff = cutoff
         self.monotonic = monotonic
         self.current_count = 0
 
     def all_above_threshold(self, values):
-        rho = samplers.laplace(1, b=self.sensitivity / self.epsilon1)
-        threshold = self.threshold + rho
+        threshold = self.threshold + self.rho
         if self.monotonic:
             b = (self.sensitivity * self.cutoff) / self.epsilon2
         else:
@@ -93,14 +93,14 @@ class SparseGeneric(ReleaseMechanism):
             indices = self.all_above_threshold(values)
             indices = indices[:remaining]
             self.current_count += len(indices)
-            sliced_values = values[indices]
-            n = len(sliced_values)
             if self.epsilon3 > 0:
+                sliced_values = values[indices]
+                n = len(sliced_values)
                 b = (self.sensitivity * self.cutoff) / self.epsilon3
                 perturbations = samplers.laplace(n, b)
                 perturbed_values = sliced_values + perturbations
             else:
-                perturbed_values = np.array([np.nan for i in range(n)])
+                perturbed_values = None  # np.array([np.nan for i in range(n)])
         else:
             raise RuntimeError()
 
