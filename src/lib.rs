@@ -88,7 +88,7 @@ fn double_uniform(scale: f64) -> f64 {
 }
 
 
-fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
+fn vectorize(param: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
     /// Vectorize a distribution sampler
     ///
     /// # Arguments
@@ -98,12 +98,12 @@ fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
     /// * `func` - The distribution function
 
     let mut samples: Vec<f64> = vec![0.0; num];
-    samples.par_iter_mut().for_each(|p| *p = func(scale));
+    samples.par_iter_mut().for_each(|p| *p = func(param));
     samples
 }
 
 
-fn vectorize_2(scale: f64, num: usize, func: fn(f64, f64) -> f64) -> Vec<f64> {
+fn vectorize_2(param_1: f64, param_2: f64, num: usize, func: fn(f64, f64) -> f64) -> Vec<f64> {
     /// Vectorize a distribution sampler
     ///
     /// # Arguments
@@ -113,8 +113,7 @@ fn vectorize_2(scale: f64, num: usize, func: fn(f64, f64) -> f64) -> Vec<f64> {
     /// * `func` - The distribution function
 
     let mut samples: Vec<f64> = vec![0.0; num];
-    let log_scale = scale.ln();
-    samples.par_iter_mut().for_each(|p| *p = func(scale, log_scale));
+    samples.par_iter_mut().for_each(|p| *p = func(param_1, param_2));
     samples
 }
 
@@ -198,7 +197,8 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         /// Simple python wrapper of the two sided geometric function. Converts
         /// the rust vector into a numpy array
 
-        vectorize_2(scale, num, optimized_two_sided_geometric).to_pyarray(py)
+        let log_scale = scale.ln();
+        vectorize_2(scale,log_scale, num, optimized_two_sided_geometric).to_pyarray(py)
     }
 
     #[pyfn(m, "double_uniform")]
