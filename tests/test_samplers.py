@@ -9,9 +9,10 @@ from differential_privacy.samplers import (
 from differential_privacy import backend
 import numpy as np
 from crlibm import log_rn
+import scipy.stats
 
 
-def _test_distribution(benchmark, func, mean, var, name=None):
+def _test_distribution(benchmark, func, mean, var, control=None):
 
     for num in [1, 20, 100, 1000]:
         samples = func(num)
@@ -20,14 +21,17 @@ def _test_distribution(benchmark, func, mean, var, name=None):
     large_sample = func(10000000)
     assert np.isclose(large_sample.mean(), mean, rtol=0.01, atol=0.01)
     assert np.isclose(large_sample.var(), var, rtol=0.01, atol=0.01)
-    if name is not None:
-        pass
+    if control is not None:
+        large_control = control(10000000)
+        score, pval = scipy.stats.ks_2samp(large_sample, large_control)
+        assert pval > 0.001
     benchmark(lambda: func(1000000))
 
 
 def test_uniform(benchmark):
     func = uniform
-    _test_distribution(benchmark, func, 0.5, 1 / 12)
+    control = lambda n: scipy.stats.uniform.rvs(size=n)
+    _test_distribution(benchmark, func, 0.5, 1 / 12, control)
 
 
 def test_exponential(benchmark):
@@ -35,7 +39,8 @@ def test_exponential(benchmark):
     mean = scale
     var = scale ** 2
     func = lambda n: exponential(n, scale)
-    _test_distribution(benchmark, func, mean, var)
+    control = lambda n: scipy.stats.expon.rvs(loc=0, scale=scale, size=n)
+    _test_distribution(benchmark, func, mean, var, control)
 
 
 def test_laplace(benchmark):
@@ -43,7 +48,8 @@ def test_laplace(benchmark):
     mean = 0
     var = 2 * scale ** 2
     func = lambda n: laplace(n, scale)
-    _test_distribution(benchmark, func, mean, var)
+    control = lambda n: scipy.stats.laplace.rvs(scale=scale, size=n)
+    _test_distribution(benchmark, func, mean, var, control)
 
 
 def test_geometric(benchmark):
@@ -51,7 +57,8 @@ def test_geometric(benchmark):
     mean = (1 - scale) / scale
     var = (1 - scale) / scale ** 2
     func = lambda n: geometric(n, scale)
-    _test_distribution(benchmark, func, mean, var)
+    control = lambda n: scipy.stats.geom.rvs(p=scale, size=n) - 1
+    _test_distribution(benchmark, func, mean, var, control)
 
 
 def test_two_sided_geometric(benchmark):
@@ -59,12 +66,16 @@ def test_two_sided_geometric(benchmark):
     mean = 0
     var = 2 * scale / (1 - scale) ** 2
     func = lambda n: two_sided_geometric(n, scale)
-    _test_distribution(benchmark, func, mean, var)
+    f = lambda n: scipy.stats.geom.rvs(p=1 - scale, size=n)
+    g = lambda n: scipy.stats.geom.rvs(p=1 - scale, size=n)
+    control = lambda n: f(n) - g(n)
+    _test_distribution(benchmark, func, mean, var, control)
 
 
 def test_uniform_double(benchmark):
     func = uniform_double
-    _test_distribution(benchmark, func, 0.5, 1 / 12)
+    control = lambda n: scipy.stats.uniform.rvs(size=n)
+    _test_distribution(benchmark, func, 0.5, 1 / 12, control)
 
 
 def test_ln_rn():
