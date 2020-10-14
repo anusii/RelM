@@ -17,7 +17,13 @@ except ImportError:
 
 setup_requires = ["setuptools-rust>=0.10.1", "wheel"]
 install_requires = [
-    "numpy", "numba", "pytest", "pytest-benchmark", "crlibm", "black"
+    "numpy",
+    "numba",
+    "pytest",
+    "pytest-benchmark",
+    "crlibm",
+    "black",
+    "scipy",
 ]
 
 setup(
