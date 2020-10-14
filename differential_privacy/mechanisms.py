@@ -56,32 +56,36 @@ class GeometricMechanism(ReleaseMechanism):
         return perturbed_values
 
 
-class Sparse(ReleaseMechanism):
-    def __init__(self, epsilon, threshold, cutoff):
-        super(Sparse, self).__init__(epsilon)
+class SparseGeneric(ReleaseMechanism):
+    def __init__(
+        self,
+        epsilon1,
+        epsilon2,
+        epsilon3,
+        sensitivity,
+        threshold,
+        cutoff,
+        monotonic,
+    ):
+        epsilon = epsilon1 + epsilon2 + epsilon3
+        self.epsilon = epsilon
+        self.epsilon1 = epsilon1
+        self.epsilon2 = epsilon2
+        self.epsilon3 = epsilon3
+        self.sensitivity = sensitivity
         self.threshold = threshold
+        self.rho = samplers.laplace(1, b=sensitivity / epsilon1)
         self.cutoff = cutoff
-
-    def next_above_threshold(self, values):
-        n = len(values)
-        threshold_perturbation = samplers.laplace(1, b=2.0 * self.cutoff / self.epsilon)
-        perturbed_threshold = self.threshold + threshold_perturbation
-        value_perturbations = samplers.laplace(n, b=4.0 * self.cutoff / self.epsilon)
-        perturbed_values = values + value_perturbations
-        indicators = perturbed_values > perturbed_threshold
-        if np.any(indicators):
-            index = np.argmax(indicators)
-        else:
-            index = None
-        return index
+        self.monotonic = monotonic
+        self.current_count = 0
 
     def all_above_threshold(self, values):
-        threshold = self.threshold + samplers.laplace(
-            1, b=2.0 * self.cutoff / self.epsilon
-        )
-        return backend.all_above_threshold(
-            values, 4.0 * self.cutoff / self.epsilon, threshold
-        )
+        threshold = self.threshold + self.rho
+        if self.monotonic:
+            b = (self.sensitivity * self.cutoff) / self.epsilon2
+        else:
+            b = (2.0 * self.sensitivity * self.cutoff) / self.epsilon2
+        return backend.all_above_threshold(values, b, threshold)
 
     def release(self, values):
         if self._is_valid():
@@ -89,38 +93,78 @@ class Sparse(ReleaseMechanism):
             indices = self.all_above_threshold(values)
             indices = indices[:remaining]
             self.current_count += len(indices)
+            if self.epsilon3 > 0:
+                sliced_values = values[indices]
+                n = len(sliced_values)
+                b = (self.sensitivity * self.cutoff) / self.epsilon3
+                perturbations = samplers.laplace(n, b)
+                perturbed_values = sliced_values + perturbations
+                return (indices, perturbed_values)
+            else:
+                return (indices,)
         else:
             raise RuntimeError()
 
+
+class SparseNumeric(SparseGeneric):
+    def __init__(
+        self,
+        epsilon,
+        sensitivity,
+        threshold,
+        cutoff,
+        e2_weight=None,
+        e3_weight=None,
+        monotonic=False,
+    ):
+        e1_weight = 1.0
+        if e2_weight is None:
+            if monotonic:
+                e2_weight = (cutoff) ** (2.0 / 3.0)
+            else:
+                e2_weight = (2.0 * cutoff) ** (2.0 / 3.0)
+        if e3_weight is None:
+            e3_weight = e1_weight + e2_weight
+        epsilon_weights = (e1_weight, e2_weight, e3_weight)
+        total_weight = sum(epsilon_weights)
+        epsilon1 = (epsilon_weights[0] / total_weight) * epsilon
+        epsilon2 = (epsilon_weights[1] / total_weight) * epsilon
+        epsilon3 = (epsilon_weights[2] / total_weight) * epsilon
+        super(SparseNumeric, self).__init__(
+            epsilon1, epsilon2, epsilon3, sensitivity, threshold, cutoff, monotonic
+        )
+
+
+class SparseIndicator(SparseNumeric):
+    def __init__(
+        self, epsilon, sensitivity, threshold, cutoff, e2_weight=None, monotonic=False
+    ):
+        e3_weight = 0.0
+        super(SparseIndicator, self).__init__(
+            epsilon, sensitivity, threshold, cutoff, e2_weight, e3_weight, monotonic
+        )
+
+    def release(self, values):
+        (indices, *_) = super(SparseIndicator, self).release(values)
         return indices
 
 
-class AboveThreshold(Sparse):
-    def __init__(self, epsilon, threshold):
-        super(AboveThreshold, self).__init__(epsilon, threshold, 1)
-
-
-class SparseNumeric(Sparse):
-    def __init__(self, epsilon, threshold, cutoff):
-        super(SparseNumeric, self).__init__(epsilon, threshold, cutoff)
-        self.epsilon = (8 / 9) * epsilon
-        self.epsilon2 = (2 / 9) * epsilon
+class AboveThreshold(SparseIndicator):
+    def __init__(
+        self, epsilon, sensitivity, threshold, e2_weight=None, monotonic=False
+    ):
+        cutoff = 1
+        super(AboveThreshold, self).__init__(
+            epsilon, sensitivity, threshold, cutoff, e2_weight, monotonic
+        )
 
     def release(self, values):
-        if self._is_valid():
-            remaining = self.cutoff - self.current_count
-            indices = self.all_above_threshold(values)
-            indices = indices[:remaining]
-            self.current_count += len(indices)
-            sliced_values = values[indices]
-            n = len(sliced_values)
-            b = 2 * self.cutoff / self.epsilon2
-            perturbations = samplers.laplace(n, b)
-            perturbed_values = sliced_values + perturbations
+        indices = super(AboveThreshold, self).release(values)
+        if len(indices) > 0:
+            index = int(indices[0])
         else:
-            raise RuntimeError()
-
-        return indices, perturbed_values
+            index = None
+        return index
 
 
 class Snapping(ReleaseMechanism):

@@ -4,7 +4,8 @@ from differential_privacy.mechanisms import (
     LaplaceMechanism,
     GeometricMechanism,
     Snapping,
-    Sparse,
+    AboveThreshold,
+    SparseIndicator,
     SparseNumeric,
 )
 
@@ -26,20 +27,32 @@ def test_geometric(benchmark):
     _test_mechanism(benchmark, mechanism)
 
 
-def test_sparse(benchmark):
-    mechanism = Sparse(epsilon=1, threshold=0.1, cutoff=100)
+def test_above_threshold(benchmark):
+    mechanism = AboveThreshold(epsilon=1, sensitivity=1.0, threshold=0.1)
     _test_mechanism(benchmark, mechanism)
-    mechanism = Sparse(epsilon=1, threshold=0.01, cutoff=100)
+    mechanism = AboveThreshold(epsilon=1, sensitivity=1.0, threshold=0.01)
     data = np.random.random(1000)
-    assert len(mechanism.release(data) == 100)
+    index = mechanism.release(data)
+    assert type(index) == int
+
+
+def test_sparse_indicator(benchmark):
+    mechanism = SparseIndicator(epsilon=1, sensitivity=1.0, threshold=0.1, cutoff=100)
+    _test_mechanism(benchmark, mechanism)
+    mechanism = SparseIndicator(epsilon=1, sensitivity=1.0, threshold=0.01, cutoff=100)
+    data = np.random.random(1000)
+    indices = mechanism.release(data)
+    assert len(indices) == 100
 
 
 def test_sparse_numeric(benchmark):
-    mechanism = SparseNumeric(epsilon=1, threshold=0.1, cutoff=100)
+    mechanism = SparseNumeric(epsilon=1, sensitivity=1.0, threshold=0.1, cutoff=100)
     _test_mechanism(benchmark, mechanism)
-    mechanism = Sparse(epsilon=1, threshold=0.01, cutoff=100)
+    mechanism = SparseNumeric(epsilon=1, sensitivity=1.0, threshold=0.01, cutoff=100)
     data = np.random.random(1000)
-    assert len(mechanism.release(data) == 100)
+    indices, values = mechanism.release(data)
+    assert len(indices) == 100
+    assert len(values) == 100
 
 
 def test_snapping(benchmark):
