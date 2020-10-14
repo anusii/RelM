@@ -99,12 +99,11 @@ class SparseGeneric(ReleaseMechanism):
                 b = (self.sensitivity * self.cutoff) / self.epsilon3
                 perturbations = samplers.laplace(n, b)
                 perturbed_values = sliced_values + perturbations
+                return (indices, perturbed_values)
             else:
-                perturbed_values = None  # np.array([np.nan for i in range(n)])
+                return (indices,)
         else:
             raise RuntimeError()
-
-        return indices, perturbed_values
 
 
 class SparseNumeric(SparseGeneric):
@@ -146,7 +145,7 @@ class SparseIndicator(SparseNumeric):
         )
 
     def release(self, values):
-        indices, perturbed_values = super(SparseIndicator, self).release(values)
+        (indices, *_) = super(SparseIndicator, self).release(values)
         return indices
 
 
