@@ -1,5 +1,7 @@
 use pyo3::prelude::{pymodule, PyModule, PyResult, Python};
 use numpy::{PyArray, PyArray1, ToPyArray};
+use rayon::prelude::*;
+
 
 mod utils;
 mod samplers;
@@ -84,6 +86,37 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         /// Simple python wrapper of the exponential function. Converts
         /// the rust vector into a numpy array
         utils::ln_rn(x)
+    }
+
+
+    #[pyfn(m, "fixed_point_laplace")]
+    fn py_fixed_point_laplace(py: Python, scale: f64, num: usize) -> &PyArray1<f64>{
+        /// Simple python wrapper of the laplace function. Converts
+        /// the rust vector into a numpy array
+
+        let mut biases: Vec<u64> = vec![0; 64];
+        for idx in 0..64 {
+            let d = 2.0f64.powi(32 - idx) / scale;
+            let bias = 1.0 / (1.0 + d.exp());
+            let bias = (bias * 2.0f64.powi(64)) as u64;
+//            print!("{}: ", idx);
+//            for idx in 0..64 {
+//                print!("{}", (bias >> (63 - idx)) & 1);
+//            }
+//            println!();
+            biases[idx as usize] = bias;
+        }
+
+        let mut samples: Vec<f64> = vec![0.0; num];
+        samples.par_iter_mut().for_each(|p| *p = samplers::fixed_point_laplace(&biases));
+        samples.to_pyarray(py)
+    }
+    #[pyfn(m, "coin_flip")]
+    fn py_coin_flip(bias: f64) -> u64 {
+        /// Simple python wrapper of the exponential function. Converts
+        /// the rust vector into a numpy array
+        let bias = (bias * 2.0f64.powi(64)) as u64;
+        samplers::simple_coin_flip(bias)
     }
 
     Ok(())

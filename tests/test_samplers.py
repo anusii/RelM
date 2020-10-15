@@ -14,18 +14,20 @@ import scipy.stats
 
 def _test_distribution(benchmark, func, mean, var, control=None):
 
-    for num in [1, 20, 100, 1000]:
+    for num in [4, 20, 100, 1000]:
         samples = func(num)
         assert samples.shape == (num,)
 
     large_sample = func(10000000)
-    assert np.isclose(large_sample.mean(), mean, rtol=0.01, atol=0.01)
-    assert np.isclose(large_sample.var(), var, rtol=0.01, atol=0.01)
+    print(large_sample[:10])
+    sample_mean, sample_var = large_sample.mean(), large_sample.var()
+    benchmark(lambda: func(1000000))
+    assert np.isclose(sample_mean, mean, rtol=0.01, atol=0.01)
+    assert np.isclose(sample_var, var, rtol=0.01, atol=0.01)
     if control is not None:
         large_control = control(10000000)
         score, pval = scipy.stats.ks_2samp(large_sample, large_control)
         assert pval > 0.001
-    benchmark(lambda: func(1000000))
 
 
 def test_uniform(benchmark):
@@ -82,3 +84,20 @@ def test_ln_rn():
     for _ in range(100000):
         x = np.random.random() / np.random.random()
         assert backend.ln_rn(x) == log_rn(x)
+
+
+def test_coin_flip(benchmark):
+    bias = np.random.random()
+    func = lambda: np.mean([backend.coin_flip(bias) for _ in range(1000000)])
+    mean = func()
+    assert np.isclose(mean, bias, rtol=0.01)
+    benchmark(func)
+
+
+def test_laplace_fixed_point(benchmark):
+    scale = np.random.random() * 10
+    mean = 0
+    var = 2 * scale ** 2
+    func = lambda n: backend.fixed_point_laplace(scale, n)
+    control = None  # lambda n: scipy.stats.laplace.rvs(scale=scale, size=n)
+    _test_distribution(benchmark, func, mean, var, control)
