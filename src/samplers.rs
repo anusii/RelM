@@ -84,17 +84,18 @@ pub fn simple_coin_flip(bias: u64) -> u64 {
 }
 
 
-pub fn coin_flip(mut bits: u64, bias: u64, mut count: u64) -> u64 {
+pub fn coin_flip(bits: &mut u64, bias: u64, count: &mut u64) -> u64 {
 
     for ii in 0..64 {
         let shift = 63 - ii;
-        count += 1;
-        if ((bits >> 63) ^ (bias >> shift)) & 1 == 1 {
-            let result = 1 - (bits >> 63) & 1;
-            bits = bits << 1;
+        *count += 1;
+        let bit = *bits >> 63;
+        if (bit ^ (bias >> shift)) & 1 == 1 {
+            let result = 1 - bit;
+            *bits = (*bits << 1);
             return result;
         }
-        bits = bits << 1;
+        *bits = (*bits << 1);
     }
     return 0;
 }
@@ -106,18 +107,18 @@ pub fn fixed_point_laplace(biases: &Vec<u64>) -> f64 {
     let mut result: u64 = 0;
 
     let mut bits: u64 = rng.gen();
-    let mut sign = (bits >> 63) as f64;
-    sign = 2.0 * (sign - 0.5);
+    let sign = 2.0 * ((bits >> 63) as f64) - 1.0;
+
     bits = bits << 1;
     let mut count: u64 = 1;
 
     for idx in 0..64 {
-//        if count > 10 {
-//            bits = rng.gen();
-//            count = 0;
-//        }
-        bits = rng.gen();
-        let bit = coin_flip(bits, biases[idx], count);
+        if count > 50 {
+            bits = rng.gen();
+            count = 0;
+        }
+
+        let bit = coin_flip(&mut bits, biases[idx], &mut count);
         result = result | (bit << 63 - idx);
 
     }
