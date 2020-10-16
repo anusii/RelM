@@ -75,7 +75,6 @@ pub fn fixed_point_laplace(biases: &Vec<u64>) -> f64 {
     let mut result: u64 = 0;
 
     let mut bits: u64 = rng.gen();
-    let mut flip_bits: u64 = 0;
     let mut offset: u32 = 0;
     let mut bit: u64 = 0;
 
