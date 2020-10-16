@@ -88,14 +88,12 @@ pub fn fixed_point_laplace(biases: &Vec<u64>) -> f64 {
     for idx in start..64 {
 
         // find the first bit of disagreement between the random bits and biases
-        flip_bits = bits ^ biases[idx];
         offset = (bits ^ biases[idx]).leading_zeros();
 
         // if we have used up all the bits refresh and try again!
         if offset + count > 63 {
             bits = rng.gen();
             count = 0;
-            flip_bits = bits ^ biases[idx];
             offset = (bits ^ biases[idx]).leading_zeros();
         }
 
