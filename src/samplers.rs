@@ -70,56 +70,32 @@ pub fn double_uniform(scale: f64) -> f64 {
 }
 
 
-pub fn simple_coin_flip(bias: u64) -> u64 {
-    let mut rng = rand::thread_rng();
-    let mut bits: u64 = rng.gen();
-    for ii in 0..64 {
-        let shift = 63 - ii;
-        if ((bits >> 63) ^ (bias >> shift)) & 1 == 1 {
-            return 1 - (bits >> 63) & 1;
-        }
-        bits = bits << 1;
-    }
-    return 0;
-}
-
-
-pub fn coin_flip(bits: &mut u64, bias: u64, count: &mut u64) -> u64 {
-
-    for ii in 0..64 {
-        let shift = 63 - ii;
-        *count += 1;
-        let bit = *bits >> 63;
-        if (bit ^ (bias >> shift)) & 1 == 1 {
-            let result = 1 - bit;
-            *bits = (*bits << 1);
-            return result;
-        }
-        *bits = (*bits << 1);
-    }
-    return 0;
-}
-
-
-
 pub fn fixed_point_laplace(biases: &Vec<u64>) -> f64 {
     let mut rng = rand::thread_rng();
     let mut result: u64 = 0;
 
     let mut bits: u64 = rng.gen();
-    let sign = 2.0 * ((bits >> 63) as f64) - 1.0;
+    let mut flip_bits: u64 = 0;
+    let mut offset: u32 = 0;
+    let mut bit: u64 = 0;
 
+    let mut count: u32 = 1;
+
+    let sign = 2.0 * ((bits >> 63) as f64) - 1.0;
     bits = bits << 1;
-    let mut count: u64 = 1;
 
     for idx in 0..64 {
-        if count > 50 {
+        if count > 48 {
             bits = rng.gen();
-            count = 0;
+            count = 1;
         }
 
-        let bit = coin_flip(&mut bits, biases[idx], &mut count);
+        flip_bits = bits ^ biases[idx];
+        offset = (bits ^ biases[idx]).leading_zeros();
+        bit = biases[idx] >> (63 - offset) & 1;
         result = result | (bit << 63 - idx);
+        count += offset + 1;
+        bits = (bits << (offset + 1));
 
     }
     sign * (result as f64) * 2.0f64.powi(-31)

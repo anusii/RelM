@@ -18,10 +18,10 @@ def _test_distribution(benchmark, func, mean, var, control=None):
         samples = func(num)
         assert samples.shape == (num,)
 
-    large_sample = func(10000000)
+    large_sample = func(10_000_000)
     print(large_sample[:10])
     sample_mean, sample_var = large_sample.mean(), large_sample.var()
-    benchmark(lambda: func(1000000))
+    benchmark(lambda: func(1_000_000))
     assert np.isclose(sample_mean, mean, rtol=0.01, atol=0.01)
     assert np.isclose(sample_var, var, rtol=0.01, atol=0.01)
     if control is not None:
@@ -86,18 +86,10 @@ def test_ln_rn():
         assert backend.ln_rn(x) == log_rn(x)
 
 
-def test_coin_flip(benchmark):
-    bias = np.random.random()
-    func = lambda: np.mean([backend.coin_flip(bias) for _ in range(1000000)])
-    mean = func()
-    assert np.isclose(mean, bias, rtol=0.01)
-    benchmark(func)
-
-
 def test_laplace_fixed_point(benchmark):
     scale = np.random.random() * 10
     mean = 0
     var = 2 * scale ** 2
     func = lambda n: backend.fixed_point_laplace(scale, n)
-    control = None  # lambda n: scipy.stats.laplace.rvs(scale=scale, size=n)
+    control = lambda n: scipy.stats.laplace.rvs(scale=scale, size=n)
     _test_distribution(benchmark, func, mean, var, control)
