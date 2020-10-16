@@ -83,8 +83,10 @@ pub fn fixed_point_laplace(biases: &Vec<u64>) -> f64 {
 
     let sign = 2.0 * ((bits >> 63) as f64) - 1.0;
     bits = bits << 1;
+    let start = biases.iter().position(|&x| x != 0).unwrap();
 
-    for idx in 0..64 {
+    for idx in start..64 {
+
         if count > 48 {
             bits = rng.gen();
             count = 1;
