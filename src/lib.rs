@@ -1,6 +1,7 @@
 use pyo3::prelude::{pymodule, PyModule, PyResult, Python};
 use numpy::{PyArray, PyArray1, ToPyArray};
 use rayon::prelude::*;
+use rug::Float;
 
 
 mod utils;
@@ -96,8 +97,9 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
 
         let mut biases: Vec<u64> = vec![0; 64];
         for idx in 0..64 {
-            let d = 2.0f64.powi(32 - idx) / scale;
-            let bias = (64.0 * 2.0f64.ln() - d.exp().ln_1p()).exp() as u64;
+            let d = Float::with_val(53, 2.0f64.powi(32 - idx)) / Float::with_val(53, scale);
+            let bias = Float::with_val(53, 1.0) / (Float::with_val(53, 1.0) + d.exp());
+            let bias = (bias * Float::with_val(53, 2.0f64.powi(64))).to_f64() as u64;
             biases[idx as usize] = bias;
         }
 
