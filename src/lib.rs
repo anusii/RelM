@@ -97,8 +97,7 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         let mut biases: Vec<u64> = vec![0; 64];
         for idx in 0..64 {
             let d = 2.0f64.powi(32 - idx) / scale;
-            let bias = 1.0 / (1.0 + d.exp());
-            let bias = (bias * 2.0f64.powi(64)) as u64;
+            let bias = (64.0 * 2.0f64.ln() - d.exp().ln_1p()).exp() as u64;
             biases[idx as usize] = bias;
         }
 
