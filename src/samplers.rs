@@ -93,7 +93,7 @@ pub fn fixed_point_laplace(biases: &Vec<u64>) -> f64 {
         if offset + count > 63 {
             bits = rng.gen();
             count = 0;
-            offset = (bits ^ biases[idx]).leading_zeros();
+            offset = (bits ^ (biases[idx] << (offset + 1))).leading_zeros();
         }
 
         // set the result idx'th bit (from left)
