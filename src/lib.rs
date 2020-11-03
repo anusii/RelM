@@ -94,7 +94,7 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
     fn py_fixed_point_laplace(py: Python, scale: f64, num: usize) -> &PyArray1<f64>{
         /// Simple python wrapper of the laplace function. Converts
         /// the rust vector into a numpy array
-        let num_bits = 100;
+        let num_bits = 58;
         let mut biases: Vec<u64> = vec![0; 64];
         for idx in 0..64 {
             let d = Float::with_val(num_bits, 2.0f64.powi(32 - idx)) / Float::with_val(num_bits, scale);
