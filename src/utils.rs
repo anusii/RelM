@@ -45,13 +45,16 @@ pub fn exponential_bias(scale: f64, pow2: i32, precision: i32) -> u64 {
     /// returns the least significant 64 bits
 
     let num_bits = (precision + 10) as u32;
+
     let d = Float::with_val(num_bits, 2.0f64.powi(pow2)) / Float::with_val(num_bits, scale);
-
     let mut bias = Float::with_val(num_bits, 1.0) / (Float::with_val(num_bits, 1.0) + d.exp());
+
+    // remove the most significant (precision - 64) bits
     bias *= Float::with_val(num_bits, 2.0f64.powi(precision - 64));
-
     let x = bias.clone();
-    bias = (bias - x.trunc()) * Float::with_val(num_bits, 2.0f64.powi(64));
+    bias = (bias - x.trunc());
 
+    // return the least significant 64 bits as a u64
+    bias *= Float::with_val(num_bits, 2.0f64.powi(64));
     bias.to_integer().unwrap().to_u64().unwrap()
 }

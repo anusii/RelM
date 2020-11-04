@@ -74,7 +74,7 @@ pub fn double_uniform(scale: f64) -> f64 {
 pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64) -> f64 {
     /// this function computes the fixed point Laplace distribution
     ///
-    
+
     let mut rng = rand::thread_rng();
     let mut result: u64 = 0;
 
