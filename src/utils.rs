@@ -36,14 +36,19 @@ pub fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 
 
 pub fn exponential_biases(scale: f64) -> Vec<u64>{
-    let num_bits = 70; // num bits = required precision + 5
-    let mut biases: Vec<u64> = vec![0; 64];
-    for idx in 0..64 {
-        let d = Float::with_val(num_bits, 2.0f64.powi(32 - idx)) / Float::with_val(num_bits, scale);
-        let bias = Float::with_val(num_bits, 1.0) / (Float::with_val(num_bits, 1.0) + d.exp());
-        let bias = bias * Float::with_val(num_bits, 2.0f64.powi(64));
-        biases[idx as usize] = bias.to_integer().unwrap().to_u64().unwrap();
-    }
+    (0..64).map(|i| exponential_bias(scale, 32 - i, 64)).collect()
+}
 
-    biases
+
+pub fn exponential_bias(scale: f64, pow2: i32, precision: i32) -> u64 {
+    let num_bits = (precision + 10) as u32;
+    let d = Float::with_val(num_bits, 2.0f64.powi(pow2)) / Float::with_val(num_bits, scale);
+
+    let mut bias = Float::with_val(num_bits, 1.0) / (Float::with_val(num_bits, 1.0) + d.exp());
+    bias *= Float::with_val(num_bits, 2.0f64.powi(precision - 64));
+
+    let x = bias.clone();
+    bias = (bias - x.trunc()) * Float::with_val(num_bits, 2.0f64.powi(64));
+
+    bias.to_integer().unwrap().to_u64().unwrap()
 }

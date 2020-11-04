@@ -1,4 +1,5 @@
 use rand::prelude::*;
+use crate::utils;
 
 
 pub fn uniform(scale: f64) -> f64 {
@@ -70,7 +71,7 @@ pub fn double_uniform(scale: f64) -> f64 {
 }
 
 
-pub fn fixed_point_laplace(biases: &Vec<u64>) -> f64 {
+pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64) -> f64 {
     let mut rng = rand::thread_rng();
     let mut result: u64 = 0;
 
@@ -81,30 +82,41 @@ pub fn fixed_point_laplace(biases: &Vec<u64>) -> f64 {
     let sign = 2.0 * ((bits >> 63) as f64) - 1.0;
 
     for idx in 0..64 {
+
         bits = rng.gen();
 
         if bits < biases[idx] {
-            result |= (1 << 63 - idx);
+            result |= 1 << 63 - idx;
         } else if bits > biases[idx] {
-            result |= (0 << 63 - idx);
+            result |= 0 << 63 - idx;
         } else {
-            panic!("Bits exhausted!");
+            let pow2 = 32 - (idx as i32);
+            result |= exact_exponential_bit(scale, pow2) << 63 - idx;
         }
-
-//        // find the first bit of disagreement between the random bits and biases
-//        offset = (bits ^ biases[idx]).leading_zeros();
-//
-//        if offset > 52 {
-//            // put arbitrary precision in here
-//            panic!("Bits exhausted!");
-//        }
-//
-//        // set the result idx'th bit (from left)
-//        // to be equal to the bias bit at the spot of disagreement
-//        bit = biases[idx] >> (63 - offset) & 1;
-//        result = result | (bit << 63 - idx);
 
     }
 
     sign * (result as f64) * 2.0f64.powi(-31)
+}
+
+
+fn exact_exponential_bit(scale: f64, pow2: i32) -> u64 {
+    let mut rng = rand::thread_rng();
+    let mut required_bits = 128;
+
+    let mut bits: u64 = rng.gen();
+    let mut bias = utils::exponential_bias(scale, pow2, required_bits);
+
+    while bias == bits {
+        required_bits += 64;
+        bias = utils::exponential_bias(scale, pow2, required_bits);
+        bits = rng.gen();
+    }
+
+    if bias > bits {
+        return 1;
+    } else {
+        return 0;
+    }
+
 }

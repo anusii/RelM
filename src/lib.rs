@@ -95,7 +95,7 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         /// the rust vector into a numpy array
         let biases: Vec<u64> = utils::exponential_biases(scale);
         let mut samples: Vec<f64> = vec![0.0; num];
-        samples.par_iter_mut().for_each(|p| *p = samplers::fixed_point_laplace(&biases));
+        samples.par_iter_mut().for_each(|p| *p = samplers::fixed_point_laplace(&biases, scale));
         samples.to_pyarray(py)
     }
 
