@@ -33,3 +33,17 @@ pub fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
     samples.par_iter_mut().for_each(|p| *p = func(scale));
     samples
 }
+
+
+pub fn exponential_biases(scale: f64) -> Vec<u64>{
+    let num_bits = 70; // num bits = required precision + 5
+    let mut biases: Vec<u64> = vec![0; 64];
+    for idx in 0..64 {
+        let d = Float::with_val(num_bits, 2.0f64.powi(32 - idx)) / Float::with_val(num_bits, scale);
+        let bias = Float::with_val(num_bits, 1.0) / (Float::with_val(num_bits, 1.0) + d.exp());
+        let bias = bias * Float::with_val(num_bits, 2.0f64.powi(64));
+        biases[idx as usize] = bias.to_integer().unwrap().to_u64().unwrap();
+    }
+
+    biases
+}

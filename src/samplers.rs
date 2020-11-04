@@ -74,36 +74,37 @@ pub fn fixed_point_laplace(biases: &Vec<u64>) -> f64 {
     let mut rng = rand::thread_rng();
     let mut result: u64 = 0;
 
-    let mut bits: u64 = rng.gen();
     let mut offset: u32 = 0;
     let mut bit: u64 = 0;
 
-    let mut count: u32 = 1;
-
+    let mut bits: u64 = rng.gen();
     let sign = 2.0 * ((bits >> 63) as f64) - 1.0;
-    bits = bits << 1;
-    let start = biases.iter().position(|&x| x != 0).unwrap();
 
-    for idx in start..64 {
+    for idx in 0..64 {
+        bits = rng.gen();
 
-        // find the first bit of disagreement between the random bits and biases
-        offset = (bits ^ biases[idx]).leading_zeros();
-
-        // if we have used up all the bits refresh and try again!
-        if offset + count > 63 {
-            bits = rng.gen();
-            count = 0;
-            offset = (bits ^ (biases[idx] << (offset + 1))).leading_zeros() + offset + 1;
+        if bits < biases[idx] {
+            result |= (1 << 63 - idx);
+        } else if bits > biases[idx] {
+            result |= (0 << 63 - idx);
+        } else {
+            panic!("Bits exhausted!");
         }
 
-        // set the result idx'th bit (from left)
-        // to be equal to the bias bit at the spot of disagreement
-        bit = biases[idx] >> (63 - offset) & 1;
-        result = result | (bit << 63 - idx);
-        // keep track of the random bits consumed
-        count += offset + 1;
-        bits = (bits << (offset + 1));
+//        // find the first bit of disagreement between the random bits and biases
+//        offset = (bits ^ biases[idx]).leading_zeros();
+//
+//        if offset > 52 {
+//            // put arbitrary precision in here
+//            panic!("Bits exhausted!");
+//        }
+//
+//        // set the result idx'th bit (from left)
+//        // to be equal to the bias bit at the spot of disagreement
+//        bit = biases[idx] >> (63 - offset) & 1;
+//        result = result | (bit << 63 - idx);
 
     }
+
     sign * (result as f64) * 2.0f64.powi(-31)
 }

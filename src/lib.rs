@@ -1,7 +1,6 @@
 use pyo3::prelude::{pymodule, PyModule, PyResult, Python};
 use numpy::{PyArray, PyArray1, ToPyArray};
 use rayon::prelude::*;
-use rug::Float;
 
 
 mod utils;
@@ -94,15 +93,7 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
     fn py_fixed_point_laplace(py: Python, scale: f64, num: usize) -> &PyArray1<f64>{
         /// Simple python wrapper of the laplace function. Converts
         /// the rust vector into a numpy array
-        let num_bits = 58;
-        let mut biases: Vec<u64> = vec![0; 64];
-        for idx in 0..64 {
-            let d = Float::with_val(num_bits, 2.0f64.powi(32 - idx)) / Float::with_val(num_bits, scale);
-            let bias = Float::with_val(num_bits, 1.0) / (Float::with_val(num_bits, 1.0) + d.exp());
-            let bias = (bias * Float::with_val(num_bits, 2.0f64.powi(64))).to_f64() as u64;
-            biases[idx as usize] = bias;
-        }
-
+        let biases: Vec<u64> = utils::exponential_biases(scale);
         let mut samples: Vec<f64> = vec![0.0; num];
         samples.par_iter_mut().for_each(|p| *p = samplers::fixed_point_laplace(&biases));
         samples.to_pyarray(py)
