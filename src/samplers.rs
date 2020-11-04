@@ -78,9 +78,6 @@ pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64) -> f64 {
     let mut rng = rand::thread_rng();
     let mut result: u64 = 0;
 
-    let mut offset: u32 = 0;
-    let mut bit: u64 = 0;
-
     let mut bits: u64 = rng.gen();
     let sign = 2.0 * ((bits >> 63) as f64) - 1.0;
 
