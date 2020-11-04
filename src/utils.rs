@@ -41,6 +41,9 @@ pub fn exponential_biases(scale: f64) -> Vec<u64>{
 
 
 pub fn exponential_bias(scale: f64, pow2: i32, precision: i32) -> u64 {
+    /// this function computes the exponential bias to the specified precision and
+    /// returns the least significant 64 bits
+
     let num_bits = (precision + 10) as u32;
     let d = Float::with_val(num_bits, 2.0f64.powi(pow2)) / Float::with_val(num_bits, scale);
 

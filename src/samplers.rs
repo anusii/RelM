@@ -72,6 +72,9 @@ pub fn double_uniform(scale: f64) -> f64 {
 
 
 pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64) -> f64 {
+    /// this function computes the fixed point Laplace distribution
+    ///
+    
     let mut rng = rand::thread_rng();
     let mut result: u64 = 0;
 
@@ -101,6 +104,10 @@ pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64) -> f64 {
 
 
 fn exact_exponential_bit(scale: f64, pow2: i32) -> u64 {
+    /// this function computes increasingly precise bias bits
+    /// until it can be definitively determined whether the random bits
+    /// are larger than the bias
+
     let mut rng = rand::thread_rng();
     let mut required_bits = 128;
 
@@ -109,7 +116,9 @@ fn exact_exponential_bit(scale: f64, pow2: i32) -> u64 {
 
     while bias == bits {
         required_bits += 64;
+        // calculate the next 64 bits of the bias
         bias = utils::exponential_bias(scale, pow2, required_bits);
+        // sample the next 64 bits from the random uniform
         bits = rng.gen();
     }
 
