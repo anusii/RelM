@@ -2,6 +2,10 @@ use rug::{float::Round, Float};
 use rayon::prelude::*;
 
 
+// number of bits to the right of the decimal place
+pub const PRECISION: i32 = 35;
+
+
 pub fn clamp(x: f64, bound: f64) -> f64 {
     if x < -bound {
         -bound
@@ -36,7 +40,7 @@ pub fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 
 
 pub fn exponential_biases(scale: f64) -> Vec<u64>{
-    (0..64).map(|i| exponential_bias(scale, 32 - i, 64)).collect()
+    (0..64).map(|i| exponential_bias(scale, 64 - PRECISION - i - 1, 64)).collect()
 }
 
 

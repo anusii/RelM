@@ -90,13 +90,13 @@ pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64) -> f64 {
         } else if bits > biases[idx] {
             result |= 0 << 63 - idx;
         } else {
-            let pow2 = 32 - (idx as i32);
+            let pow2 = 64 - utils::PRECISION - (idx as i32) - 1;
             result |= exact_exponential_bit(scale, pow2) << 63 - idx;
         }
 
     }
 
-    sign * (result as f64) * 2.0f64.powi(-31)
+    sign * (result as f64) * 2.0f64.powi(-utils::PRECISION)
 }
 
 
