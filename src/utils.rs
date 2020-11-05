@@ -47,12 +47,20 @@ pub fn exponential_bias(scale: f64, pow2: i32, precision: i32) -> u64 {
     let num_bits = (precision + 10) as u32;
 
     let d = Float::with_val(num_bits, 2.0f64.powi(pow2)) / Float::with_val(num_bits, scale);
+    let bias = Float::with_val(num_bits, 1.0) / (Float::with_val(num_bits, 1.0) + d.exp());
 
-    let mut bias = Float::with_val(num_bits, 1.0) / (Float::with_val(num_bits, 1.0) + d.exp());
-    bias *= Float::with_val(num_bits, 2.0f64.powi(precision));
+    // put bias in [0.5, 1) range and convert to the correct final precision
+    // this allows the final 64 mantissa bits to be read off directly
+    let bias = bias + Float::with_val(num_bits, 0.5);
+    let bias = Float::with_val(precision as u32, bias);
 
-    // remove the most significant (precision - 64) bits
-    let mut bias = bias.to_integer().unwrap();
-    bias.keep_bits_mut(64);
-    bias.to_u64().unwrap()
+    // read off the lsb 64 mantissa bits
+    let (bias, _) = bias.to_integer_exp().unwrap();
+    if precision == 64 {
+        // if the precision is 64 remove the
+        bias.keep_bits(64).to_u64().unwrap() - (1 << 63)
+    } else {
+        bias.keep_bits(64).to_u64().unwrap()
+    }
+
 }
