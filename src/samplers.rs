@@ -75,30 +75,38 @@ pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64) -> f64 {
     /// this function computes the fixed point Laplace distribution
     ///
 
-    let mut rng = rand::thread_rng();
     let mut result: u64 = 0;
+    let mut exp_bit: u64 = 0;
+    let mut pow2: i32 = 0;
 
-    let mut bits: u64 = rng.gen();
-    let sign = 2.0 * ((bits >> 63) as f64) - 1.0;
+    let mix_bias = utils::exponential_bias(-scale, -utils::PRECISION, 64);
+    let mix_bit = exponential_bit(mix_bias, -scale, -utils::PRECISION);
 
-    for idx in 0..64 {
-
-        bits = rng.gen();
-
-        if bits < biases[idx] {
-            result |= 1 << 63 - idx;
-        } else if bits > biases[idx] {
-            result |= 0 << 63 - idx;
-        } else {
-            let pow2 = 64 - utils::PRECISION - (idx as i32) - 1;
-            result |= exact_exponential_bit(scale, pow2) << 63 - idx;
-        }
-
+    for idx in 1..64 {
+        pow2 = 64 - utils::PRECISION - (idx as i32) - 1;
+        exp_bit = exponential_bit(biases[idx], scale, pow2);
+        result |= exp_bit << 63 - idx;
     }
 
-    sign * (result as f64) * 2.0f64.powi(-utils::PRECISION)
+    let result_i64 = ((-1 + (mix_bit as i64)) ^ (result as i64));
+    (result_i64 as f64) * 2.0f64.powi(-utils::PRECISION)
 }
 
+fn exponential_bit(bias: u64, scale: f64, pow2: i32) -> u64 {
+    let mut rng = rand::thread_rng();
+    let mut ret_bit: u64 = 0;
+    let rand_bits: u64 = rng.gen();
+
+    if rand_bits < bias {
+        ret_bit = 1;
+    } else if rand_bits > bias {
+        ret_bit = 0;
+    } else {
+        ret_bit = exact_exponential_bit(scale, pow2);
+    }
+
+    ret_bit
+}
 
 fn exact_exponential_bit(scale: f64, pow2: i32) -> u64 {
     /// this function computes increasingly precise bias bits
