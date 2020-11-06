@@ -79,8 +79,7 @@ pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64) -> f64 {
     let mut exp_bit: u64 = 0;
     let mut pow2: i32 = 0;
 
-    let mix_bias = utils::exponential_bias(-scale, -utils::PRECISION, 64);
-    let mix_bit = exponential_bit(mix_bias, -scale, -utils::PRECISION);
+    let mix_bit = exponential_bit(biases[0], -scale, -utils::PRECISION);
 
     for idx in 1..64 {
         pow2 = 64 - utils::PRECISION - (idx as i32) - 1;

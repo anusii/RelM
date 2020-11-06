@@ -40,7 +40,13 @@ pub fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 
 
 pub fn exponential_biases(scale: f64) -> Vec<u64>{
-    (0..64).map(|i| exponential_bias(scale, 64 - PRECISION - i - 1, 64)).collect()
+    (0..64).map(|i| {
+        if i == 0 {
+            exponential_bias(-scale, -PRECISION, 64)
+        } else {
+            exponential_bias(scale, 64 - PRECISION - i - 1, 64)
+        }
+    }).collect()
 }
 
 
