@@ -57,7 +57,7 @@ def test_fixed_point_laplace(benchmark):
     scale = np.random.random() * 10
     mean = 0
     var = 2 * scale ** 2
-    func = lambda n: fixed_point_laplace(n, scale, precision=35)
+    func = lambda n: fixed_point_laplace(n, scale, 35) * 2.0 ** (-35)
     control = lambda n: scipy.stats.laplace.rvs(scale=scale, size=n)
     _test_distribution(benchmark, func, mean, var, control)
 
@@ -92,12 +92,3 @@ def test_ln_rn():
     for _ in range(100000):
         x = np.random.random() / np.random.random()
         assert backend.ln_rn(x) == log_rn(x)
-
-
-def test_laplace_fixed_point(benchmark):
-    scale = np.random.random() * 10
-    mean = 0
-    var = 2 * scale ** 2
-    func = lambda n: backend.fixed_point_laplace(scale, n, 35)
-    control = None  # lambda n: scipy.stats.laplace.rvs(scale=scale, size=n)
-    _test_distribution(benchmark, func, mean, var, control)

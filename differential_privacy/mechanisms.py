@@ -38,8 +38,10 @@ class LaplaceMechanism(ReleaseMechanism):
             self.current_count += 1
             n = len(values)
             b = (self.sensitivity + 2 ** (-self.precision)) / self.epsilon
-            perturbations = samplers.fixed_point_laplace(n, b, self.precision)
-            perturbed_values = values + perturbations
+            fp_perturbations = samplers.fixed_point_laplace(n, b, self.precision)
+            fp_values = np.rint(values / 2 ** (-self.precision)).astype(np.int64)
+            temp = (fp_values + fp_perturbations).astype(np.float64)
+            perturbed_values = temp * 2 ** (-self.precision)
         else:
             raise RuntimeError()
 

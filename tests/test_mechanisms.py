@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.stats
 import pytest
 from differential_privacy.mechanisms import (
     LaplaceMechanism,
@@ -20,6 +21,13 @@ def _test_mechanism(benchmark, mechanism):
 def test_laplace(benchmark):
     mechanism = LaplaceMechanism(epsilon=1, sensitivity=1, precision=35)
     _test_mechanism(benchmark, mechanism)
+    # Verify that the fixed point <-> floating point casting works properly
+    mechanism = LaplaceMechanism(epsilon=1, sensitivity=1, precision=35)
+    data = np.random.random(10000000) * 100
+    values = mechanism.release(data)
+    control = scipy.stats.laplace.rvs(scale=1.0 + 2 ** -35, size=data.size)
+    score, pval = scipy.stats.ks_2samp(values - data, control)
+    assert pval > 0.001
 
 
 def test_geometric(benchmark):
