@@ -3,7 +3,7 @@ use rayon::prelude::*;
 
 
 // number of bits to the right of the decimal place
-pub const PRECISION: i32 = 35;
+//pub const PRECISION: i32 = 35;
 
 
 pub fn clamp(x: f64, bound: f64) -> f64 {
@@ -39,12 +39,12 @@ pub fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 }
 
 
-pub fn exponential_biases(scale: f64) -> Vec<u64>{
+pub fn exponential_biases(scale: f64, precision: i32) -> Vec<u64>{
     (0..64).map(|i| {
         if i == 0 {
-            exponential_bias(-scale, -PRECISION, 64)
+            exponential_bias(-scale, -precision, 64)
         } else {
-            exponential_bias(scale, 64 - PRECISION - i - 1, 64)
+            exponential_bias(scale, 64 - precision - i - 1, 64)
         }
     }).collect()
 }

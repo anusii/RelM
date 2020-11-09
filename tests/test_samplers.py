@@ -88,6 +88,6 @@ def test_laplace_fixed_point(benchmark):
     scale = np.random.random() * 10
     mean = 0
     var = 2 * scale ** 2
-    func = lambda n: backend.fixed_point_laplace(scale, n)
+    func = lambda n: backend.fixed_point_laplace(scale, n, 35)
     control = None  # lambda n: scipy.stats.laplace.rvs(scale=scale, size=n)
     _test_distribution(benchmark, func, mean, var, control)

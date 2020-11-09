@@ -71,7 +71,7 @@ pub fn double_uniform(scale: f64) -> f64 {
 }
 
 
-pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64) -> f64 {
+pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64, precision: i32) -> f64 {
     /// this function computes the fixed point Laplace distribution
     ///
 
@@ -79,16 +79,16 @@ pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64) -> f64 {
     let mut exp_bit: u64 = 0;
     let mut pow2: i32 = 0;
 
-    let mix_bit = exponential_bit(biases[0], -scale, -utils::PRECISION);
+    let mix_bit = exponential_bit(biases[0], -scale, -precision);
 
     for idx in 1..64 {
-        pow2 = 64 - utils::PRECISION - (idx as i32) - 1;
+        pow2 = 64 - precision - (idx as i32) - 1;
         exp_bit = exponential_bit(biases[idx], scale, pow2);
         result |= exp_bit << 63 - idx;
     }
 
     let result_i64 = ((-1 + (mix_bit as i64)) ^ (result as i64));
-    (result_i64 as f64) * 2.0f64.powi(-utils::PRECISION)
+    (result_i64 as f64) * 2.0f64.powi(-precision)
 }
 
 fn exponential_bit(bias: u64, scale: f64, pow2: i32) -> u64 {
