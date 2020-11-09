@@ -60,5 +60,4 @@ pub fn exponential_bias(scale: f64, pow2: i32, required_bits: i32) -> u64 {
     let d = Float::with_val(num_bits, scale).recip() << pow2;
     let bias = (Float::with_val(num_bits, 1.0) + d.exp()).recip() << required_bits;
     bias.trunc().to_integer().unwrap().keep_bits(64).to_u64().unwrap()
-
 }
