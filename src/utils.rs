@@ -36,7 +36,6 @@ pub fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 
 
 pub fn fp_laplace_bit_biases(scale: f64, precision: i32) -> Vec<u64>{
-
     let mix_bit_bias: u64 = exponential_bias(-scale, -precision, 64);
 
     let mut exponential_bit_biases: [u64; 63] = [0; 63];
