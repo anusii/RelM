@@ -94,7 +94,7 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
     fn py_fixed_point_laplace(py: Python, scale: f64, num: usize, precision: i32) -> &PyArray1<i64>{
         /// Simple python wrapper of the laplace function. Converts
         /// the rust vector into a numpy array
-        let biases: Vec<u64> = utils::exponential_biases(scale, precision);
+        let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, precision);
         let mut samples: Vec<i64> = vec![0; num];
         samples.par_iter_mut().for_each(|p| *p = samplers::fixed_point_laplace(&biases, scale, precision));
         samples.to_pyarray(py)
