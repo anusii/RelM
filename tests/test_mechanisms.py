@@ -18,7 +18,7 @@ def _test_mechanism(benchmark, mechanism):
 
 
 def test_laplace(benchmark):
-    mechanism = LaplaceMechanism(epsilon=1)
+    mechanism = LaplaceMechanism(epsilon=1, sensitivity=1, precision=35)
     _test_mechanism(benchmark, mechanism)
 
 
