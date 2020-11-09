@@ -2,10 +2,6 @@ use rug::{float::Round, Float};
 use rayon::prelude::*;
 
 
-// number of bits to the right of the decimal place
-//pub const PRECISION: i32 = 35;
-
-
 pub fn clamp(x: f64, bound: f64) -> f64 {
     if x < -bound {
         -bound
@@ -40,14 +36,17 @@ pub fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 
 
 pub fn fp_laplace_bit_biases(scale: f64, precision: i32) -> Vec<u64>{
+
     let mix_bit_bias: u64 = exponential_bias(-scale, -precision, 64);
-    let mut biases: Vec<u64> = vec![mix_bit_bias];
 
-    let mut exponential_bit_biases: Vec<u64> = (1..64).collect();
-    exponential_bit_biases.par_iter_mut()
-        .for_each(|i| *i = exponential_bias(scale, 63 - precision - (*i as i32), 64));
+    let mut exponential_bit_biases: [u64; 63] = [0; 63];
+    for i in (0..63) {
+        exponential_bit_biases[62-i] = exponential_bias(scale, -precision + (i as i32), 64);
+    }
 
-    biases.extend(exponential_bit_biases);
+    let mut biases: Vec<u64> = Vec::new();
+    biases.push(mix_bit_bias);
+    biases.extend(exponential_bit_biases.iter());
     biases
 }
 
