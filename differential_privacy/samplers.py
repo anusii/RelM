@@ -141,3 +141,14 @@ def uniform_double(n):
     :return: a 1D numpy array of length `n` of samples from the Uniform(0,1) distribution.
     """
     return backend.double_uniform(n)
+
+
+def fixed_point_laplace(n, b=1, precision=35):
+    """
+    Samples from the Laplace(b) distribution.
+
+    :param n: the number of samples to draw.
+    :param b: parameter that determines the spread of the distribution.
+    :return: a 1D numpy array of length `n` of samples from the Laplace(b) distribution.
+    """
+    return backend.fixed_point_laplace(b, n, precision)

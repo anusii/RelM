@@ -2,10 +2,6 @@ use rug::{float::Round, Float};
 use rayon::prelude::*;
 
 
-// number of bits to the right of the decimal place
-pub const PRECISION: i32 = 35;
-
-
 pub fn clamp(x: f64, bound: f64) -> f64 {
     if x < -bound {
         -bound
@@ -39,19 +35,30 @@ pub fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 }
 
 
-pub fn exponential_biases(scale: f64) -> Vec<u64>{
-    (0..64).map(|i| exponential_bias(scale, 64 - PRECISION - i - 1, 64)).collect()
+pub fn fp_laplace_bit_biases(scale: f64, precision: i32) -> Vec<u64>{
+    let mix_bit_bias: u64 = exponential_bias(-scale, -precision, 64);
+
+    let mut exponential_bit_biases: [u64; 63] = [0; 63];
+    for i in (0..63) {
+        // The least significant bit should have pow2 = -precision
+        let pow2 = 62 - precision - (i as i32);
+        exponential_bit_biases[i] = exponential_bias(scale, pow2, 64);
+    }
+
+    let mut biases: Vec<u64> = Vec::new();
+    biases.push(mix_bit_bias);
+    biases.extend(exponential_bit_biases.iter());
+    biases
 }
 
 
-pub fn exponential_bias(scale: f64, pow2: i32, precision: i32) -> u64 {
-    /// this function computes the exponential bias to the specified precision and
-    /// returns the least significant 64 bits
+pub fn exponential_bias(scale: f64, pow2: i32, required_bits: i32) -> u64 {
+    /// this function computes the exponential bias to the specified number of
+    /// required_bits and returns the least significant 64 bits.
 
-    let num_bits = (precision + 10) as u32;
+    let num_bits = (required_bits + 10) as u32;
 
     let d = Float::with_val(num_bits, scale).recip() << pow2;
-    let bias = (Float::with_val(num_bits, 1.0) + d.exp()).recip() << precision;
+    let bias = (Float::with_val(num_bits, 1.0) + d.exp()).recip() << required_bits;
     bias.trunc().to_integer().unwrap().keep_bits(64).to_u64().unwrap()
-
 }

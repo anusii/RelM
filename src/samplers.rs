@@ -71,58 +71,63 @@ pub fn double_uniform(scale: f64) -> f64 {
 }
 
 
-pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64) -> f64 {
+pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64, precision: i32) -> i64 {
     /// this function computes the fixed point Laplace distribution
     ///
 
-    let mut rng = rand::thread_rng();
-    let mut result: u64 = 0;
+    let mut exponential_bits: u64 = 0;
+    let mut pow2: i32 = 0;
 
-    let mut bits: u64 = rng.gen();
-    let sign = 2.0 * ((bits >> 63) as f64) - 1.0;
+    let mix_bit = sample_exponential_bit(biases[0], -scale, -precision);
 
-    for idx in 0..64 {
-
-        bits = rng.gen();
-
-        if bits < biases[idx] {
-            result |= 1 << 63 - idx;
-        } else if bits > biases[idx] {
-            result |= 0 << 63 - idx;
-        } else {
-            let pow2 = 64 - utils::PRECISION - (idx as i32) - 1;
-            result |= exact_exponential_bit(scale, pow2) << 63 - idx;
-        }
-
+    for idx in 1..64 {
+        pow2 = 64 - precision - (idx as i32) - 1;
+        let temp = sample_exponential_bit(biases[idx], scale, pow2);
+        exponential_bits |= temp << (63 - idx);
     }
 
-    sign * (result as f64) * 2.0f64.powi(-utils::PRECISION)
+    let laplace_bits = ((-1 + (mix_bit as i64)) ^ (exponential_bits as i64));
+    laplace_bits
 }
 
+fn sample_exponential_bit(bias: u64, scale: f64, pow2: i32) -> u64 {
+    let mut rng = rand::thread_rng();
+    let mut exponential_bit: u64 = 0;
+    let rand_bits: u64 = rng.gen();
 
-fn exact_exponential_bit(scale: f64, pow2: i32) -> u64 {
+    if rand_bits < bias {
+        exponential_bit = 1;
+    } else if rand_bits > bias {
+        exponential_bit = 0;
+    } else {
+        exponential_bit = sample_exact_exponential_bit(scale, pow2);
+    }
+
+    exponential_bit
+}
+
+fn sample_exact_exponential_bit(scale: f64, pow2: i32) -> u64 {
     /// this function computes increasingly precise bias bits
     /// until it can be definitively determined whether the random bits
     /// are larger than the bias
 
     let mut rng = rand::thread_rng();
-    let mut required_bits = 128;
+    let mut num_required_bits = 128;
 
-    let mut bits: u64 = rng.gen();
-    let mut bias = utils::exponential_bias(scale, pow2, required_bits);
+    let mut bias = utils::exponential_bias(scale, pow2, num_required_bits);
+    let mut rand_bits: u64 = rng.gen();
 
-    while bias == bits {
-        required_bits += 64;
+    while bias == rand_bits {
+        num_required_bits += 64;
         // calculate the next 64 bits of the bias
-        bias = utils::exponential_bias(scale, pow2, required_bits);
+        bias = utils::exponential_bias(scale, pow2, num_required_bits);
         // sample the next 64 bits from the random uniform
-        bits = rng.gen();
+        rand_bits = rng.gen();
     }
 
-    if bias > bits {
+    if bias > rand_bits {
         return 1;
     } else {
         return 0;
     }
-
 }
