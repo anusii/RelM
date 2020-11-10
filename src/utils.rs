@@ -36,18 +36,17 @@ pub fn vectorize(scale: f64, num: usize, func: fn(f64) -> f64) -> Vec<f64> {
 
 
 pub fn fp_laplace_bit_biases(scale: f64, precision: i32) -> Vec<u64>{
-    let mix_bit_bias: u64 = exponential_bias(-scale, -precision, 64).to_u64().unwrap();
 
-    let mut exponential_bit_biases: [u64; 63] = [0; 63];
-    for i in (0..63) {
-        // The least significant bit should have pow2 = -precision
-        let pow2 = 62 - precision - (i as i32);
-        exponential_bit_biases[i] = exponential_bias(scale, pow2, 64).to_u64().unwrap();
+    let mut biases: Vec<u64> = vec![0; 64];
+    let mix_bit_bias = exponential_bias(-scale, -precision, 64).to_u64().unwrap();
+    biases[0] = mix_bit_bias;
+
+    let mut pow2 = 62 - precision;
+    for i in 1..64 {
+        biases[i] = exponential_bias(scale, pow2, 64).to_u64().unwrap();
+        pow2 -= 1;
     }
 
-    let mut biases: Vec<u64> = Vec::new();
-    biases.push(mix_bit_bias);
-    biases.extend(exponential_bit_biases.iter());
     biases
 }
 
