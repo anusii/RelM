@@ -1,5 +1,7 @@
 use rand::prelude::*;
+use rug::Integer;
 use crate::utils;
+
 
 
 pub fn uniform(scale: f64) -> f64 {
@@ -116,15 +118,18 @@ fn sample_exact_exponential_bit(scale: f64, pow2: i32, rand_bits: u64) -> u64 {
     let mut rng = rand::thread_rng();
     let mut num_required_bits = 128;
 
-    let mut bias = utils::exponential_bias(scale, pow2, num_required_bits).keep_bits(64).to_u64().unwrap();
-    let mut rand_bits: u64 = rng.gen();
+    let bias = utils::exponential_bias(scale, pow2, num_required_bits).keep_bits(64).to_u64().unwrap();
 
-    while bias == rand_bits {
+    let mut rand_bits = Integer::from(rand_bits);
+    rand_bits = (rand_bits << 64) + Integer::from(rng.next_u64());
+
+
+    while Integer::from((&rand_bits - &bias)).abs() <= 1 {
         num_required_bits += 64;
         // calculate the next 64 bits of the bias
-        bias = utils::exponential_bias(scale, pow2, num_required_bits).keep_bits(64).to_u64().unwrap();
+        let bias = utils::exponential_bias(scale, pow2, num_required_bits);
         // sample the next 64 bits from the random uniform
-        rand_bits = rng.gen();
+        rand_bits = (rand_bits << 64) + Integer::from(rng.next_u64());
     }
 
     if bias > rand_bits {
