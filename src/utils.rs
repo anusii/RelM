@@ -54,7 +54,7 @@ pub fn fp_laplace_bit_biases(scale: f64, precision: i32) -> Vec<u64>{
 
 pub fn exponential_bias(scale: f64, pow2: i32, required_bits: i32) -> Integer {
     /// this function computes the exponential bias to the specified number of
-    /// required_bits and returns the least significant 64 bits.
+    /// required_bits
 
     let num_bits = (required_bits + 10) as u32;
 

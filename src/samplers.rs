@@ -92,6 +92,7 @@ pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64, precision: i32) -> i64
     laplace_bits
 }
 
+
 fn sample_exponential_bit(bias: u64, scale: f64, pow2: i32) -> u64 {
     let mut rng = rand::thread_rng();
     let mut exponential_bit: u64 = 0;
@@ -110,6 +111,7 @@ fn sample_exponential_bit(bias: u64, scale: f64, pow2: i32) -> u64 {
     exponential_bit
 }
 
+
 fn sample_exact_exponential_bit(scale: f64, pow2: i32, rand_bits: u64) -> u64 {
     /// this function computes increasingly precise bias bits
     /// until it can be definitively determined whether the random bits
@@ -118,18 +120,18 @@ fn sample_exact_exponential_bit(scale: f64, pow2: i32, rand_bits: u64) -> u64 {
     let mut rng = rand::thread_rng();
     let mut num_required_bits = 128;
 
-    let bias = utils::exponential_bias(scale, pow2, num_required_bits).keep_bits(64).to_u64().unwrap();
+    let bias = utils::exponential_bias(scale, pow2, num_required_bits);
 
-    let mut rand_bits = Integer::from(rand_bits);
-    rand_bits = (rand_bits << 64) + Integer::from(rng.next_u64());
-
+    let mut rand_bits = Integer::from(rand_bits) << 64;
+    rand_bits += Integer::from(rng.next_u64());
 
     while Integer::from((&rand_bits - &bias)).abs() <= 1 {
         num_required_bits += 64;
-        // calculate the next 64 bits of the bias
+        // calculate a more precise bias
         let bias = utils::exponential_bias(scale, pow2, num_required_bits);
         // sample the next 64 bits from the random uniform
-        rand_bits = (rand_bits << 64) + Integer::from(rng.next_u64());
+        rand_bits <<= 64;
+        rand_bits += Integer::from(rng.next_u64());
     }
 
     if bias > rand_bits {
