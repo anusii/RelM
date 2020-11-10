@@ -9,7 +9,7 @@ pub fn uniform(scale: f64) -> f64 {
     ///
 
     let mut rng = rand::thread_rng();
-    rng.gen::<f64>()
+    scale * rng.gen::<f64>()
 }
 
 
@@ -68,7 +68,7 @@ pub fn double_uniform(scale: f64) -> f64 {
 
     let mut rng = rand::thread_rng();
     let exponent: f64 = geometric(0.5) + 53.0;
-    let mut significand = (rng.gen::<u64>() >> 11) | (1 << 52);
+    let significand = (rng.gen::<u64>() >> 11) | (1 << 52);
     scale * (significand as f64) * 2.0_f64.powf(-exponent)
 }
 
@@ -125,7 +125,7 @@ fn sample_exact_exponential_bit(scale: f64, pow2: i32, rand_bits: u64) -> i64 {
     let mut rand_bits = Integer::from(rand_bits) << 64;
     rand_bits += Integer::from(rng.next_u64());
 
-    while Integer::from((&rand_bits - &bias)).abs() <= 1 {
+    while Integer::from(&rand_bits - &bias).abs() <= 1 {
         num_required_bits += 64;
         // calculate a more precise bias
         let bias = utils::exponential_bias(scale, pow2, num_required_bits);
