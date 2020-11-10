@@ -95,18 +95,20 @@ fn sample_exponential_bit(bias: u64, scale: f64, pow2: i32) -> u64 {
     let mut exponential_bit: u64 = 0;
     let rand_bits: u64 = rng.gen();
 
-    if rand_bits < bias {
+    if rand_bits.saturating_sub(bias) + bias.saturating_sub(rand_bits) <= 1 {
+        exponential_bit = sample_exact_exponential_bit(scale, pow2, rand_bits);
+    } else if rand_bits < bias {
         exponential_bit = 1;
     } else if rand_bits > bias {
         exponential_bit = 0;
     } else {
-        exponential_bit = sample_exact_exponential_bit(scale, pow2);
+        panic!("Error: code should never reach here.");
     }
 
     exponential_bit
 }
 
-fn sample_exact_exponential_bit(scale: f64, pow2: i32) -> u64 {
+fn sample_exact_exponential_bit(scale: f64, pow2: i32, rand_bits: u64) -> u64 {
     /// this function computes increasingly precise bias bits
     /// until it can be definitively determined whether the random bits
     /// are larger than the bias
@@ -114,13 +116,13 @@ fn sample_exact_exponential_bit(scale: f64, pow2: i32) -> u64 {
     let mut rng = rand::thread_rng();
     let mut num_required_bits = 128;
 
-    let mut bias = utils::exponential_bias(scale, pow2, num_required_bits);
+    let mut bias = utils::exponential_bias(scale, pow2, num_required_bits).keep_bits(64).to_u64().unwrap();
     let mut rand_bits: u64 = rng.gen();
 
     while bias == rand_bits {
         num_required_bits += 64;
         // calculate the next 64 bits of the bias
-        bias = utils::exponential_bias(scale, pow2, num_required_bits);
+        bias = utils::exponential_bias(scale, pow2, num_required_bits).keep_bits(64).to_u64().unwrap();
         // sample the next 64 bits from the random uniform
         rand_bits = rng.gen();
     }
