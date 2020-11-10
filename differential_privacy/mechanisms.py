@@ -21,12 +21,6 @@ class ReleaseMechanism:
         raise NotImplementedError()
 
 
-# spec = [
-#     ('epsilon', float64),
-#     ('cutoff', int64),
-#     ('current_count', int64)
-# ]
-# @jitclass(spec)
 class LaplaceMechanism(ReleaseMechanism):
     def __init__(self, epsilon, sensitivity, precision):
         self.sensitivity = sensitivity
@@ -39,7 +33,7 @@ class LaplaceMechanism(ReleaseMechanism):
             n = len(values)
             b = (self.sensitivity + 2 ** (-self.precision)) / self.epsilon
             fp_perturbations = samplers.fixed_point_laplace(n, b, self.precision)
-            fp_values = np.rint(values / 2 ** (-self.precision)).astype(np.int64)
+            fp_values = np.rint(values * 2 ** self.precision).astype(np.int64)
             temp = (fp_values + fp_perturbations).astype(np.float64)
             perturbed_values = temp * 2 ** (-self.precision)
         else:
@@ -48,7 +42,6 @@ class LaplaceMechanism(ReleaseMechanism):
         return perturbed_values
 
 
-# @jitclass(spec)
 class GeometricMechanism(ReleaseMechanism):
     def release(self, values):
         if self._is_valid():

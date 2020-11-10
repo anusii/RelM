@@ -40,8 +40,9 @@ pub fn fp_laplace_bit_biases(scale: f64, precision: i32) -> Vec<u64>{
 
     let mut exponential_bit_biases: [u64; 63] = [0; 63];
     for i in (0..63) {
-        let pow2 = -precision + (i as i32);
-        exponential_bit_biases[62-i] = exponential_bias(scale, pow2, 64);
+        // The least significant bit should have pow2 = -precision
+        let pow2 = 62 - precision - (i as i32);
+        exponential_bit_biases[i] = exponential_bias(scale, pow2, 64);
     }
 
     let mut biases: Vec<u64> = Vec::new();
