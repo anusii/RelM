@@ -76,16 +76,23 @@ pub fn double_uniform(scale: f64) -> f64 {
 pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64, precision: i32) -> i64 {
     /// this function computes the fixed point Laplace distribution
     ///
+    let mut rng = thread_rng();
 
     let mut exponential_bits: i64 = 0;
     let mut pow2: i32 = 0;
 
-    let mix_bit = sample_exponential_bit(biases[0], -scale, -precision);
+    let mix_bit = match compare_exponential_bit(biases[0], rng.next_u64()) {
+        Some(x) => x,
+        None => sample_exact_exponential_bit(-scale, -precision, rng.next_u64())
+    };
 
     for idx in 1..64 {
         pow2 = 64 - precision - (idx as i32) - 1;
-        let temp = sample_exponential_bit(biases[idx], scale, pow2);
-        exponential_bits |= temp << (63 - idx);
+        let bit = match compare_exponential_bit(biases[idx], rng.next_u64()) {
+            Some(x) => x,
+            None => sample_exact_exponential_bit(-scale, pow2, rng.next_u64())
+        };
+        exponential_bits |= bit << (63 - idx);
     }
 
     let laplace_bits = (-1 + mix_bit) ^ exponential_bits;
@@ -93,22 +100,16 @@ pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64, precision: i32) -> i64
 }
 
 
-fn sample_exponential_bit(bias: u64, scale: f64, pow2: i32) -> i64 {
-    let mut rng = rand::thread_rng();
-    let mut exponential_bit: i64 = 0;
-    let rand_bits: u64 = rng.gen();
-
+fn compare_exponential_bit(bias: u64, rand_bits: u64) -> Option<i64> {
     if rand_bits.saturating_sub(bias) + bias.saturating_sub(rand_bits) <= 1 {
-        exponential_bit = sample_exact_exponential_bit(scale, pow2, rand_bits);
+        None
     } else if rand_bits < bias {
-        exponential_bit = 1;
+        Some(1)
     } else if rand_bits > bias {
-        exponential_bit = 0;
+        Some(0)
     } else {
         panic!("Error: code should never reach here.");
     }
-
-    exponential_bit
 }
 
 
