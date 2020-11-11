@@ -81,16 +81,18 @@ pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64, precision: i32) -> i64
     let mut exponential_bits: i64 = 0;
     let mut pow2: i32 = 0;
 
-    let mix_bit = match compare_exponential_bit(biases[0], rng.next_u64()) {
+    let rand_bits = rng.next_u64();
+    let mix_bit = match comp_exp_bit(biases[0], rand_bits) {
         Some(x) => x,
-        None => sample_exact_exponential_bit(-scale, -precision, rng.next_u64())
+        None => sample_exact_exponential_bit(-scale, -precision, rand_bits)
     };
 
     for idx in 1..64 {
+        let rand_bits = rng.next_u64();
         pow2 = 64 - precision - (idx as i32) - 1;
-        let bit = match compare_exponential_bit(biases[idx], rng.next_u64()) {
+        let bit = match comp_exp_bit(biases[idx], rand_bits) {
             Some(x) => x,
-            None => sample_exact_exponential_bit(-scale, pow2, rng.next_u64())
+            None => sample_exact_exponential_bit(-scale, pow2, rand_bits)
         };
         exponential_bits |= bit << (63 - idx);
     }
@@ -100,7 +102,7 @@ pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64, precision: i32) -> i64
 }
 
 
-fn compare_exponential_bit(bias: u64, rand_bits: u64) -> Option<i64> {
+fn comp_exp_bit(bias: u64, rand_bits: u64) -> Option<i64> {
     if rand_bits.saturating_sub(bias) + bias.saturating_sub(rand_bits) <= 1 {
         None
     } else if rand_bits < bias {
