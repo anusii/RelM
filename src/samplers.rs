@@ -13,31 +13,6 @@ pub fn uniform(scale: f64) -> f64 {
 }
 
 
-pub fn exponential(scale: f64) -> f64 {
-    /// Returns a sample from the exponential distribution
-    ///
-    /// # Arguments
-    ///
-    /// * `scale` - The scale parameter of the exponential distribution
-
-    let sample = -scale * uniform(1.0).ln();
-    sample
-}
-
-
-pub fn laplace(scale: f64) -> f64 {
-    /// Returns one sample from the Laplace distribution
-    ///
-    /// # Arguments
-    ///
-    /// * `scale` - The scale parameter of the Laplace distribution
-
-    let y = uniform(1.0) - 0.5;
-    let sgn = y.signum();
-    sgn * (2.0 * sgn * y).ln() * scale
-}
-
-
 pub fn geometric(scale: f64) -> f64 {
     /// Returns a sample from the geometric distribution
     ///
@@ -49,20 +24,7 @@ pub fn geometric(scale: f64) -> f64 {
 }
 
 
-pub fn two_sided_geometric(scale: f64) -> f64 {
-    /// Returns a sample from the two sided geometric distribution
-    ///
-    /// # Arguments
-    ///
-    /// * `scale` - The scale parameter of the two sided geometric distribution
-
-    let y = (uniform(1.0) - 0.5) * (1.0 + scale);
-    let sgn = y.signum();
-    sgn * ((sgn * y).ln() / scale.ln()).floor()
-}
-
-
-pub fn double_uniform(scale: f64) -> f64 {
+pub fn uniform_double(scale: f64) -> f64 {
     /// Returns a sample from the [0, scale) uniform distribution
     ///
 
@@ -92,7 +54,7 @@ pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64, precision: i32) -> i64
         pow2 = 64 - precision - (idx as i32) - 1;
         let bit = match comp_exp_bit(biases[idx], rand_bits) {
             Some(x) => x,
-            None => sample_exact_exponential_bit(-scale, pow2, rand_bits)
+            None => sample_exact_exponential_bit(scale, pow2, rand_bits)
         };
         exponential_bits |= bit << (63 - idx);
     }

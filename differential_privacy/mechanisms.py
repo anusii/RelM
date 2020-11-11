@@ -47,8 +47,9 @@ class GeometricMechanism(ReleaseMechanism):
         if self._is_valid():
             self.current_count += 1
             n = len(values)
-            q = 1.0 / np.exp(self.epsilon)
-            perturbations = samplers.two_sided_geometric(n, q)
+            q = 1.0 / self.epsilon
+            # perturbations = samplers.two_sided_geometric(n, q)
+            perturbations = samplers.fixed_point_laplace(n, q, 0)
             perturbed_values = values + perturbations
         else:
             raise RuntimeError()
@@ -66,6 +67,7 @@ class SparseGeneric(ReleaseMechanism):
         threshold,
         cutoff,
         monotonic,
+        precision=35,
     ):
         epsilon = epsilon1 + epsilon2 + epsilon3
         self.epsilon = epsilon
@@ -74,18 +76,23 @@ class SparseGeneric(ReleaseMechanism):
         self.epsilon3 = epsilon3
         self.sensitivity = sensitivity
         self.threshold = threshold
-        self.rho = samplers.laplace(1, b=sensitivity / epsilon1)
         self.cutoff = cutoff
         self.monotonic = monotonic
+        self.precision = precision
         self.current_count = 0
+        self.rho = samplers.fixed_point_laplace(1, sensitivity / epsilon1, precision)
 
     def all_above_threshold(self, values):
-        threshold = self.threshold + self.rho
+        fp_threshold = np.rint(self.threshold * 2 ** self.precision).astype(np.int64)
+        fp_perturbed_threshold = self.threshold + self.rho
+        perturbed_threshold = fp_perturbed_threshold * 2 ** -self.precision
         if self.monotonic:
             b = (self.sensitivity * self.cutoff) / self.epsilon2
         else:
             b = (2.0 * self.sensitivity * self.cutoff) / self.epsilon2
-        return backend.all_above_threshold(values, b, threshold)
+        return backend.all_above_threshold(
+            values, b, perturbed_threshold, self.precision
+        )
 
     def release(self, values):
         if self._is_valid():
@@ -97,9 +104,15 @@ class SparseGeneric(ReleaseMechanism):
                 sliced_values = values[indices]
                 n = len(sliced_values)
                 b = (self.sensitivity * self.cutoff) / self.epsilon3
-                perturbations = samplers.laplace(n, b)
-                perturbed_values = sliced_values + perturbations
-                return (indices, perturbed_values)
+                fp_perturbations = samplers.fixed_point_laplace(n, b, self.precision)
+                fp_sliced_values = np.rint(sliced_values * 2 ** self.precision).astype(
+                    np.int64
+                )
+                fp_perturbed_sliced_values = fp_sliced_values + fp_perturbations
+                perturbed_sliced_values = (
+                    fp_perturbed_sliced_values * 2 ** -self.precision
+                )
+                return (indices, fp_perturbed_sliced_values)
             else:
                 return (indices,)
         else:
@@ -116,6 +129,7 @@ class SparseNumeric(SparseGeneric):
         e2_weight=None,
         e3_weight=None,
         monotonic=False,
+        precision=35,
     ):
         e1_weight = 1.0
         if e2_weight is None:
@@ -131,17 +145,38 @@ class SparseNumeric(SparseGeneric):
         epsilon2 = (epsilon_weights[1] / total_weight) * epsilon
         epsilon3 = (epsilon_weights[2] / total_weight) * epsilon
         super(SparseNumeric, self).__init__(
-            epsilon1, epsilon2, epsilon3, sensitivity, threshold, cutoff, monotonic
+            epsilon1,
+            epsilon2,
+            epsilon3,
+            sensitivity,
+            threshold,
+            cutoff,
+            monotonic,
+            precision,
         )
 
 
 class SparseIndicator(SparseNumeric):
     def __init__(
-        self, epsilon, sensitivity, threshold, cutoff, e2_weight=None, monotonic=False
+        self,
+        epsilon,
+        sensitivity,
+        threshold,
+        cutoff,
+        e2_weight=None,
+        monotonic=False,
+        precision=35,
     ):
         e3_weight = 0.0
         super(SparseIndicator, self).__init__(
-            epsilon, sensitivity, threshold, cutoff, e2_weight, e3_weight, monotonic
+            epsilon,
+            sensitivity,
+            threshold,
+            cutoff,
+            e2_weight,
+            e3_weight,
+            monotonic,
+            precision,
         )
 
     def release(self, values):
@@ -151,11 +186,17 @@ class SparseIndicator(SparseNumeric):
 
 class AboveThreshold(SparseIndicator):
     def __init__(
-        self, epsilon, sensitivity, threshold, e2_weight=None, monotonic=False
+        self,
+        epsilon,
+        sensitivity,
+        threshold,
+        e2_weight=None,
+        monotonic=False,
+        precision=35,
     ):
         cutoff = 1
         super(AboveThreshold, self).__init__(
-            epsilon, sensitivity, threshold, cutoff, e2_weight, monotonic
+            epsilon, sensitivity, threshold, cutoff, e2_weight, monotonic, precision
         )
 
     def release(self, values):

@@ -33,6 +33,17 @@ def test_laplace(benchmark):
 def test_geometric(benchmark):
     mechanism = GeometricMechanism(epsilon=1)
     _test_mechanism(benchmark, mechanism)
+    epsilon = 0.01
+    mechanism = GeometricMechanism(epsilon=epsilon)
+    n = 10000000
+    data = np.random.randint(0, 2 ** 16, size=n, dtype=np.int64)
+    values = mechanism.release(data)
+    q = np.exp(-epsilon)
+    x = scipy.stats.geom.rvs(p=1 - q, size=n)
+    y = scipy.stats.geom.rvs(p=1 - q, size=n)
+    z = x - y
+    score, pval = scipy.stats.ks_2samp(values - data, z)
+    assert pval > 0.001
 
 
 def test_above_threshold(benchmark):
