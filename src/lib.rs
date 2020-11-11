@@ -1,5 +1,7 @@
+#![allow(unused_doc_comments)]
+
 use pyo3::prelude::{pymodule, PyModule, PyResult, Python};
-use numpy::{PyArray, PyArray1, ToPyArray};
+use numpy::{PyArray1, ToPyArray};
 use rayon::prelude::*;
 
 

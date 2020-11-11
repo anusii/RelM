@@ -9,7 +9,7 @@ pub fn uniform(scale: f64) -> f64 {
     ///
 
     let mut rng = rand::thread_rng();
-    rng.gen::<f64>()
+    scale * rng.gen::<f64>()
 }
 
 
@@ -68,7 +68,7 @@ pub fn double_uniform(scale: f64) -> f64 {
 
     let mut rng = rand::thread_rng();
     let exponent: f64 = geometric(0.5) + 53.0;
-    let mut significand = (rng.gen::<u64>() >> 11) | (1 << 52);
+    let significand = (rng.gen::<u64>() >> 11) | (1 << 52);
     scale * (significand as f64) * 2.0_f64.powf(-exponent)
 }
 
@@ -76,43 +76,46 @@ pub fn double_uniform(scale: f64) -> f64 {
 pub fn fixed_point_laplace(biases: &Vec<u64>, scale: f64, precision: i32) -> i64 {
     /// this function computes the fixed point Laplace distribution
     ///
+    let mut rng = thread_rng();
 
-    let mut exponential_bits: u64 = 0;
+    let mut exponential_bits: i64 = 0;
     let mut pow2: i32 = 0;
 
-    let mix_bit = sample_exponential_bit(biases[0], -scale, -precision);
+    let rand_bits = rng.next_u64();
+    let mix_bit = match comp_exp_bit(biases[0], rand_bits) {
+        Some(x) => x,
+        None => sample_exact_exponential_bit(-scale, -precision, rand_bits)
+    };
 
     for idx in 1..64 {
+        let rand_bits = rng.next_u64();
         pow2 = 64 - precision - (idx as i32) - 1;
-        let temp = sample_exponential_bit(biases[idx], scale, pow2);
-        exponential_bits |= temp << (63 - idx);
+        let bit = match comp_exp_bit(biases[idx], rand_bits) {
+            Some(x) => x,
+            None => sample_exact_exponential_bit(-scale, pow2, rand_bits)
+        };
+        exponential_bits |= bit << (63 - idx);
     }
 
-    let laplace_bits = ((-1 + (mix_bit as i64)) ^ (exponential_bits as i64));
+    let laplace_bits = (-1 + mix_bit) ^ exponential_bits;
     laplace_bits
 }
 
 
-fn sample_exponential_bit(bias: u64, scale: f64, pow2: i32) -> u64 {
-    let mut rng = rand::thread_rng();
-    let mut exponential_bit: u64 = 0;
-    let rand_bits: u64 = rng.gen();
-
+fn comp_exp_bit(bias: u64, rand_bits: u64) -> Option<i64> {
     if rand_bits.saturating_sub(bias) + bias.saturating_sub(rand_bits) <= 1 {
-        exponential_bit = sample_exact_exponential_bit(scale, pow2, rand_bits);
+        None
     } else if rand_bits < bias {
-        exponential_bit = 1;
+        Some(1)
     } else if rand_bits > bias {
-        exponential_bit = 0;
+        Some(0)
     } else {
         panic!("Error: code should never reach here.");
     }
-
-    exponential_bit
 }
 
 
-fn sample_exact_exponential_bit(scale: f64, pow2: i32, rand_bits: u64) -> u64 {
+fn sample_exact_exponential_bit(scale: f64, pow2: i32, rand_bits: u64) -> i64 {
     /// this function computes increasingly precise bias bits
     /// until it can be definitively determined whether the random bits
     /// are larger than the bias
@@ -125,7 +128,7 @@ fn sample_exact_exponential_bit(scale: f64, pow2: i32, rand_bits: u64) -> u64 {
     let mut rand_bits = Integer::from(rand_bits) << 64;
     rand_bits += Integer::from(rng.next_u64());
 
-    while Integer::from((&rand_bits - &bias)).abs() <= 1 {
+    while Integer::from(&rand_bits - &bias).abs() <= 1 {
         num_required_bits += 64;
         // calculate a more precise bias
         let bias = utils::exponential_bias(scale, pow2, num_required_bits);
