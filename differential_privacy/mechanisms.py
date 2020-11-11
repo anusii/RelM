@@ -43,7 +43,6 @@ class LaplaceMechanism(ReleaseMechanism):
 
 
 class GeometricMechanism(ReleaseMechanism):
-
     def unsafe_release(self, values):
         self.privacy_loss += self.epsilon
         n = len(values)
@@ -56,7 +55,14 @@ class GeometricMechanism(ReleaseMechanism):
 
 class SparseGeneric(ReleaseMechanism):
     def __init__(
-        self, epsilon1, epsilon2, epsilon3, sensitivity, threshold, cutoff, monotonic,
+        self,
+        epsilon1,
+        epsilon2,
+        epsilon3,
+        sensitivity,
+        threshold,
+        cutoff,
+        monotonic,
     ):
         epsilon = epsilon1 + epsilon2 + epsilon3
         self.epsilon = epsilon
