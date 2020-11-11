@@ -18,6 +18,12 @@ class ReleaseMechanism:
         return self.current_count < self.cutoff
 
     def release(self):
+        if self.current_count < self.cutoff:
+            return self.unsafe_release()
+
+        raise RuntimeError
+
+    def unsafe_release(self):
         raise NotImplementedError()
 
 
@@ -27,45 +33,33 @@ class LaplaceMechanism(ReleaseMechanism):
         self.precision = precision
         super(LaplaceMechanism, self).__init__(epsilon)
 
-    def release(self, values):
-        if self._is_valid():
-            self.current_count += 1
-            n = len(values)
-            b = (self.sensitivity + 2 ** (-self.precision)) / self.epsilon
-            fp_perturbations = samplers.fixed_point_laplace(n, b, self.precision)
-            fp_values = np.rint(values * 2 ** self.precision).astype(np.int64)
-            temp = (fp_values + fp_perturbations).astype(np.float64)
-            perturbed_values = temp * 2 ** (-self.precision)
-        else:
-            raise RuntimeError()
+    def unsafe_release(self, values):
+
+        self.current_count += 1
+        n = len(values)
+        b = (self.sensitivity + 2 ** (-self.precision)) / self.epsilon
+        fp_perturbations = samplers.fixed_point_laplace(n, b, self.precision)
+        fp_values = np.rint(values * 2 ** self.precision).astype(np.int64)
+        temp = (fp_values + fp_perturbations).astype(np.float64)
+        perturbed_values = temp * 2 ** (-self.precision)
 
         return perturbed_values
 
 
 class GeometricMechanism(ReleaseMechanism):
     def release(self, values):
-        if self._is_valid():
-            self.current_count += 1
-            n = len(values)
-            q = 1.0 / np.exp(self.epsilon)
-            perturbations = samplers.two_sided_geometric(n, q)
-            perturbed_values = values + perturbations
-        else:
-            raise RuntimeError()
+        self.current_count += 1
+        n = len(values)
+        q = 1.0 / np.exp(self.epsilon)
+        perturbations = samplers.two_sided_geometric(n, q)
+        perturbed_values = values + perturbations
 
         return perturbed_values
 
 
 class SparseGeneric(ReleaseMechanism):
     def __init__(
-        self,
-        epsilon1,
-        epsilon2,
-        epsilon3,
-        sensitivity,
-        threshold,
-        cutoff,
-        monotonic,
+        self, epsilon1, epsilon2, epsilon3, sensitivity, threshold, cutoff, monotonic,
     ):
         epsilon = epsilon1 + epsilon2 + epsilon3
         self.epsilon = epsilon
@@ -87,23 +81,19 @@ class SparseGeneric(ReleaseMechanism):
             b = (2.0 * self.sensitivity * self.cutoff) / self.epsilon2
         return backend.all_above_threshold(values, b, threshold)
 
-    def release(self, values):
-        if self._is_valid():
-            remaining = self.cutoff - self.current_count
-            indices = self.all_above_threshold(values)
-            indices = indices[:remaining]
-            self.current_count += len(indices)
-            if self.epsilon3 > 0:
-                sliced_values = values[indices]
-                n = len(sliced_values)
-                b = (self.sensitivity * self.cutoff) / self.epsilon3
-                perturbations = samplers.laplace(n, b)
-                perturbed_values = sliced_values + perturbations
-                return (indices, perturbed_values)
-            else:
-                return (indices,)
-        else:
-            raise RuntimeError()
+    def unsafe_release(self, values):
+
+        remaining = self.cutoff - self.current_count
+        indices = self.all_above_threshold(values)
+        indices = indices[:remaining]
+        self.current_count += len(indices)
+        if self.epsilon3 > 0:
+            sliced_values = values[indices]
+            n = len(sliced_values)
+            b = (self.sensitivity * self.cutoff) / self.epsilon3
+            perturbations = samplers.laplace(n, b)
+            perturbed_values = sliced_values + perturbations
+            return (indices, perturbed_values)
 
 
 class SparseNumeric(SparseGeneric):
@@ -144,7 +134,7 @@ class SparseIndicator(SparseNumeric):
             epsilon, sensitivity, threshold, cutoff, e2_weight, e3_weight, monotonic
         )
 
-    def release(self, values):
+    def unsafe_release(self, values):
         (indices, *_) = super(SparseIndicator, self).release(values)
         return indices
 
@@ -158,7 +148,7 @@ class AboveThreshold(SparseIndicator):
             epsilon, sensitivity, threshold, cutoff, e2_weight, monotonic
         )
 
-    def release(self, values):
+    def unsafe_release(self, values):
         indices = super(AboveThreshold, self).release(values)
         if len(indices) > 0:
             index = int(indices[0])
@@ -177,7 +167,7 @@ class Snapping(ReleaseMechanism):
         self.B = B
         super(Snapping, self).__init__(epsilon)
 
-    def release(self, values):
+    def unsafe_release(self, values):
         if self._is_valid():
             self.current_count += 1
             release_values = backend.snapping(values, self.B, self.lam, self.quanta)
