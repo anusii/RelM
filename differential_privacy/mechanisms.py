@@ -11,15 +11,11 @@ from differential_privacy import backend
 class ReleaseMechanism:
     def __init__(self, epsilon):
         self.epsilon = epsilon
-        self.cutoff = 1
-        self.current_count = 0
+        self.privacy_loss = 0
 
-    def _is_valid(self):
-        return self.current_count < self.cutoff
-
-    def release(self):
-        if self.current_count < self.cutoff:
-            return self.unsafe_release()
+    def release(self, data):
+        if self.privacy_loss < self.epsilon:
+            return self.unsafe_release(data)
 
         raise RuntimeError
 
@@ -35,7 +31,7 @@ class LaplaceMechanism(ReleaseMechanism):
 
     def unsafe_release(self, values):
 
-        self.current_count += 1
+        self.privacy_loss += self.epsilon
         n = len(values)
         b = (self.sensitivity + 2 ** (-self.precision)) / self.epsilon
         fp_perturbations = samplers.fixed_point_laplace(n, b, self.precision)
@@ -47,8 +43,9 @@ class LaplaceMechanism(ReleaseMechanism):
 
 
 class GeometricMechanism(ReleaseMechanism):
-    def release(self, values):
-        self.current_count += 1
+
+    def unsafe_release(self, values):
+        self.privacy_loss += self.epsilon
         n = len(values)
         q = 1.0 / np.exp(self.epsilon)
         perturbations = samplers.two_sided_geometric(n, q)
@@ -72,6 +69,7 @@ class SparseGeneric(ReleaseMechanism):
         self.cutoff = cutoff
         self.monotonic = monotonic
         self.current_count = 0
+        super(SparseGeneric, self).__init__(epsilon)
 
     def all_above_threshold(self, values):
         threshold = self.threshold + self.rho
@@ -82,18 +80,27 @@ class SparseGeneric(ReleaseMechanism):
         return backend.all_above_threshold(values, b, threshold)
 
     def unsafe_release(self, values):
+        if self.privacy_loss == 0:
+            self.privacy_loss += self.epsilon1
 
         remaining = self.cutoff - self.current_count
         indices = self.all_above_threshold(values)
         indices = indices[:remaining]
-        self.current_count += len(indices)
+        n = len(indices)
+        self.current_count += n
+        self.privacy_loss += self.epsilon2 * n / self.cutoff
+
         if self.epsilon3 > 0:
             sliced_values = values[indices]
-            n = len(sliced_values)
             b = (self.sensitivity * self.cutoff) / self.epsilon3
+
             perturbations = samplers.laplace(n, b)
             perturbed_values = sliced_values + perturbations
-            return (indices, perturbed_values)
+            self.privacy_loss += self.epsilon3 * n / self.cutoff
+
+            return indices, perturbed_values
+        else:
+            return indices
 
 
 class SparseNumeric(SparseGeneric):
@@ -129,13 +136,13 @@ class SparseIndicator(SparseNumeric):
     def __init__(
         self, epsilon, sensitivity, threshold, cutoff, e2_weight=None, monotonic=False
     ):
-        e3_weight = 0.0
+        e3_weight = None
         super(SparseIndicator, self).__init__(
             epsilon, sensitivity, threshold, cutoff, e2_weight, e3_weight, monotonic
         )
 
     def unsafe_release(self, values):
-        (indices, *_) = super(SparseIndicator, self).release(values)
+        (indices, *_) = super(SparseIndicator, self).unsafe_release(values)
         return indices
 
 
@@ -149,7 +156,7 @@ class AboveThreshold(SparseIndicator):
         )
 
     def unsafe_release(self, values):
-        indices = super(AboveThreshold, self).release(values)
+        indices = super(AboveThreshold, self).unsafe_release(values)
         if len(indices) > 0:
             index = int(indices[0])
         else:
@@ -168,10 +175,6 @@ class Snapping(ReleaseMechanism):
         super(Snapping, self).__init__(epsilon)
 
     def unsafe_release(self, values):
-        if self._is_valid():
-            self.current_count += 1
-            release_values = backend.snapping(values, self.B, self.lam, self.quanta)
-        else:
-            raise RuntimeError
-
+        self.privacy_loss += self.epsilon
+        release_values = backend.snapping(values, self.B, self.lam, self.quanta)
         return release_values
