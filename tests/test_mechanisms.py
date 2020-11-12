@@ -4,7 +4,7 @@ import pytest
 from differential_privacy.mechanisms import (
     LaplaceMechanism,
     GeometricMechanism,
-    Snapping,
+    SnappingMechanism,
     AboveThreshold,
     SparseIndicator,
     SparseNumeric,
@@ -18,10 +18,10 @@ def _test_mechanism(benchmark, mechanism):
         mechanism.release(data)
 
 
-def test_laplace(benchmark):
+def test_LaplaceMechanism(benchmark):
     mechanism = LaplaceMechanism(epsilon=1, sensitivity=1, precision=35)
     _test_mechanism(benchmark, mechanism)
-    # Verify that the fixed point <-> floating point casting works properly
+    # Goodness of fit test
     mechanism = LaplaceMechanism(epsilon=1, sensitivity=1, precision=35)
     data = np.random.random(10000000) * 100
     values = mechanism.release(data)
@@ -30,9 +30,10 @@ def test_laplace(benchmark):
     assert pval > 0.001
 
 
-def test_geometric(benchmark):
+def test_GeometricMechanism(benchmark):
     mechanism = GeometricMechanism(epsilon=1)
     _test_mechanism(benchmark, mechanism)
+    # Goodness of fit test
     epsilon = 0.01
     mechanism = GeometricMechanism(epsilon=epsilon)
     n = 10000000
@@ -74,6 +75,6 @@ def test_sparse_numeric(benchmark):
     assert len(values) == 100
 
 
-def test_snapping(benchmark):
-    mechanism = Snapping(epsilon=1.0, B=10)
+def test_SnappingMechanism(benchmark):
+    mechanism = SnappingMechanism(epsilon=1.0, B=10)
     _test_mechanism(benchmark, mechanism)

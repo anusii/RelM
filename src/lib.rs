@@ -2,7 +2,6 @@
 
 use pyo3::prelude::{pymodule, PyModule, PyResult, Python};
 use numpy::{PyArray1, ToPyArray};
-use rayon::prelude::*;
 
 
 mod utils;
@@ -15,38 +14,27 @@ mod mechanisms;
 #[pymodule]
 fn backend(py: Python, m: &PyModule) -> PyResult<()> {
 
-    // #[pyfn(m, "uniform")]
-    // fn py_uniform(py: Python, num: usize) -> &PyArray1<f64>{
-    //     /// Simple python wrapper of the exponential function. Converts
-    //     /// the rust vector into a numpy array
-    //
-    //     utils::vectorize(1.0, num, samplers::uniform).to_pyarray(py)
-    // }
-
-    // #[pyfn(m, "uniform_double")]
-    // fn py_double_uniform(py: Python, num: usize) -> &PyArray1<f64>{
-    //     /// Simple python wrapper of the exponential function. Converts
-    //     /// the rust vector into a numpy array
-    //     utils::vectorize(1.0, num, samplers::uniform_double).to_pyarray(py)
-    // }
-
     #[pyfn(m, "all_above_threshold")]
     fn py_all_above_threshold<'a>(
-        py: Python<'a>, data: &'a PyArray1<f64>,
-        scale: f64, threshold: f64,
+        py: Python<'a>,
+        data: &'a PyArray1<f64>,
+        scale: f64,
+        threshold: f64,
         precision: i32,
     ) -> &'a PyArray1<usize> {
         /// Simple python wrapper of the exponential function. Converts
         /// the rust vector into a numpy array
         let data = data.to_vec().unwrap();
-        let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, precision);
-        mechanisms::all_above_threshold(data, scale, threshold, precision, &biases).to_pyarray(py)
+        mechanisms::all_above_threshold(data, scale, threshold, precision).to_pyarray(py)
     }
 
     #[pyfn(m, "snapping")]
     fn py_snapping<'a>(
-        py: Python<'a>, data: &'a PyArray1<f64>,
-        bound: f64, lambda: f64, quanta: f64
+        py: Python<'a>,
+        data: &'a PyArray1<f64>,
+        bound: f64,
+        lambda: f64,
+        quanta: f64,
     ) -> &'a PyArray1<f64> {
         /// Simple python wrapper of the exponential function. Converts
         /// the rust vector into a numpy array
@@ -54,44 +42,17 @@ fn backend(py: Python, m: &PyModule) -> PyResult<()> {
         mechanisms::snapping(data, bound, lambda, quanta).to_pyarray(py)
     }
 
-    // #[pyfn(m, "ln_rn")]
-    // fn py_ln_rn(x: f64) -> f64 {
-    //     /// Simple python wrapper of the exponential function. Converts
-    //     /// the rust vector into a numpy array
-    //     utils::ln_rn(x)
-    // }
-
-    #[pyfn(m, "fixed_point_laplace")]
-    fn py_fixed_point_laplace(py: Python, scale: f64, num: usize, precision: i32) -> &PyArray1<i64>{
-        /// Simple python wrapper of the laplace function. Converts
-        /// the rust vector into a numpy array
-        let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, precision);
-        let mut samples: Vec<i64> = vec![0; num];
-        samples.par_iter_mut().for_each(|p| *p = samplers::fixed_point_laplace(&biases, scale, precision));
-        samples.to_pyarray(py)
+    #[pyfn(m, "laplace_mechanism")]
+    fn py_laplace_mechanism<'a>(
+        py: Python<'a>,
+        data: &'a PyArray1<f64>,
+        sensitivity: f64,
+        epsilon: f64,
+        precision: i32,
+    ) -> &'a PyArray1<f64> {
+        let data = data.to_vec().unwrap();
+        mechanisms::laplace_mechanism(data, sensitivity, epsilon, precision).to_pyarray(py)
     }
-
-    // #[pyfn(m, "fixed_point_exponential")]
-    // fn py_fixed_point_exponential(py: Python, scale: f64, num: usize, precision: i32) -> &PyArray1<i64>{
-    //     /// Simple python wrapper of the laplace function. Converts
-    //     /// the rust vector into a numpy array
-    //     let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, precision);
-    //     let mut samples: Vec<i64> = vec![0; num];
-    //     samples.par_iter_mut().for_each(|p| *p = samplers::fixed_point_exponential(&biases, scale, precision));
-    //     samples.to_pyarray(py)
-    // }
-    //
-    // #[pyfn(m, "geometric")]
-    // fn py_geometric(py: Python, p: f64, num: usize) -> &PyArray1<i64>{
-    //     /// Simple python wrapper of the geometric function. Converts
-    //     /// the rust vector into a numpy array
-    //
-    //     let scale = -1.0 / (1.0 - p).ln();
-    //     let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, 0);
-    //     let mut samples: Vec<i64> = vec![0; num];
-    //     samples.par_iter_mut().for_each(|p| *p = samplers::fixed_point_exponential(&biases, scale, 0));
-    //     samples.to_pyarray(py)
-    // }
 
     Ok(())
 }
