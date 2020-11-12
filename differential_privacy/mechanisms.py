@@ -4,7 +4,6 @@ import struct
 
 import numpy as np
 
-from . import samplers
 from differential_privacy import backend
 
 
@@ -32,7 +31,7 @@ class LaplaceMechanism(ReleaseMechanism):
             self.current_count += 1
             n = len(values)
             b = (self.sensitivity + 2 ** (-self.precision)) / self.epsilon
-            fp_perturbations = samplers.fixed_point_laplace(n, b, self.precision)
+            fp_perturbations = backend.fixed_point_laplace(b, n, self.precision)
             fp_values = np.rint(values * 2 ** self.precision).astype(np.int64)
             temp = (fp_values + fp_perturbations).astype(np.float64)
             perturbed_values = temp * 2 ** (-self.precision)
@@ -48,8 +47,7 @@ class GeometricMechanism(ReleaseMechanism):
             self.current_count += 1
             n = len(values)
             q = 1.0 / self.epsilon
-            # perturbations = samplers.two_sided_geometric(n, q)
-            perturbations = samplers.fixed_point_laplace(n, q, 0)
+            perturbations = backend.fixed_point_laplace(q, n, 0)
             perturbed_values = values + perturbations
         else:
             raise RuntimeError()
@@ -80,7 +78,7 @@ class SparseGeneric(ReleaseMechanism):
         self.monotonic = monotonic
         self.precision = precision
         self.current_count = 0
-        self.rho = samplers.fixed_point_laplace(1, sensitivity / epsilon1, precision)
+        self.rho = backend.fixed_point_laplace(sensitivity / epsilon1, 1, precision)
 
     def all_above_threshold(self, values):
         fp_threshold = np.rint(self.threshold * 2 ** self.precision).astype(np.int64)
@@ -104,7 +102,7 @@ class SparseGeneric(ReleaseMechanism):
                 sliced_values = values[indices]
                 n = len(sliced_values)
                 b = (self.sensitivity * self.cutoff) / self.epsilon3
-                fp_perturbations = samplers.fixed_point_laplace(n, b, self.precision)
+                fp_perturbations = backend.fixed_point_laplace(b, n, self.precision)
                 fp_sliced_values = np.rint(sliced_values * 2 ** self.precision).astype(
                     np.int64
                 )
