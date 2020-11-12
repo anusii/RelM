@@ -12,7 +12,7 @@ mod mechanisms;
 ///// A Python module implemented in Rust.
 ///// Exports the rust functions to python.
 #[pymodule]
-fn backend(py: Python, m: &PyModule) -> PyResult<()> {
+fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
 
     #[pyfn(m, "all_above_threshold")]
     fn py_all_above_threshold<'a>(
