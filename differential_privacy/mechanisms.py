@@ -1,7 +1,4 @@
-import crlibm
 import math
-import struct
-
 import numpy as np
 
 from . import samplers
@@ -22,12 +19,35 @@ class ReleaseMechanism:
 
 
 class LaplaceMechanism(ReleaseMechanism):
+    """
+    Secure implementation of the Laplace mechanism. This mechanism can be used once
+    after which its privacy budget will be exhausted and it can no longer be used.
+
+    Under the hood this mechanism samples exactly from a 64-bit fixed point
+    Laplace mechanism bit by bit.
+
+    Args:
+        epsilon: the maximum privacy loss of the mechanism.
+        sensitivity: the sensitivity of the query that this will be applied to
+        precision: number of fractional bits to use in the internal fixed point representation.
+
+    """
+
     def __init__(self, epsilon, sensitivity, precision):
         self.sensitivity = sensitivity
         self.precision = precision
         super(LaplaceMechanism, self).__init__(epsilon)
 
     def release(self, values):
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy array of the output of a query.
+
+        Returns:
+            A numpy array of perturbed values.
+        """
         if self._is_valid():
             self.current_count += 1
             n = len(values)
@@ -43,7 +63,25 @@ class LaplaceMechanism(ReleaseMechanism):
 
 
 class GeometricMechanism(ReleaseMechanism):
+    """
+    Secure implementation of the Geometric mechanism. This mechanism can be used once
+    after which its privacy budget will be exhausted and it can no longer be used.
+
+    Args:
+        epsilon: the maximum privacy loss of the mechanism.
+
+    """
+
     def release(self, values):
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy array of the output of a query.
+
+        Returns:
+            A numpy array of perturbed values.
+        """
         if self._is_valid():
             self.current_count += 1
             n = len(values)
@@ -88,6 +126,15 @@ class SparseGeneric(ReleaseMechanism):
         return backend.all_above_threshold(values, b, threshold)
 
     def release(self, values):
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy arrays of query responses. Each element is the response to a different query.
+
+        Returns:
+            A tuple of numpy arrays containing the perturbed values and the corresponding indices.
+        """
         if self._is_valid():
             remaining = self.cutoff - self.current_count
             indices = self.all_above_threshold(values)
@@ -107,6 +154,24 @@ class SparseGeneric(ReleaseMechanism):
 
 
 class SparseNumeric(SparseGeneric):
+    """
+    Secure implementation of the SparseNumeric mechanism.
+    This mechanism can used repeatedly until `cutoff` positive queries have been answered
+    after which the mechanism is exhausted and cannot be used.
+
+    Args:
+        epsilon: the maximum privacy loss of the mechanism.
+        sensitivity: the sensitivity of the query function
+        threshold: the threshold to use
+        cutoff: the number of positive queries that can be answered
+        e2_weight: the relative amount of the privacy budget to allocate to
+            perturbing the answers for comparison. If set to None (default) this will be
+            auto-calculated.
+        e3_weight: the relative amount of the privacy budget to allocate to
+            perturbing the answers for release. If set to None (default) this will be
+            auto-calculated.
+        monotonic: boolean indicating whether the queries are monotonic.
+    """
     def __init__(
         self,
         epsilon,
@@ -136,6 +201,22 @@ class SparseNumeric(SparseGeneric):
 
 
 class SparseIndicator(SparseNumeric):
+    """
+    Secure implementation of the SparseIndicator mechanism.
+    This mechanism can used repeatedly until `cutoff` positive queries have been answered
+    after which the mechanism is exhausted and cannot be used.
+
+    Args:
+        epsilon: the maximum privacy loss of the mechanism.
+        sensitivity: the sensitivity of the query function
+        threshold: the threshold to use
+        cutoff: the number of positive queries that can be answered
+        e2_weight: the relative amount of the privacy budget to allocate to
+            perturbing the answers for comparison. If set to None (default) this will be
+            auto-calculated.
+        monotonic: boolean indicating whether the queries are monotonic.
+    """
+
     def __init__(
         self, epsilon, sensitivity, threshold, cutoff, e2_weight=None, monotonic=False
     ):
@@ -145,11 +226,33 @@ class SparseIndicator(SparseNumeric):
         )
 
     def release(self, values):
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy arrays of query responses. Each element is the response to a different query.
+
+        Returns:
+            A tuple of numpy arrays containing the indices of noisy queries above the threshold.
+        """
         (indices, *_) = super(SparseIndicator, self).release(values)
         return indices
 
 
 class AboveThreshold(SparseIndicator):
+    """
+    Secure implementation of the AboveThreshold mechanism. This returns the index
+    of the first query above the threshold after which the mechanism will be exhausted.
+
+    Args:
+        epsilon: the maximum privacy loss of the mechanism.
+        sensitivity: the sensitivity of the query function
+        threshold: the threshold to use
+        e2_weight: the relative amount of the privacy budget to allocate to
+            perturbing the answers for comparison. If set to None (default) this will be
+            auto-calculated.
+        monotonic: boolean indicating whether the queries are monotonic.
+    """
     def __init__(
         self, epsilon, sensitivity, threshold, e2_weight=None, monotonic=False
     ):
@@ -159,6 +262,15 @@ class AboveThreshold(SparseIndicator):
         )
 
     def release(self, values):
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy arrays of query responses. Each element is the response to a different query.
+
+        Returns:
+            The index of the first noisy query above the threshold.
+        """
         indices = super(AboveThreshold, self).release(values)
         if len(indices) > 0:
             index = int(indices[0])
@@ -168,6 +280,16 @@ class AboveThreshold(SparseIndicator):
 
 
 class Snapping(ReleaseMechanism):
+    """
+    Secure implementation of the Snapping mechanism. This mechanism can be used once
+    after which its privacy budget will be exhausted and it can no longer be used.
+
+    Args:
+        epsilon: the maximum privacy loss of the mechanism.
+        B: the bound of the range to use for the snapping mechanism.
+            B should ideally be larger than the range of outputs expected but the larger B is
+            the less accurate the results.
+    """
     def __init__(self, epsilon, B):
         lam = (1 + 2 ** (-49) * B) / epsilon
         if (B <= lam) or (B >= (2 ** 46 * lam)):
@@ -178,6 +300,15 @@ class Snapping(ReleaseMechanism):
         super(Snapping, self).__init__(epsilon)
 
     def release(self, values):
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy array of the output of a query.
+
+        Returns:
+            A numpy array of perturbed values.
+        """
         if self._is_valid():
             self.current_count += 1
             release_values = backend.snapping(values, self.B, self.lam, self.quanta)
