@@ -172,6 +172,7 @@ class SparseNumeric(SparseGeneric):
             auto-calculated.
         monotonic: boolean indicating whether the queries are monotonic.
     """
+
     def __init__(
         self,
         epsilon,
@@ -253,6 +254,7 @@ class AboveThreshold(SparseIndicator):
             auto-calculated.
         monotonic: boolean indicating whether the queries are monotonic.
     """
+
     def __init__(
         self, epsilon, sensitivity, threshold, e2_weight=None, monotonic=False
     ):
@@ -290,6 +292,7 @@ class Snapping(ReleaseMechanism):
             B should ideally be larger than the range of outputs expected but the larger B is
             the less accurate the results.
     """
+
     def __init__(self, epsilon, B):
         lam = (1 + 2 ** (-49) * B) / epsilon
         if (B <= lam) or (B >= (2 ** 46 * lam)):
