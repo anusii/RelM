@@ -1,6 +1,3 @@
-__all__ = [
-    "mechanisms",
-    "samplers",
-]
+__all__ = ["mechanisms"]
 
-from differential_privacy import samplers, mechanisms
+from differential_privacy import mechanisms

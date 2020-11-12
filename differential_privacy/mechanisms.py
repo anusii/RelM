@@ -1,10 +1,5 @@
-import crlibm
 import math
-import struct
-
 import numpy as np
-
-from . import samplers
 from differential_privacy import backend
 
 
@@ -30,30 +25,24 @@ class LaplaceMechanism(ReleaseMechanism):
     def release(self, values):
         if self._is_valid():
             self.current_count += 1
-            n = len(values)
-            b = (self.sensitivity + 2 ** (-self.precision)) / self.epsilon
-            fp_perturbations = samplers.fixed_point_laplace(n, b, self.precision)
-            fp_values = np.rint(values * 2 ** self.precision).astype(np.int64)
-            temp = (fp_values + fp_perturbations).astype(np.float64)
-            perturbed_values = temp * 2 ** (-self.precision)
+            args = (values, self.sensitivity, self.epsilon, self.precision)
+            release_values = backend.laplace_mechanism(*args)
         else:
             raise RuntimeError()
 
-        return perturbed_values
+        return release_values
 
 
 class GeometricMechanism(ReleaseMechanism):
     def release(self, values):
         if self._is_valid():
             self.current_count += 1
-            n = len(values)
-            q = 1.0 / np.exp(self.epsilon)
-            perturbations = samplers.two_sided_geometric(n, q)
-            perturbed_values = values + perturbations
+            args = (values.astype(np.float64), 0.0, self.epsilon, 0)
+            release_values = backend.laplace_mechanism(*args)
         else:
             raise RuntimeError()
 
-        return perturbed_values
+        return release_values.astype(np.int64)
 
 
 class SparseGeneric(ReleaseMechanism):
@@ -66,6 +55,7 @@ class SparseGeneric(ReleaseMechanism):
         threshold,
         cutoff,
         monotonic,
+        precision=35,
     ):
         epsilon = epsilon1 + epsilon2 + epsilon3
         self.epsilon = epsilon
@@ -74,18 +64,23 @@ class SparseGeneric(ReleaseMechanism):
         self.epsilon3 = epsilon3
         self.sensitivity = sensitivity
         self.threshold = threshold
-        self.rho = samplers.laplace(1, b=sensitivity / epsilon1)
         self.cutoff = cutoff
         self.monotonic = monotonic
+        self.precision = precision
         self.current_count = 0
 
+        temp = np.array([threshold], dtype=np.float64)
+        args = (temp, sensitivity, epsilon1, precision)
+        self.perturbed_threshold = backend.laplace_mechanism(*args)[0]
+
     def all_above_threshold(self, values):
-        threshold = self.threshold + self.rho
         if self.monotonic:
             b = (self.sensitivity * self.cutoff) / self.epsilon2
         else:
             b = (2.0 * self.sensitivity * self.cutoff) / self.epsilon2
-        return backend.all_above_threshold(values, b, threshold)
+        return backend.all_above_threshold(
+            values, b, self.perturbed_threshold, self.precision
+        )
 
     def release(self, values):
         if self._is_valid():
@@ -95,11 +90,10 @@ class SparseGeneric(ReleaseMechanism):
             self.current_count += len(indices)
             if self.epsilon3 > 0:
                 sliced_values = values[indices]
-                n = len(sliced_values)
-                b = (self.sensitivity * self.cutoff) / self.epsilon3
-                perturbations = samplers.laplace(n, b)
-                perturbed_values = sliced_values + perturbations
-                return (indices, perturbed_values)
+                temp = self.sensitivity * self.cutoff
+                args = (sliced_values, temp, self.epsilon3, self.precision)
+                release_values = backend.laplace_mechanism(*args)
+                return (indices, release_values)
             else:
                 return (indices,)
         else:
@@ -116,6 +110,7 @@ class SparseNumeric(SparseGeneric):
         e2_weight=None,
         e3_weight=None,
         monotonic=False,
+        precision=35,
     ):
         e1_weight = 1.0
         if e2_weight is None:
@@ -131,17 +126,38 @@ class SparseNumeric(SparseGeneric):
         epsilon2 = (epsilon_weights[1] / total_weight) * epsilon
         epsilon3 = (epsilon_weights[2] / total_weight) * epsilon
         super(SparseNumeric, self).__init__(
-            epsilon1, epsilon2, epsilon3, sensitivity, threshold, cutoff, monotonic
+            epsilon1,
+            epsilon2,
+            epsilon3,
+            sensitivity,
+            threshold,
+            cutoff,
+            monotonic,
+            precision,
         )
 
 
 class SparseIndicator(SparseNumeric):
     def __init__(
-        self, epsilon, sensitivity, threshold, cutoff, e2_weight=None, monotonic=False
+        self,
+        epsilon,
+        sensitivity,
+        threshold,
+        cutoff,
+        e2_weight=None,
+        monotonic=False,
+        precision=35,
     ):
         e3_weight = 0.0
         super(SparseIndicator, self).__init__(
-            epsilon, sensitivity, threshold, cutoff, e2_weight, e3_weight, monotonic
+            epsilon,
+            sensitivity,
+            threshold,
+            cutoff,
+            e2_weight,
+            e3_weight,
+            monotonic,
+            precision,
         )
 
     def release(self, values):
@@ -151,11 +167,17 @@ class SparseIndicator(SparseNumeric):
 
 class AboveThreshold(SparseIndicator):
     def __init__(
-        self, epsilon, sensitivity, threshold, e2_weight=None, monotonic=False
+        self,
+        epsilon,
+        sensitivity,
+        threshold,
+        e2_weight=None,
+        monotonic=False,
+        precision=35,
     ):
         cutoff = 1
         super(AboveThreshold, self).__init__(
-            epsilon, sensitivity, threshold, cutoff, e2_weight, monotonic
+            epsilon, sensitivity, threshold, cutoff, e2_weight, monotonic, precision
         )
 
     def release(self, values):
@@ -167,7 +189,7 @@ class AboveThreshold(SparseIndicator):
         return index
 
 
-class Snapping(ReleaseMechanism):
+class SnappingMechanism(ReleaseMechanism):
     def __init__(self, epsilon, B):
         lam = (1 + 2 ** (-49) * B) / epsilon
         if (B <= lam) or (B >= (2 ** 46 * lam)):
@@ -175,12 +197,13 @@ class Snapping(ReleaseMechanism):
         self.lam = lam
         self.quanta = 2 ** math.ceil(math.log2(self.lam))
         self.B = B
-        super(Snapping, self).__init__(epsilon)
+        super(SnappingMechanism, self).__init__(epsilon)
 
     def release(self, values):
         if self._is_valid():
             self.current_count += 1
-            release_values = backend.snapping(values, self.B, self.lam, self.quanta)
+            args = (values, self.B, self.lam, self.quanta)
+            release_values = backend.snapping(*args)
         else:
             raise RuntimeError
 
