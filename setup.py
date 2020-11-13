@@ -26,12 +26,14 @@ install_requires = [
     "scipy",
 ]
 
+extras_requires = {
+    "docs": ["Sphinx==3.3.0", "sphinx-rtd-theme==0.5.0"],
+}
+
 setup(
     name="differential-privacy",
     version="0.1.0",
     classifiers=[
-        "License :: OSI Approved :: MIT License",
-        "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Programming Language :: Python",
         "Programming Language :: Rust",
@@ -41,6 +43,7 @@ setup(
     packages=["differential_privacy"],
     rust_extensions=[RustExtension("differential_privacy.backend")],
     install_requires=install_requires,
+    extras_require=extras_requires,
     setup_requires=setup_requires,
     include_package_data=True,
     zip_safe=False,
