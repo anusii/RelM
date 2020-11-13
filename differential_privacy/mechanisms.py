@@ -14,7 +14,22 @@ class ReleaseMechanism:
                 "Mechanism has exhausted has exhausted its privacy budget."
             )
 
-    def release(self):
+    def release(self, values):
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy array of the output of a query.
+
+        Returns:
+            A numpy array of perturbed values.
+        """
+        raise NotImplementedError()
+
+    def get_privacy_consumption(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
         raise NotImplementedError()
 
 
@@ -56,16 +71,29 @@ class LaplaceMechanism(ReleaseMechanism):
 
         return release_values
 
+    def get_privacy_consumption(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
 
-class GeometricMechanism(ReleaseMechanism):
+
+class GeometricMechanism(LaplaceMechanism):
     """
     Secure implementation of the Geometric mechanism. This mechanism can be used once
     after which its privacy budget will be exhausted and it can no longer be used.
 
     Args:
         epsilon: the maximum privacy loss of the mechanism.
+        sensitivity: the sensitivity of the query that this will be applied to
 
     """
+
+    def __init__(self, epsilon, sensitivity):
+        super(GeometricMechanism, self).__init__(epsilon, sensitivity - 1, precision=0)
 
     def release(self, values):
         """
@@ -77,12 +105,12 @@ class GeometricMechanism(ReleaseMechanism):
         Returns:
             A numpy array of perturbed values.
         """
-        self._check_valid()
-        args = (values.astype(np.float64), 0.0, self.epsilon, 0)
-        release_values = backend.laplace_mechanism(*args)
-        self._is_valid = False
 
-        return release_values.astype(np.int64)
+        return (
+            super(GeometricMechanism, self)
+            .release(values.astype(np.float64))
+            .astype(np.int64)
+        )
 
 
 class SparseGeneric(ReleaseMechanism):
@@ -151,6 +179,17 @@ class SparseGeneric(ReleaseMechanism):
             return indices, release_values
         else:
             return indices
+
+    def get_privacy_consumption(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
+        if self._is_valid:
+            return self.epsilon1 + (self.current_count / self.cutoff) * (
+                self.epsilon2 + self.epsilon3
+            )
+        else:
+            return self.epsilon
 
 
 class SparseNumeric(SparseGeneric):
@@ -345,3 +384,12 @@ class SnappingMechanism(ReleaseMechanism):
         self._is_valid = False
 
         return release_values
+
+    def get_privacy_consumption(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
