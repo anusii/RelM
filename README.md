@@ -43,10 +43,15 @@ The docs will now be in `docs-build/index.html`.
 import pandas as pd
 data = pd.read_csv("pcr_testing_age_group_2020-03-09.csv")
 raw_age_counts = data["age_group"].value_counts().sort_index()
+```
 
+```python
 # Create a differentially private release mechanism.
 from differential_privacy.mechanisms import GeometricMechanism
 mechanism = GeometricMechanism(epsilon=0.1)
+```
+
+```python
 # Apply the release mechanism to the exact query responses.
 dp_age_counts = mechanism.release(values=raw_age_counts.values)
 ```
