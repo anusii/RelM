@@ -59,3 +59,19 @@ Compute perturbed query responses:
 ```python
 perturbed_counts = mechanism.release(values=exact_counts.values)
 ```
+
+Differentially private release mechanisms are one-time use only:
+```python
+mechanism = GeometricMechanism(epsilon=0.1)
+perturbed_counts = mechanism.release(values=exact_counts.values) # OK
+perturbed_counts2 = mechanism.release(values=exact_counts.values) # Exception!
+  # RuntimeError: Mechanism has exhausted has exhausted its privacy budget.
+```
+
+Each release requires its own differentially private release mechanism.
+```python
+mechanism = GeometricMechanism(epsilon=0.1)
+perturbed_counts = mechanism.release(values=exact_counts.values) # OK
+mechanism2 = GeometricMechanism(epsilon=0.1)
+perturbed_counts2 = mechanism2.release(values=exact_counts.values) # OK
+```
