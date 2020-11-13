@@ -6,11 +6,13 @@ from differential_privacy import backend
 class ReleaseMechanism:
     def __init__(self, epsilon):
         self.epsilon = epsilon
-        self.cutoff = 1
-        self.current_count = 0
+        self._is_valid = True
 
-    def _is_valid(self):
-        return self.current_count < self.cutoff
+    def _check_valid(self):
+        if not self._is_valid:
+            raise RuntimeError(
+                "Mechanism has exhausted has exhausted its privacy budget."
+            )
 
     def release(self):
         raise NotImplementedError()
@@ -46,12 +48,11 @@ class LaplaceMechanism(ReleaseMechanism):
         Returns:
             A numpy array of perturbed values.
         """
-        if self._is_valid():
-            self.current_count += 1
-            args = (values, self.sensitivity, self.epsilon, self.precision)
-            release_values = backend.laplace_mechanism(*args)
-        else:
-            raise RuntimeError()
+
+        self._check_valid()
+        args = (values, self.sensitivity, self.epsilon, self.precision)
+        release_values = backend.laplace_mechanism(*args)
+        self._is_valid = False
 
         return release_values
 
@@ -76,12 +77,10 @@ class GeometricMechanism(ReleaseMechanism):
         Returns:
             A numpy array of perturbed values.
         """
-        if self._is_valid():
-            self.current_count += 1
-            args = (values.astype(np.float64), 0.0, self.epsilon, 0)
-            release_values = backend.laplace_mechanism(*args)
-        else:
-            raise RuntimeError()
+        self._check_valid()
+        args = (values.astype(np.float64), 0.0, self.epsilon, 0)
+        release_values = backend.laplace_mechanism(*args)
+        self._is_valid = False
 
         return release_values.astype(np.int64)
 
@@ -113,6 +112,7 @@ class SparseGeneric(ReleaseMechanism):
         temp = np.array([threshold], dtype=np.float64)
         args = (temp, sensitivity, epsilon1, precision)
         self.perturbed_threshold = backend.laplace_mechanism(*args)[0]
+        super(SparseGeneric, self).__init__(epsilon)
 
     def all_above_threshold(self, values):
         if self.monotonic:
@@ -133,21 +133,24 @@ class SparseGeneric(ReleaseMechanism):
         Returns:
             A tuple of numpy arrays containing the perturbed values and the corresponding indices.
         """
-        if self._is_valid():
-            remaining = self.cutoff - self.current_count
-            indices = self.all_above_threshold(values)
-            indices = indices[:remaining]
-            self.current_count += len(indices)
-            if self.epsilon3 > 0:
-                sliced_values = values[indices]
-                temp = self.sensitivity * self.cutoff
-                args = (sliced_values, temp, self.epsilon3, self.precision)
-                release_values = backend.laplace_mechanism(*args)
-                return (indices, release_values)
-            else:
-                return (indices,)
+        self._check_valid()
+
+        remaining = self.cutoff - self.current_count
+        indices = self.all_above_threshold(values)
+        indices = indices[:remaining]
+        self.current_count += len(indices)
+
+        if self.current_count == self.cutoff:
+            self._is_valid = False
+
+        if self.epsilon3 > 0:
+            sliced_values = values[indices]
+            temp = self.sensitivity * self.cutoff
+            args = (sliced_values, temp, self.epsilon3, self.precision)
+            release_values = backend.laplace_mechanism(*args)
+            return indices, release_values
         else:
-            raise RuntimeError()
+            return indices
 
 
 class SparseNumeric(SparseGeneric):
@@ -255,8 +258,7 @@ class SparseIndicator(SparseNumeric):
         Returns:
             A tuple of numpy arrays containing the indices of noisy queries above the threshold.
         """
-        (indices, *_) = super(SparseIndicator, self).release(values)
-        return indices
+        return super(SparseIndicator, self).release(values)
 
 
 class AboveThreshold(SparseIndicator):
@@ -337,11 +339,9 @@ class SnappingMechanism(ReleaseMechanism):
         Returns:
             A numpy array of perturbed values.
         """
-        if self._is_valid():
-            self.current_count += 1
-            args = (values, self.B, self.lam, self.quanta)
-            release_values = backend.snapping(*args)
-        else:
-            raise RuntimeError
+        self._check_valid()
+        args = (values, self.B, self.lam, self.quanta)
+        release_values = backend.snapping(*args)
+        self._is_valid = False
 
         return release_values
