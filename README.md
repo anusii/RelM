@@ -8,9 +8,19 @@ First of all, install rust: https://doc.rust-lang.org/book/ch01-01-installation.
 Then:
 
 ```
-$ git clone
+$ git clone https://github.com/anusii/differential-privacy
 $ cd differential-privacy
 $ pip install .
+```
+
+That's it!
+
+## Run tests
+
+Install the test dependencies:
+
+```
+pip install .[tests]
 ```
 
 Check the tests run:
@@ -19,7 +29,6 @@ Check the tests run:
 $ pytest tests
 ```
 
-That's it!
 
 ## Build docs
 

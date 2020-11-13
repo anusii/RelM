@@ -23,14 +23,15 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
+    - name: Build
       run: |
         python -m pip install --upgrade pip
-        pip install pytest
-        python ./setup.py install
+        pip install .
     - name: Test with pytest
       run: |
-        pytest
+        pip install .[tests]
+        pytest tests
     - name: Check formatting with black
       run: |
+        pip install black
         black --check differential_privacy tests
