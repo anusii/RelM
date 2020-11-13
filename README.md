@@ -10,7 +10,7 @@ Then:
 ```
 $ git clone 
 $ cd differential-privacy
-$ python ./setup.py install
+$ pip install .
 ```
 
 Check the tests run:
@@ -20,3 +20,19 @@ $ pytest tests
 ```
 
 That's it!
+
+## Build docs
+
+Install the docs dependencies:
+
+```
+$ pip install .[docs]
+```
+
+Build the docs:
+
+```
+sphinx-build -b html docs-source docs-build
+```
+
+The docs will now be in `docs-build/index.html`.
