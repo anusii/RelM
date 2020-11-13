@@ -14,14 +14,7 @@ Mechanisms
 ================================================
 
 .. automodule:: differential_privacy.mechanisms
-    :members: LaplaceMechanism, GeometricMechanism
-
-
-Samplers
-================================================
-
-.. automodule:: differential_privacy.samplers
-   :members:
+    :members: LaplaceMechanism, GeometricMechanism, SnappingMechanism, AboveThreshold, SparseIndicator, SparseNumeric
 
 
 Indices and tables
