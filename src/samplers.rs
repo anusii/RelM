@@ -117,3 +117,20 @@ fn sample_exact_exponential_bit(scale: f64, pow2: i32, rand_bits: u64) -> i64 {
         return 0;
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::prelude::*;
+
+    #[test]
+    fn test_sample_exact_exponential_bit() {
+        let scale: f64 = 1.0;
+        let pow2 = 1;
+        let mut rng = thread_rng();
+        let rand_bits: u64 = utils::exponential_bias(scale, pow2, 64).to_u64().unwrap();
+
+        sample_exact_exponential_bit(scale, pow2, rand_bits);
+    }
+}
