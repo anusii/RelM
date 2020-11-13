@@ -5,8 +5,10 @@ import matplotlib.pyplot as plt
 
 from differential_privacy.mechanisms import GeometricMechanism
 
-# Read the data and compute the exact query responses.
+# Read the raw data.
 data = pd.read_csv("pcr_testing_age_group_2020-03-09.csv")
+
+# Compute the exact query responses.
 raw_age_counts = data["age_group"].value_counts().sort_index()
 
 # Create a differentially private release mechanism.

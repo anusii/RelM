@@ -39,9 +39,13 @@ The docs will now be in `docs-build/index.html`.
 
 ## Basic Usage
 ```python
-# Read the data and compute the exact query responses.
+# Read the raw data.
 import pandas as pd
 data = pd.read_csv("pcr_testing_age_group_2020-03-09.csv")
+```
+
+```python
+# Compute exact query responses.
 raw_age_counts = data["age_group"].value_counts().sort_index()
 ```
 
