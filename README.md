@@ -52,7 +52,7 @@ exact_counts = data["age_group"].value_counts().sort_index()
 Create a differentially private release mechanism:
 ```python
 from differential_privacy.mechanisms import GeometricMechanism
-mechanism = GeometricMechanism(epsilon=0.1)
+mechanism = GeometricMechanism(epsilon=0.1, sensitivity=1.0)
 ```
 
 Compute perturbed query responses:
@@ -62,7 +62,7 @@ perturbed_counts = mechanism.release(values=exact_counts.values)
 
 Differentially private release mechanisms are one-time use only:
 ```python
-mechanism = GeometricMechanism(epsilon=0.1)
+mechanism = GeometricMechanism(epsilon=0.1, sensitivity=1.0)
 perturbed_counts = mechanism.release(values=exact_counts.values) # OK
 perturbed_counts2 = mechanism.release(values=exact_counts.values) # Exception!
   # RuntimeError: Mechanism has exhausted has exhausted its privacy budget.
@@ -70,8 +70,8 @@ perturbed_counts2 = mechanism.release(values=exact_counts.values) # Exception!
 
 Each release requires its own differentially private release mechanism.
 ```python
-mechanism = GeometricMechanism(epsilon=0.1)
+mechanism = GeometricMechanism(epsilon=0.1, sensitivity=1.0)
 perturbed_counts = mechanism.release(values=exact_counts.values) # OK
-mechanism2 = GeometricMechanism(epsilon=0.1)
+mechanism2 = GeometricMechanism(epsilon=0.1, sensitivity=1.0)
 perturbed_counts2 = mechanism2.release(values=exact_counts.values) # OK
 ```

@@ -11,7 +11,7 @@ data = pd.read_csv("pcr_testing_age_group_2020-03-09.csv")
 exact_counts = data["age_group"].value_counts().sort_index()
 
 # Create a differentially private release mechanism.
-mechanism = GeometricMechanism(epsilon=0.1)
+mechanism = GeometricMechanism(epsilon=0.1, sensitivity=1.0)
 
 # Compute perturbed query responses.
 perturbed_counts = mechanism.release(values=exact_counts.values)
