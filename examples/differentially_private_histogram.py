@@ -18,5 +18,5 @@ df = pd.DataFrame(({'Age Group'      : age_ranges,
                     'Exact Count'    : raw_age_counts,
                     'Perturbed Count': dp_age_counts}))
 
-df.plot(x='Age Group', title="Counts of Covid Tests by Age Group", kind='bar', rot=0)
+df.plot(x='Age Group', title="Counts of Tests by Age Group", kind='bar', rot=0)
 plt.show()
