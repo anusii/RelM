@@ -44,7 +44,7 @@ import pandas as pd
 data = pd.read_csv("pcr_testing_age_group_2020-03-09.csv")
 ```
 
-Compute exact query responses:
+Compute the exact query responses:
 ```python
 raw_age_counts = data["age_group"].value_counts().sort_index()
 ```
@@ -55,7 +55,7 @@ from differential_privacy.mechanisms import GeometricMechanism
 mechanism = GeometricMechanism(epsilon=0.1)
 ```
 
-Apply the release mechanism to the exact query responses:
+Use the differentially private release mechanism to compute perturbed query responses:
 ```python
 dp_age_counts = mechanism.release(values=raw_age_counts.values)
 ```
