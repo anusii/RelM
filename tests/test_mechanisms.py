@@ -11,8 +11,8 @@ from differential_privacy.mechanisms import (
 )
 
 
-def _test_mechanism(benchmark, mechanism, dtype=np.float64):
-    data = np.random.random(100000).astype(dtype)
+def _test_mechanism(benchmark, mechanism):
+    data = np.random.random(100000)
     benchmark.pedantic(lambda: mechanism.release(data), iterations=1, rounds=1)
     with pytest.raises(RuntimeError):
         mechanism.release(data)
@@ -31,11 +31,11 @@ def test_LaplaceMechanism(benchmark):
 
 
 def test_GeometricMechanism(benchmark):
-    mechanism = GeometricMechanism(epsilon=1)
-    _test_mechanism(benchmark, mechanism, dtype=np.int64)
+    mechanism = GeometricMechanism(epsilon=1, sensitivity=1)
+    _test_mechanism(benchmark, mechanism)
     # Goodness of fit test
     epsilon = 0.01
-    mechanism = GeometricMechanism(epsilon=epsilon)
+    mechanism = GeometricMechanism(epsilon=epsilon, sensitivity=1)
     n = 10000000
     data = np.random.randint(0, 2 ** 16, size=n, dtype=np.int64)
     values = mechanism.release(data)
