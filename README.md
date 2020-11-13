@@ -55,7 +55,7 @@ from differential_privacy.mechanisms import GeometricMechanism
 mechanism = GeometricMechanism(epsilon=0.1)
 ```
 
-Use the differentially private release mechanism to compute perturbed query responses:
+Compute perturbed query responses:
 ```python
 perturbed_counts = mechanism.release(values=exact_counts.values)
 ```

@@ -13,7 +13,8 @@ exact_counts = data["age_group"].value_counts().sort_index()
 
 # Create a differentially private release mechanism.
 mechanism = GeometricMechanism(epsilon=0.1)
-# Use the differentially private release mechanism to compute perturbed query responses:
+
+# Compute perturbed query responses:
 perturbed_counts = mechanism.release(values=exact_counts.values)
 
 # Display the exact query responses alongside the output of the
