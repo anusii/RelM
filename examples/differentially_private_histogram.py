@@ -20,13 +20,11 @@ perturbed_counts = mechanism.release(values=exact_counts.values)
 age_groups = np.sort(data["age_group"].unique())
 age_ranges = np.array([a.lstrip("AgeGroup_") for a in age_groups])
 df = pd.DataFrame(
-    (
-        {
-            "Age Group": age_ranges,
-            "Exact Counts": exact_counts,
-            "Perturbed Counts": perturbed_counts,
-        }
-    )
+    {
+        "Age Group": age_ranges,
+        "Exact Counts": exact_counts,
+        "Perturbed Counts": perturbed_counts,
+    }
 )
 print(df)
 
