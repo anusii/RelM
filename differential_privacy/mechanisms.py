@@ -78,8 +78,8 @@ class GeometricMechanism(ReleaseMechanism):
         """
         if self._is_valid():
             self.current_count += 1
-            args = (values.astype(np.float64), 0.0, self.epsilon, 0)
-            release_values = backend.laplace_mechanism(*args)
+            args = (values, 1.0, self.epsilon)
+            release_values = backend.geometric_mechanism(*args)
         else:
             raise RuntimeError()
 
