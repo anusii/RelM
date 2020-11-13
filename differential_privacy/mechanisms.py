@@ -65,11 +65,9 @@ class LaplaceMechanism(ReleaseMechanism):
         """
 
         self._check_valid()
-        args = (values, self.sensitivity, self.epsilon, self.precision)
-        release_values = backend.laplace_mechanism(*args)
         self._is_valid = False
-
-        return release_values
+        args = (values, self.sensitivity, self.epsilon, self.precision)
+        return backend.laplace_mechanism(*args)
 
     def get_privacy_consumption(self):
         """
