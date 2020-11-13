@@ -65,11 +65,9 @@ class LaplaceMechanism(ReleaseMechanism):
         """
 
         self._check_valid()
-        args = (values, self.sensitivity, self.epsilon, self.precision)
-        release_values = backend.laplace_mechanism(*args)
         self._is_valid = False
-
-        return release_values
+        args = (values, self.sensitivity, self.epsilon, self.precision)
+        return backend.laplace_mechanism(*args)
 
     def get_privacy_consumption(self):
         """
@@ -93,7 +91,7 @@ class GeometricMechanism(LaplaceMechanism):
     """
 
     def __init__(self, epsilon, sensitivity):
-        super(GeometricMechanism, self).__init__(epsilon, sensitivity - 1, precision=0)
+        super(GeometricMechanism, self).__init__(epsilon, sensitivity, precision=0)
 
     def release(self, values):
         """
@@ -105,12 +103,9 @@ class GeometricMechanism(LaplaceMechanism):
         Returns:
             A numpy array of perturbed values.
         """
-
-        return (
-            super(GeometricMechanism, self)
-            .release(values.astype(np.float64))
-            .astype(np.int64)
-        )
+        self._check_valid()
+        self._is_valid = False
+        return backend.geometric_mechanism(values, self.sensitivity, self.epsilon)
 
 
 class SparseGeneric(ReleaseMechanism):

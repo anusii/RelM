@@ -23,6 +23,7 @@ pub fn snapping(data: Vec<f64>, bound: f64, lambda: f64, quanta: f64) -> Vec<f64
         .collect()
 }
 
+
 pub fn laplace_mechanism(data: Vec<f64>, sensitivity: f64, epsilon: f64, precision: i32) -> Vec<f64> {
     let scale = (sensitivity + 2.0f64.powi(-precision)) / epsilon;
     let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, precision);
@@ -32,3 +33,14 @@ pub fn laplace_mechanism(data: Vec<f64>, sensitivity: f64, epsilon: f64, precisi
         .map(|x| (x as f64) * 2.0f64.powi(-precision))
         .collect()
 }
+
+
+pub fn geometric_mechanism(data: Vec<i64>, sensitivity: f64, epsilon: f64) -> Vec<i64> {
+    let scale = sensitivity / epsilon;
+    let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, 0);
+    data.par_iter()
+        .map(|&x| x + samplers::fixed_point_laplace(&biases, scale, 0))
+        .collect()
+}
+
+
