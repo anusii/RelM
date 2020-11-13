@@ -31,11 +31,11 @@ def test_LaplaceMechanism(benchmark):
 
 
 def test_GeometricMechanism(benchmark):
-    mechanism = GeometricMechanism(epsilon=1)
+    mechanism = GeometricMechanism(epsilon=1, sensitivity=1)
     _test_mechanism(benchmark, mechanism)
     # Goodness of fit test
     epsilon = 0.01
-    mechanism = GeometricMechanism(epsilon=epsilon)
+    mechanism = GeometricMechanism(epsilon=epsilon, sensitivity=1)
     n = 10000000
     data = np.random.randint(0, 2 ** 16, size=n, dtype=np.int64)
     values = mechanism.release(data)
