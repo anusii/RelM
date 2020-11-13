@@ -54,5 +54,16 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         mechanisms::laplace_mechanism(data, sensitivity, epsilon, precision).to_pyarray(py)
     }
 
+    #[pyfn(m, "geometric_mechanism")]
+    fn py_geometric_mechanism<'a>(
+        py: Python<'a>,
+        data: &'a PyArray1<i64>,
+        sensitivity: f64,
+        epsilon: f64,
+    ) -> &'a PyArray1<i64> {
+        let data = data.to_vec().unwrap();
+        mechanisms::geometric_mechanism(data, sensitivity, epsilon).to_pyarray(py)
+    }
+
     Ok(())
 }
