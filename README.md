@@ -1,5 +1,5 @@
 # differential-privacy
-Implementations of differentially private release mechanisms
+Implementations of differentially-private release mechanisms
 
 ## Install
 
