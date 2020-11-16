@@ -50,7 +50,7 @@ dp_first_hit = mechanism.release(values=values)
 
 TRIALS = 16
 
-# Perform TRIALS independent experiments to capture the rondomized nature of
+# Perform TRIALS independent experiments to capture the randomized nature of
 # of the release mechanism
 dp_first_hits = np.zeros(TRIALS, dtype=np.int)
 for i in range(TRIALS):
