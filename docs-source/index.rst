@@ -13,7 +13,7 @@ Welcome to Differential Privacy's documentation!
 Mechanisms
 ================================================
 
-.. automodule:: differential_privacy.mechanisms
+.. automodule:: relm.mechanisms
     :members: LaplaceMechanism, GeometricMechanism, SnappingMechanism, AboveThreshold, SparseIndicator, SparseNumeric
 
 
