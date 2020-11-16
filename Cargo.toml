@@ -1,5 +1,5 @@
 [package]
-name = "differential-privacy"
+name = "relm-backend"
 version = "0.1.0"
 edition = "2018"
 

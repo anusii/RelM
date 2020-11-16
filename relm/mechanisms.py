@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from differential_privacy import backend
+from relm import backend
 
 
 class ReleaseMechanism:

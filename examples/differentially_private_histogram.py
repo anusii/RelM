@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from differential_privacy.mechanisms import GeometricMechanism
+from relm.mechanisms import GeometricMechanism
 
 # Read the raw data.
 data = pd.read_csv("pcr_testing_age_group_2020-03-09.csv")

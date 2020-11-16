@@ -34,4 +34,4 @@ jobs:
     - name: Check formatting with black
       run: |
         pip install black
-        black --check differential_privacy tests
+        black --check relm tests
