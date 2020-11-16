@@ -8,8 +8,6 @@ EPSILON = 2 ** -3
 SENSITIVITY = 1.0
 THRESHOLD = 100.0
 
-TRIALS = 16
-
 # ========================================================================================
 
 # Read the raw data.
@@ -49,6 +47,8 @@ mechanism = AboveThreshold(
 dp_first_hit = mechanism.release(values=values)
 
 # ========================================================================================
+
+TRIALS = 16
 
 # Perform TRIALS independent experiments to capture the rondomized nature of
 # of the release mechanism
