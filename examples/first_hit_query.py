@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import pathlib
 
 from relm.mechanisms import AboveThreshold, SparseIndicator, SparseNumeric
 
@@ -11,7 +12,10 @@ THRESHOLD = 100.0
 # ========================================================================================
 
 # Read the raw data.
-data = pd.read_csv("confirmed_cases_table4_likely_source.csv")
+filename = "confirmed_cases_table4_likely_source.csv"
+path = pathlib.Path(__file__, "..", filename).resolve()
+data = pd.read_csv(path)
+
 
 # Compute the exact first-hit index.
 exact_counts = data["notification_date"].value_counts().sort_index()

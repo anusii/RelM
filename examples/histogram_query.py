@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import pathlib
 
 from relm.mechanisms import GeometricMechanism
 
@@ -10,7 +11,9 @@ SENSITIVITY = 1.0
 # ========================================================================================
 
 # Read the raw data.
-data = pd.read_csv("pcr_testing_age_group_2020-03-09.csv")
+filename = "pcr_testing_age_group_2020-03-09.csv"
+path = pathlib.Path(__file__, "..", filename).resolve()
+data = pd.read_csv(path)
 
 # Compute the exact query responses.
 exact_counts = data["age_group"].value_counts().sort_index()
