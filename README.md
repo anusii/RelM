@@ -8,8 +8,8 @@ First of all, install rust: https://doc.rust-lang.org/book/ch01-01-installation.
 Then:
 
 ```
-$ git clone https://github.com/anusii/differential-privacy
-$ cd differential-privacy
+$ git clone https://github.com/anusii/RelM
+$ cd RelM
 $ pip install .
 ```
 
