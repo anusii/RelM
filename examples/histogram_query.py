@@ -17,15 +17,21 @@ exact_counts = data["age_group"].value_counts().sort_index()
 
 # ========================================================================================
 
+# Usage
 # Create a differentially private release mechanism.
 mechanism = GeometricMechanism(epsilon=EPSILON, sensitivity=SENSITIVITY)
 
 # Compute perturbed query responses.
 perturbed_counts = mechanism.release(values=exact_counts.values)
 
-# ----------------------------------------------------------------------------------------
+# ========================================================================================
 
 # Display the exact query responses alongside the perturbed query responses.
+mechanism = GeometricMechanism(epsilon=EPSILON, sensitivity=SENSITIVITY)
+perturbed_counts = mechanism.release(values=exact_counts.values)
+
+# ----------------------------------------------------------------------------------------
+
 age_groups = np.sort(data["age_group"].unique())
 age_ranges = np.array([a.lstrip("AgeGroup_") for a in age_groups])
 df = pd.DataFrame(
@@ -37,5 +43,5 @@ df = pd.DataFrame(
 )
 print(df)
 
-df.plot(x="Age Group", title="Test Counts by Age Group", kind="bar", rot=0)
-plt.show()
+# df.plot(x="Age Group", title="Test Counts by Age Group", kind="bar", rot=0)
+# plt.show()
