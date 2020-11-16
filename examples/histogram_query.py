@@ -4,17 +4,26 @@ import matplotlib.pyplot as plt
 
 from relm.mechanisms import GeometricMechanism
 
+EPSILON = 2 ** -3
+SENSITIVITY = 1.0
+
+# ========================================================================================
+
 # Read the raw data.
 data = pd.read_csv("pcr_testing_age_group_2020-03-09.csv")
 
 # Compute the exact query responses.
 exact_counts = data["age_group"].value_counts().sort_index()
 
+# ========================================================================================
+
 # Create a differentially private release mechanism.
-mechanism = GeometricMechanism(epsilon=0.1, sensitivity=1.0)
+mechanism = GeometricMechanism(epsilon=EPSILON, sensitivity=SENSITIVITY)
 
 # Compute perturbed query responses.
 perturbed_counts = mechanism.release(values=exact_counts.values)
+
+# ----------------------------------------------------------------------------------------
 
 # Display the exact query responses alongside the perturbed query responses.
 age_groups = np.sort(data["age_group"].unique())
