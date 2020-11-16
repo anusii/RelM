@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.stats
 import pytest
-from differential_privacy.mechanisms import (
+from relm.mechanisms import (
     LaplaceMechanism,
     GeometricMechanism,
     SnappingMechanism,

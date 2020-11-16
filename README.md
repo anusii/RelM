@@ -1,5 +1,5 @@
-# differential-privacy
-Implementations of differentially-private release mechanisms
+# RelM
+Implementations of differentially private Rel(ease) M(echanisms).
 
 ## Install
 
@@ -60,7 +60,7 @@ exact_counts = data["age_group"].value_counts().sort_index()
 
 Create a differentially-private release mechanism:
 ```python
-from differential_privacy.mechanisms import GeometricMechanism
+from relm.mechanisms import GeometricMechanism
 mechanism = GeometricMechanism(epsilon=0.1, sensitivity=1.0)
 ```
 
