@@ -46,5 +46,3 @@ def test_check_valid():
     assert mechanism.accountant is not None
     with pytest.raises(RuntimeError):
         mechanism._check_valid()
-
-    assert mechanism.accountant is None

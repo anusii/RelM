@@ -16,9 +16,6 @@ class ReleaseMechanism:
             self._is_valid &= self.accountant.check_valid()
 
         if not self._is_valid:
-            # delete the reference to accountant to break the circular loop
-            # allows both this Mechanism and the Accountant to be deleted by GC
-            self.accountant = None
             raise RuntimeError(
                 "Mechanism has exhausted has exhausted its privacy budget."
             )
