@@ -4,7 +4,7 @@ import pathlib
 
 from relm.mechanisms import GeometricMechanism
 
-EPSILON = 2 ** -3
+EPSILON = 2 ** -4
 SENSITIVITY = 1.0
 
 # ========================================================================================
