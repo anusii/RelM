@@ -24,7 +24,7 @@ def test_privacy_consumed():
         mechanism = LaplaceMechanism(e, precision=20, sensitivity=1)
         accountant.add_mechanism(mechanism)
         _ = mechanism.release(vals)
-        assert accountant.privacy_consumed == epsilons[: i + 1].sum()
+        assert np.isclose(accountant.privacy_consumed, epsilons[: i + 1].sum())
 
 
 def test_check_valid():
@@ -42,7 +42,9 @@ def test_check_valid():
     mechanism = LaplaceMechanism(1, precision=20, sensitivity=1)
     mechanism._check_valid()
 
-    assert mechanism.accountant is not None
     accountant.add_mechanism(mechanism)
+    assert mechanism.accountant is not None
     with pytest.raises(RuntimeError):
         mechanism._check_valid()
+
+    assert mechanism.accountant is None
