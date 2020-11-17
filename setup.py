@@ -29,7 +29,7 @@ extras_requires = {
 }
 
 setup(
-    name="differential-privacy",
+    name="relm",
     version="0.1.0",
     classifiers=[
         "Intended Audience :: Developers",
