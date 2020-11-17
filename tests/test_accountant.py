@@ -12,7 +12,7 @@ def test_add_mechanism():
         mechanism = LaplaceMechanism(1, precision=20, sensitivity=1)
         accountant.add_mechanism(mechanism)
 
-    assert len(accountant.mechanisms) == n
+    assert len(accountant._privacy_losses) == n
 
 
 def test_privacy_consumed():

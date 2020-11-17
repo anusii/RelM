@@ -8,11 +8,11 @@ class PrivacyAccountant:
 
     def __init__(self, privacy_budget):
         self.privacy_budget = privacy_budget
-        self.mechanisms = []
+        self._privacy_losses = dict()
 
     @property
     def privacy_consumed(self):
-        return sum(m.get_privacy_consumption() for m in self.mechanisms)
+        return sum(p for _, p in self._privacy_losses.items())
 
     def check_valid(self):
         """
@@ -24,6 +24,9 @@ class PrivacyAccountant:
         is_valid = self.privacy_consumed < self.privacy_budget
         return is_valid
 
+    def update(self, mechanism):
+        self._privacy_losses[hash(mechanism)] = mechanism.get_privacy_consumption()
+
     def add_mechanism(self, mechanism):
         """
         Adds a mechanism to be tracked by the privacy accountant.
@@ -33,7 +36,9 @@ class PrivacyAccountant:
 
         """
 
-        # connect the account to the mechanisms
-        # creates a circular loop
+        if mechanism.accountant is not None:
+            raise RuntimeError(
+                "mechanism: attempted to add a mechanism to two accountants."
+            )
         mechanism.accountant = self
-        self.mechanisms.append(mechanism)
+        self._privacy_losses[hash(mechanism)] = mechanism.get_privacy_consumption()
