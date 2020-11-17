@@ -1,6 +1,7 @@
 import numpy as np
 from relm.mechanisms import LaplaceMechanism
 from relm.accountant import PrivacyAccountant
+import pytest
 
 
 def test_add_mechanism():
@@ -36,3 +37,12 @@ def test_check_valid():
         _ = mechanism.release(vals)
 
     assert not accountant.check_valid()
+
+    # check that any new mechanisms are invalidated if added to the accountant
+    mechanism = LaplaceMechanism(1, precision=20, sensitivity=1)
+    mechanism._check_valid()
+
+    assert mechanism.accountant is not None
+    accountant.add_mechanism(mechanism)
+    with pytest.raises(RuntimeError):
+        mechanism._check_valid()

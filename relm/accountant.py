@@ -21,7 +21,8 @@ class PrivacyAccountant:
         Returns:
             bool
         """
-        return self.privacy_consumed < self.privacy_budget
+        is_valid = self.privacy_consumed < self.privacy_budget
+        return is_valid
 
     def add_mechanism(self, mechanism):
         """
@@ -32,4 +33,7 @@ class PrivacyAccountant:
 
         """
 
+        # connect the account to the mechanisms
+        # creates a circular loop
+        mechanism.accountant = self
         self.mechanisms.append(mechanism)
