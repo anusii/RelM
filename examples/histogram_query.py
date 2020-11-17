@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import pathlib
 
 from relm.mechanisms import GeometricMechanism
@@ -46,5 +45,6 @@ df = pd.DataFrame(
 )
 print(df)
 
+# import matplotlib.pyplot as plt
 # df.plot(x="Age Group", title="Test Counts by Age Group", kind="bar", rot=0)
 # plt.show()
