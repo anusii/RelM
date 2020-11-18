@@ -43,7 +43,13 @@ class PrivacyAccountant:
         self._max_privacy_loss += mechanism.epsilon
 
     def add_disjoint_mechanisms(self, mechanisms):
+        """
+        Adds mechanisms that release queries operating over disjoint subsets of the database. This allows for
+        more precise privacy accounting.
 
+        Args:
+            mechanisms: a list of ReleaseMechanism's that release queries operating over disjoint queries.
+        """
         max_epsilon = max(mechanism.epsilon for mechanism in mechanisms)
         if self._max_privacy_loss + max_epsilon > self.privacy_budget:
             raise ValueError(
