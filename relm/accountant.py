@@ -16,8 +16,12 @@ class PrivacyAccountant:
     def privacy_consumed(self):
         _privacy_consumed = sum(p for _, p in self._privacy_losses.items())
         for disjoint_mechanisms in self._disjoint_mechanism_groups:
-            _privacy_consumed += max(self._privacy_losses[m] for m in disjoint_mechanisms)
-            _privacy_consumed -= sum(self._privacy_losses[m] for m in disjoint_mechanisms)
+            _privacy_consumed += max(
+                self._privacy_losses[m] for m in disjoint_mechanisms
+            )
+            _privacy_consumed -= sum(
+                self._privacy_losses[m] for m in disjoint_mechanisms
+            )
 
         return _privacy_consumed
 
@@ -59,7 +63,9 @@ class PrivacyAccountant:
         for mechanism in mechanisms:
             self._add_mechanism(mechanism)
 
-        self._disjoint_mechanism_groups.append(set(hash(mechanism) for mechanism in mechanisms))
+        self._disjoint_mechanism_groups.append(
+            set(hash(mechanism) for mechanism in mechanisms)
+        )
         self._max_privacy_loss += max_epsilon
 
     def _add_mechanism(self, mechanism):

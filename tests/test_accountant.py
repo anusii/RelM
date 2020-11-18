@@ -34,7 +34,9 @@ def test_add_disjoint_mechanisms():
 
     accountant = PrivacyAccountant(1000000)
 
-    mechanisms = [LaplaceMechanism(20, precision=20, sensitivity=1) for _ in range(1000)]
+    mechanisms = [
+        LaplaceMechanism(20, precision=20, sensitivity=1) for _ in range(1000)
+    ]
     accountant.add_disjoint_mechanisms(mechanisms)
 
     mechanisms = [LaplaceMechanism(4, precision=20, sensitivity=1) for _ in range(1000)]
