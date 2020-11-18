@@ -16,7 +16,7 @@ class PrivacyAccountant:
         return sum(p for _, p in self._privacy_losses.items())
 
     def update(self, mechanism):
-        self._privacy_losses[hash(mechanism)] = mechanism.get_privacy_consumption()
+        self._privacy_losses[hash(mechanism)] = mechanism.privacy_consumed()
 
     def add_mechanism(self, mechanism):
         """
@@ -39,5 +39,5 @@ class PrivacyAccountant:
 
             )
         mechanism.accountant = self
-        self._privacy_losses[hash(mechanism)] = mechanism.get_privacy_consumption()
+        self._privacy_losses[hash(mechanism)] = mechanism.privacy_consumed()
         self._max_privacy_loss += mechanism.epsilon

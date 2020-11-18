@@ -12,9 +12,6 @@ class ReleaseMechanism:
 
     def _check_valid(self):
 
-        if self.accountant is not None:
-            self._is_valid &= self.accountant.check_valid()
-
         if not self._is_valid:
             raise RuntimeError(
                 "Mechanism has exhausted has exhausted its privacy budget."
@@ -39,7 +36,7 @@ class ReleaseMechanism:
         """
         raise NotImplementedError()
 
-    def get_privacy_consumption(self):
+    def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
         """
@@ -83,7 +80,7 @@ class LaplaceMechanism(ReleaseMechanism):
         args = (values, self.sensitivity, self.epsilon, self.precision)
         return backend.laplace_mechanism(*args)
 
-    def get_privacy_consumption(self):
+    def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
         """
@@ -192,7 +189,7 @@ class SparseGeneric(ReleaseMechanism):
         else:
             return indices
 
-    def get_privacy_consumption(self):
+    def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
         """
@@ -397,7 +394,7 @@ class SnappingMechanism(ReleaseMechanism):
         self._update_accountant()
         return release_values
 
-    def get_privacy_consumption(self):
+    def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
         """
