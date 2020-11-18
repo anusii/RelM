@@ -7,12 +7,22 @@ class ReleaseMechanism:
     def __init__(self, epsilon):
         self.epsilon = epsilon
         self._is_valid = True
+        self.accountant = None
+        self._id = np.random.randint(low=0, high=2 ** 60)
 
     def _check_valid(self):
+
         if not self._is_valid:
             raise RuntimeError(
                 "Mechanism has exhausted has exhausted its privacy budget."
             )
+
+    def _update_accountant(self):
+        if self.accountant is not None:
+            self.accountant.update(self)
+
+    def __hash__(self):
+        return self._id
 
     def release(self, values):
         """
@@ -26,7 +36,8 @@ class ReleaseMechanism:
         """
         raise NotImplementedError()
 
-    def get_privacy_consumption(self):
+    @property
+    def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
         """
@@ -66,10 +77,12 @@ class LaplaceMechanism(ReleaseMechanism):
 
         self._check_valid()
         self._is_valid = False
+        self._update_accountant()
         args = (values, self.sensitivity, self.epsilon, self.precision)
         return backend.laplace_mechanism(*args)
 
-    def get_privacy_consumption(self):
+    @property
+    def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
         """
@@ -105,6 +118,7 @@ class GeometricMechanism(LaplaceMechanism):
         """
         self._check_valid()
         self._is_valid = False
+        self._update_accountant()
         return backend.geometric_mechanism(values, self.sensitivity, self.epsilon)
 
 
@@ -166,6 +180,8 @@ class SparseGeneric(ReleaseMechanism):
         if self.current_count == self.cutoff:
             self._is_valid = False
 
+        self._update_accountant()
+
         if self.epsilon3 > 0:
             sliced_values = values[indices]
             temp = self.sensitivity * self.cutoff
@@ -175,7 +191,8 @@ class SparseGeneric(ReleaseMechanism):
         else:
             return indices
 
-    def get_privacy_consumption(self):
+    @property
+    def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
         """
@@ -377,10 +394,11 @@ class SnappingMechanism(ReleaseMechanism):
         args = (values, self.B, self.lam, self.quanta)
         release_values = backend.snapping(*args)
         self._is_valid = False
-
+        self._update_accountant()
         return release_values
 
-    def get_privacy_consumption(self):
+    @property
+    def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
         """
