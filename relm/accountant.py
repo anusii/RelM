@@ -36,7 +36,6 @@ class PrivacyAccountant:
             raise ValueError(
                 f"mechanism: using this mechanism could exceed the privacy budget of {self.privacy_budget}"
                 f" with a total privacy loss of {self._max_privacy_loss + mechanism.epsilon}"
-
             )
         mechanism.accountant = self
         self._privacy_losses[hash(mechanism)] = mechanism.privacy_consumed
