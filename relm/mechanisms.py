@@ -439,12 +439,14 @@ class ReportNoisyMax(ReleaseMechanism):
         """
         self._check_valid()
         self._is_valid = False
+        self._update_accountant()
         args = (values, self.sensitivity, self.epsilon, self.precision)
         perturbed_values = backend.laplace_mechanism(*args)
         argmax = perturbed_values.argmax()
         return (argmax, perturbed_values[argmax])
 
-    def get_privacy_consumption(self):
+    @property
+    def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
         """
