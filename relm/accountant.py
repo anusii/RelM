@@ -9,20 +9,11 @@ class PrivacyAccountant:
     def __init__(self, privacy_budget):
         self.privacy_budget = privacy_budget
         self._privacy_losses = dict()
+        self._max_privacy_loss = 0
 
     @property
     def privacy_consumed(self):
         return sum(p for _, p in self._privacy_losses.items())
-
-    def check_valid(self):
-        """
-        Checks that the privacy consumed is less than the privacy budget.
-
-        Returns:
-            bool
-        """
-        is_valid = self.privacy_consumed < self.privacy_budget
-        return is_valid
 
     def update(self, mechanism):
         self._privacy_losses[hash(mechanism)] = mechanism.get_privacy_consumption()
@@ -40,5 +31,13 @@ class PrivacyAccountant:
             raise RuntimeError(
                 "mechanism: attempted to add a mechanism to two accountants."
             )
+
+        if self._max_privacy_loss + mechanism.epsilon > self.privacy_budget:
+            raise ValueError(
+                f"mechanism: using this mechanism could exceed the privacy budget of {self.privacy_budget}"
+                f" with a total privacy loss of {self._max_privacy_loss + mechanism.epsilon}"
+
+            )
         mechanism.accountant = self
         self._privacy_losses[hash(mechanism)] = mechanism.get_privacy_consumption()
+        self._max_privacy_loss += mechanism.epsilon
