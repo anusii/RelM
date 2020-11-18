@@ -8,6 +8,7 @@ from relm.mechanisms import (
     AboveThreshold,
     SparseIndicator,
     SparseNumeric,
+    ReportNoisyMax,
 )
 
 
@@ -77,4 +78,9 @@ def test_sparse_numeric(benchmark):
 
 def test_SnappingMechanism(benchmark):
     mechanism = SnappingMechanism(epsilon=1.0, B=10)
+    _test_mechanism(benchmark, mechanism)
+
+
+def test_ReportNoisyMax(benchmark):
+    mechanism = ReportNoisyMax(epsilon=0.1, precision=35)
     _test_mechanism(benchmark, mechanism)
