@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import secrets
 from relm import backend
 
 
@@ -442,8 +443,9 @@ class ReportNoisyMax(ReleaseMechanism):
         self._update_accountant()
         args = (values, self.sensitivity, self.epsilon, self.precision)
         perturbed_values = backend.laplace_mechanism(*args)
-        argmax = perturbed_values.argmax()
-        return (argmax, perturbed_values[argmax])
+        valmax = np.max(perturbed_values)
+        argmax = secrets.choice(np.where(perturbed_values == valmax)[0])
+        return (argmax, valmax)
 
     @property
     def privacy_consumed(self):
