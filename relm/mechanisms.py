@@ -36,6 +36,7 @@ class ReleaseMechanism:
         """
         raise NotImplementedError()
 
+    @property
     def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
@@ -80,6 +81,7 @@ class LaplaceMechanism(ReleaseMechanism):
         args = (values, self.sensitivity, self.epsilon, self.precision)
         return backend.laplace_mechanism(*args)
 
+    @property
     def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
@@ -189,6 +191,7 @@ class SparseGeneric(ReleaseMechanism):
         else:
             return indices
 
+    @property
     def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
@@ -394,6 +397,7 @@ class SnappingMechanism(ReleaseMechanism):
         self._update_accountant()
         return release_values
 
+    @property
     def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
