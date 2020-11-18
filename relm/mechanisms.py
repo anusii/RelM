@@ -388,3 +388,49 @@ class SnappingMechanism(ReleaseMechanism):
             return 0
         else:
             return self.epsilon
+
+
+class ReportNoisyMax(ReleaseMechanism):
+    """
+    Secure implementation of the ReportNoisyMax mechanism. This mechanism can be used
+    once after which its privacy budget will be exhausted and it can no longer be used.
+
+    This mechanism adds Laplace noise to each of a set of counting queries and
+    returns both the index of the largest perturbed value (the argmax) and the
+    largest perturbed value.
+
+    Args:
+        epsilon: the maximum privacy loss of the mechanism.
+        precision: number of fractional bits to use in the internal fixed point representation.
+    """
+
+    def __init__(self, epsilon, precision):
+        self.sensitivity = 1.0
+        self.precision = precision
+        super(ReportNoisyMax, self).__init__(epsilon)
+
+    def release(self, values):
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy array of the outputs of a collection of counting queries.
+
+        Returns:
+            A tuple containing the (argmax, max) of the perturbed values.
+        """
+        self._check_valid()
+        self._is_valid = False
+        args = (values, self.sensitivity, self.epsilon, self.precision)
+        perturbed_values = backend.laplace_mechanism(*args)
+        argmax = perturbed_values.argmax()
+        return (argmax, perturbed_values[argmax])
+
+    def get_privacy_consumption(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
