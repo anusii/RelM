@@ -1,7 +1,6 @@
 import numpy as np
 from relm.mechanisms import LaplaceMechanism
 from relm.accountant import PrivacyAccountant
-from relm.composition import ParallelRelease
 import pytest
 
 
