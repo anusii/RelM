@@ -9,7 +9,6 @@ class PrivacyAccountant:
     def __init__(self, privacy_budget):
         self.privacy_budget = privacy_budget
         self._privacy_losses = dict()
-        self._disjoint_mechanism_groups = []
         self._max_privacy_loss = 0
 
     @property
