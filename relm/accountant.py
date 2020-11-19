@@ -37,42 +37,17 @@ class PrivacyAccountant:
 
         """
 
-        if self._max_privacy_loss + mechanism.epsilon > self.privacy_budget:
-            raise ValueError(
-                f"mechanism: using this mechanism could exceed the privacy budget of {self.privacy_budget}"
-                f" with a total privacy loss of {self._max_privacy_loss + mechanism.epsilon}"
-            )
-        self._add_mechanism(mechanism)
-        self._max_privacy_loss += mechanism.epsilon
-
-    def add_disjoint_mechanisms(self, mechanisms):
-        """
-        Adds mechanisms that release queries operating over disjoint subsets of the database. This allows for
-        more precise privacy accounting.
-
-        Args:
-            mechanisms: a list of ReleaseMechanism's that release queries operating over disjoint queries.
-        """
-        max_epsilon = max(mechanism.epsilon for mechanism in mechanisms)
-        if self._max_privacy_loss + max_epsilon > self.privacy_budget:
-            raise ValueError(
-                f"mechanism: using this mechanism could exceed the privacy budget of {self.privacy_budget}"
-                f" with a total privacy loss of {self._max_privacy_loss + max_epsilon}"
-            )
-
-        for mechanism in mechanisms:
-            self._add_mechanism(mechanism)
-
-        self._disjoint_mechanism_groups.append(
-            set(hash(mechanism) for mechanism in mechanisms)
-        )
-        self._max_privacy_loss += max_epsilon
-
-    def _add_mechanism(self, mechanism):
         if mechanism.accountant is not None:
             raise RuntimeError(
                 "mechanism: attempted to add a mechanism to two accountants."
             )
 
+        if self._max_privacy_loss + mechanism.epsilon > self.privacy_budget:
+            raise ValueError(
+                f"mechanism: using this mechanism could exceed the privacy budget of {self.privacy_budget}"
+                f" with a total privacy loss of {self._max_privacy_loss + mechanism.epsilon}"
+            )
+
         mechanism.accountant = self
         self._privacy_losses[hash(mechanism)] = mechanism.privacy_consumed
+        self._max_privacy_loss += mechanism.epsilon
