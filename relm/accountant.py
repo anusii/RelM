@@ -14,16 +14,7 @@ class PrivacyAccountant:
 
     @property
     def privacy_consumed(self):
-        _privacy_consumed = sum(p for _, p in self._privacy_losses.items())
-        for disjoint_mechanisms in self._disjoint_mechanism_groups:
-            _privacy_consumed += max(
-                self._privacy_losses[m] for m in disjoint_mechanisms
-            )
-            _privacy_consumed -= sum(
-                self._privacy_losses[m] for m in disjoint_mechanisms
-            )
-
-        return _privacy_consumed
+        return sum(p for _, p in self._privacy_losses.items())
 
     def update(self, mechanism):
         self._privacy_losses[hash(mechanism)] = mechanism.privacy_consumed
@@ -47,7 +38,6 @@ class PrivacyAccountant:
                 f"mechanism: using this mechanism could exceed the privacy budget of {self.privacy_budget}"
                 f" with a total privacy loss of {self._max_privacy_loss + mechanism.epsilon}"
             )
-
         mechanism.accountant = self
         self._privacy_losses[hash(mechanism)] = mechanism.privacy_consumed
         self._max_privacy_loss += mechanism.epsilon
