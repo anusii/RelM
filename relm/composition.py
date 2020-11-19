@@ -32,7 +32,7 @@ class ComposedRelease:
 
 class ParallelRelease(ComposedRelease):
     """
-    A base class for calculating the privacy loss of the composition
+    A class for calculating the privacy loss of the composition
     of multiple ReleaseMechanisms operating over disjoint subsets of the database.
 
     Usage:
@@ -47,3 +47,22 @@ class ParallelRelease(ComposedRelease):
     @property
     def privacy_consumed(self):
         return max(p for _, p in self._privacy_losses.items())
+
+
+class SequentialRelease(ComposedRelease):
+    """
+    A class for calculating the privacy loss of the composition
+    of multiple ReleaseMechanisms.
+
+    Usage:
+        accountant = PrivacyAccountant(privacy_budget=2)
+        mechanisms = [LaplaceMechanism(1, 1, precision=20) for _ in range(1000)]
+        parallel_mechanisms = ParallelRelease(mechanisms)
+        # data releases still occur with the mechanisms
+        mechanisms[0].release(data)
+
+    """
+
+    @property
+    def privacy_consumed(self):
+        return sum(p for _, p in self._privacy_losses.items())
