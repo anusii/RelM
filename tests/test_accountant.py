@@ -12,7 +12,7 @@ def test_add_mechanism():
         mechanism = LaplaceMechanism(1, precision=20, sensitivity=1)
         accountant.add_mechanism(mechanism)
 
-    assert accountant._max_privacy_loss == 10
+    assert len(accountant._privacy_losses) == 10
 
     with pytest.raises(ValueError):
         mechanism = LaplaceMechanism(1, precision=20, sensitivity=1)
