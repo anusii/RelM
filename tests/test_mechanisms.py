@@ -4,6 +4,7 @@ import pytest
 from relm.mechanisms import (
     LaplaceMechanism,
     GeometricMechanism,
+    ExponentialMechanism,
     SnappingMechanism,
     AboveThreshold,
     SparseIndicator,
@@ -45,6 +46,35 @@ def test_GeometricMechanism(benchmark):
     y = scipy.stats.geom.rvs(p=1 - q, size=n)
     z = x - y
     score, pval = scipy.stats.ks_2samp(values - data, z)
+    assert pval > 0.001
+
+
+def test_ExponentialMechanism(benchmark):
+    n = 10
+    output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    mechanism = ExponentialMechanism(
+        epsilon=1.0,
+        utility_function=utility_function,
+        sensitivity=1.0,
+        output_range=output_range,
+    )
+    _test_mechanism(benchmark, mechanism)
+    # Goodness of fit test
+    n = 16
+    output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    data = np.zeros(1)
+    TRIALS = 2 ** 10
+    mechanism = ExponentialMechanism(
+        epsilon=1.0,
+        utility_function=utility_function,
+        sensitivity=1.0,
+        output_range=output_range,
+    )
+    values = mechanism.release(data, _k=TRIALS)
+    z = scipy.stats.laplace.rvs(scale=2.0, size=TRIALS)
+    score, pval = scipy.stats.ks_2samp(values, z)
     assert pval > 0.001
 
 

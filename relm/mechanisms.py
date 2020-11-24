@@ -55,9 +55,8 @@ class LaplaceMechanism(ReleaseMechanism):
 
     Args:
         epsilon: the maximum privacy loss of the mechanism.
-        sensitivity: the sensitivity of the query that this will be applied to
+        sensitivity: the sensitivity of the query to which this mechanism will be applied.
         precision: number of fractional bits to use in the internal fixed point representation.
-
     """
 
     def __init__(self, epsilon, sensitivity, precision):
@@ -100,8 +99,7 @@ class GeometricMechanism(LaplaceMechanism):
 
     Args:
         epsilon: the maximum privacy loss of the mechanism.
-        sensitivity: the sensitivity of the query that this will be applied to
-
+        sensitivity: the sensitivity of the query to which this mechanism will be applied.
     """
 
     def __init__(self, epsilon, sensitivity):
@@ -121,6 +119,48 @@ class GeometricMechanism(LaplaceMechanism):
         self._is_valid = False
         self._update_accountant()
         return backend.geometric_mechanism(values, self.sensitivity, self.epsilon)
+
+
+class ExponentialMechanism(ReleaseMechanism):
+    """
+    Insecure implementation of the Exponential Mechanism. This mechanism can be used once
+    after which its privacy budget will be exhausted and it can no longer be used.
+
+    Args:
+        epsilon: the maximum privacy loss of the mechanism.
+        utility_function: the utility function.
+        sensitivity: the sensitivity of the utility function.
+    """
+
+    def __init__(self, epsilon, utility_function, sensitivity, output_range):
+        self.utility_function = utility_function
+        self.sensitivity = sensitivity
+        self.output_range = output_range
+        super(ExponentialMechanism, self).__init__(epsilon)
+
+    def release(self, values, _k=1):
+        self._check_valid()
+        self._is_valid = False
+        self._update_accountant()
+
+        output_utilities = self.utility_function(values)
+        log_weights = self.epsilon * output_utilities / (2 * self.sensitivity)
+        weights = np.exp(log_weights)
+        # probs = scipy.special.softmax(log_weights)
+
+        rng = secrets.SystemRandom()
+        output = np.array(rng.choices(self.output_range, weights=weights, k=_k))
+        return output
+
+    @property
+    def privacy_consumed(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
 
 
 class SparseGeneric(ReleaseMechanism):
