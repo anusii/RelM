@@ -5,9 +5,8 @@ use rug::Integer;
 use crate::utils;
 
 
-pub fn discrete(choices: &Vec<u64>, weights: &Vec<f64>) -> u64 {
+pub fn discrete(choices: &Vec<u64>, dist: &WeightedIndex<f64>) -> u64 {
     let mut rng = rand::thread_rng();
-    let dist = WeightedIndex::new(weights).unwrap();
     choices[dist.sample(&mut rng)]
 }
 

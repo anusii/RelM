@@ -65,7 +65,7 @@ def test_ExponentialMechanism(benchmark):
     output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
     utility_function = lambda x: -np.abs(output_range - np.mean(x))
     data = np.zeros(1)
-    TRIALS = 2 ** 0
+    TRIALS = 2 ** 10
     mechanism = ExponentialMechanism(
         epsilon=1.0,
         utility_function=utility_function,

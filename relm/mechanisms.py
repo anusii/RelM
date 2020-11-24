@@ -156,9 +156,6 @@ class ExponentialMechanism(ReleaseMechanism):
         log_weights = self.epsilon * output_utilities / (2 * self.sensitivity)
         weights = np.exp(log_weights)
 
-        # rng = secrets.SystemRandom()
-        # output = np.array(rng.choices(self.output_range, weights=weights, k=k))
-
         n = len(self.output_range)
         choices = np.arange(n, dtype=np.uint64)
         indices = backend.exponential_mechanism(choices, weights, k)
