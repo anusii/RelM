@@ -1,4 +1,5 @@
 use rand::distributions::WeightedIndex;
+use std::convert::TryInto;
 
 use rayon::prelude::*;
 use crate::samplers;
@@ -46,11 +47,13 @@ pub fn geometric_mechanism(data: Vec<i64>, sensitivity: f64, epsilon: f64) -> Ve
 }
 
 
-pub fn exponential_mechanism(choices: Vec<u64>, utilities: Vec<f64>, sensitivity: f64, epsilon: f64, k: u64) -> Vec<u64> {
+pub fn exponential_mechanism(utilities: Vec<f64>, sensitivity: f64, epsilon: f64, k: u64) -> Vec<u64> {
     let weights: Vec<f64> = utilities.par_iter()
                                      .map(|u| epsilon * u / (2.0f64 * sensitivity))
                                      .map(|u| u.exp())
                                      .collect();
     let dist = WeightedIndex::new(weights).unwrap();
+    let n: u64 = utilities.len().try_into().unwrap();
+    let choices: Vec<u64> = (0..n).collect();
     (0..k).map(|_| samplers::discrete(&choices, &dist)).collect()
 }

@@ -152,16 +152,15 @@ class ExponentialMechanism(ReleaseMechanism):
         self._is_valid = False
         self._update_accountant()
 
-        n = len(self.output_range)
-        choices = np.arange(n, dtype=np.uint64)
-
         utilities = self.utility_function(values)
         indices = backend.exponential_mechanism(
-            choices, utilities, self.sensitivity, self.epsilon, k
+            utilities,
+            self.sensitivity,
+            self.epsilon,
+            k,
         )
 
-        output = np.array([self.output_range[i] for i in indices])
-        return output
+        return np.array([self.output_range[i] for i in indices])
 
     @property
     def privacy_consumed(self):
