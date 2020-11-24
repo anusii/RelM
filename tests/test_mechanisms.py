@@ -72,7 +72,7 @@ def test_ExponentialMechanism(benchmark):
         sensitivity=1.0,
         output_range=output_range,
     )
-    values = mechanism.release(data, _k=TRIALS)
+    values = mechanism._release(data, k=TRIALS)
     z = scipy.stats.laplace.rvs(scale=2.0, size=TRIALS)
     score, pval = scipy.stats.ks_2samp(values, z)
     assert pval > 0.001

@@ -138,7 +138,16 @@ class ExponentialMechanism(ReleaseMechanism):
         self.output_range = output_range
         super(ExponentialMechanism, self).__init__(epsilon)
 
-    def release(self, values, _k=1):
+    def release(self, values):
+        return self._release(values, k=1)
+
+    def _release(self, values, k):
+        """
+        Release k independent outputs from the mechanism.  This is useful for
+        goodness-of-fit testing.  Using k > 1 is inconsistent with all privacy
+        accounting and should never be used to prepare real data releases.
+        """
+
         self._check_valid()
         self._is_valid = False
         self._update_accountant()
@@ -146,10 +155,9 @@ class ExponentialMechanism(ReleaseMechanism):
         output_utilities = self.utility_function(values)
         log_weights = self.epsilon * output_utilities / (2 * self.sensitivity)
         weights = np.exp(log_weights)
-        # probs = scipy.special.softmax(log_weights)
 
         rng = secrets.SystemRandom()
-        output = np.array(rng.choices(self.output_range, weights=weights, k=_k))
+        output = np.array(rng.choices(self.output_range, weights=weights, k=k))
         return output
 
     @property
