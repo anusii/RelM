@@ -1,4 +1,3 @@
-use rand::prelude::*;
 use rand::distributions::WeightedIndex;
 
 use rayon::prelude::*;
@@ -48,7 +47,6 @@ pub fn geometric_mechanism(data: Vec<i64>, sensitivity: f64, epsilon: f64) -> Ve
 
 
 pub fn exponential_mechanism(choices: Vec<u64>, weights: Vec<f64>, k: u64) -> Vec<u64> {
-    let mut rng = rand::thread_rng();
     let dist = WeightedIndex::new(weights).unwrap();
     (0..k).map(|_| samplers::discrete(&choices, &dist)).collect()
 }
