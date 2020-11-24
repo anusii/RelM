@@ -1,7 +1,15 @@
 use rand::prelude::*;
+use rand::distributions::WeightedIndex;
+
 use rug::Integer;
 use crate::utils;
 
+
+pub fn discrete(choices: &Vec<u64>, weights: &Vec<f64>) -> u64 {
+    let mut rng = rand::thread_rng();
+    let dist = WeightedIndex::new(weights).unwrap();
+    choices[dist.sample(&mut rng)]
+}
 
 
 pub fn uniform(scale: f64) -> f64 {
