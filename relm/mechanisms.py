@@ -152,13 +152,14 @@ class ExponentialMechanism(ReleaseMechanism):
         self._is_valid = False
         self._update_accountant()
 
-        output_utilities = self.utility_function(values)
-        log_weights = self.epsilon * output_utilities / (2 * self.sensitivity)
-        weights = np.exp(log_weights)
-
         n = len(self.output_range)
         choices = np.arange(n, dtype=np.uint64)
-        indices = backend.exponential_mechanism(choices, weights, k)
+
+        utilities = self.utility_function(values)
+        indices = backend.exponential_mechanism(
+            choices, utilities, self.sensitivity, self.epsilon, k
+        )
+
         output = np.array([self.output_range[i] for i in indices])
         return output
 

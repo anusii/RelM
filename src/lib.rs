@@ -70,15 +70,15 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
     fn py_exponential_mechanism<'a>(
         py: Python<'a>,
         // data: &'a PyArray1<i64>,
-        // sensitivity: f64,
-        // epsilon: f64,
         choices: &'a PyArray1<u64>,
-        weights: &'a PyArray1<f64>,
+        utilities: &'a PyArray1<f64>,
+        sensitivity: f64,
+        epsilon: f64,
         k: u64,
     ) -> &'a PyArray1<u64> {
         let choices = choices.to_vec().unwrap();
-        let weights = weights.to_vec().unwrap();
-        mechanisms::exponential_mechanism(choices, weights, k).to_pyarray(py)
+        let utilities = utilities.to_vec().unwrap();
+        mechanisms::exponential_mechanism(choices, utilities, sensitivity, epsilon, k).to_pyarray(py)
     }
 
     Ok(())
