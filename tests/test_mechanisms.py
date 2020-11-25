@@ -49,8 +49,8 @@ def test_GeometricMechanism(benchmark):
     assert pval > 0.001
 
 
-def test_ExponentialMechanism(benchmark):
-    n = 10
+def test_ExponentialMechanismWeightedIndex(benchmark):
+    n = 6
     output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
     utility_function = lambda x: -np.abs(output_range - np.mean(x))
     mechanism = ExponentialMechanism(
@@ -58,19 +58,52 @@ def test_ExponentialMechanism(benchmark):
         utility_function=utility_function,
         sensitivity=1.0,
         output_range=output_range,
+        method="weighted_index",
     )
     _test_mechanism(benchmark, mechanism)
     # Goodness of fit test
-    n = 16
+    n = 10
     output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
     utility_function = lambda x: -np.abs(output_range - np.mean(x))
     data = np.zeros(1)
-    TRIALS = 2 ** 10
+    TRIALS = 2 ** 12
     mechanism = ExponentialMechanism(
         epsilon=1.0,
         utility_function=utility_function,
         sensitivity=1.0,
         output_range=output_range,
+        method="weighted_index",
+    )
+    values = mechanism._release(data, k=TRIALS)
+    z = scipy.stats.laplace.rvs(scale=2.0, size=TRIALS)
+    score, pval = scipy.stats.ks_2samp(values, z)
+    assert pval > 0.001
+
+
+def test_ExponentialMechanismGumbelTrick(benchmark):
+    n = 6
+    output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    mechanism = ExponentialMechanism(
+        epsilon=1.0,
+        utility_function=utility_function,
+        sensitivity=1.0,
+        output_range=output_range,
+        method="gumbel_trick",
+    )
+    _test_mechanism(benchmark, mechanism)
+    # Goodness of fit test
+    n = 10
+    output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    data = np.zeros(1)
+    TRIALS = 2 ** 12
+    mechanism = ExponentialMechanism(
+        epsilon=1.0,
+        utility_function=utility_function,
+        sensitivity=1.0,
+        output_range=output_range,
+        method="gumbel_trick",
     )
     values = mechanism._release(data, k=TRIALS)
     z = scipy.stats.laplace.rvs(scale=2.0, size=TRIALS)

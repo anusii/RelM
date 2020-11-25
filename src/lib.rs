@@ -66,16 +66,38 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
     }
 
 
-    #[pyfn(m, "exponential_mechanism")]
-    fn py_exponential_mechanism<'a>(
+    #[pyfn(m, "exponential_mechanism_weighted_index")]
+    fn py_exponential_mechanism_weighted_index<'a>(
         py: Python<'a>,
         utilities: &'a PyArray1<f64>,
         sensitivity: f64,
         epsilon: f64,
-        k: u64,
+        k: usize,
     ) -> &'a PyArray1<u64> {
         let utilities = utilities.to_vec().unwrap();
-        mechanisms::exponential_mechanism(utilities, sensitivity, epsilon, k).to_pyarray(py)
+        mechanisms::exponential_mechanism_weighted_index(
+            utilities,
+            sensitivity,
+            epsilon,
+            k,
+        ).to_pyarray(py)
+    }
+
+    #[pyfn(m, "exponential_mechanism_gumbel_trick")]
+    fn py_exponential_mechanism_gumbel_trick<'a>(
+        py: Python<'a>,
+        utilities: &'a PyArray1<f64>,
+        sensitivity: f64,
+        epsilon: f64,
+        k: usize,
+    ) -> &'a PyArray1<u64> {
+        let utilities = utilities.to_vec().unwrap();
+        mechanisms::exponential_mechanism_gumbel_trick(
+            utilities,
+            sensitivity,
+            epsilon,
+            k,
+        ).to_pyarray(py)
     }
 
     Ok(())

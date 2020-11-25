@@ -31,6 +31,17 @@ pub fn geometric(scale: f64) -> f64 {
 }
 
 
+pub fn gumbel(scale: f64) -> f64 {
+    /// Returns a sample from the Gumbel distribution
+    ///
+    /// # Arguments
+    ///
+    /// * `scale` = The scale parameter of the Gumbel distribution
+    let mut rng = rand::thread_rng();
+    -scale * (-rng.gen::<f64>().ln()).ln()
+}
+
+
 pub fn uniform_double(scale: f64) -> f64 {
     /// Returns a sample from the [0, scale) uniform distribution
     ///

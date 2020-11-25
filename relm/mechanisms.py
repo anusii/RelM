@@ -132,10 +132,18 @@ class ExponentialMechanism(ReleaseMechanism):
         sensitivity: the sensitivity of the utility function.
     """
 
-    def __init__(self, epsilon, utility_function, sensitivity, output_range):
+    def __init__(
+        self,
+        epsilon,
+        utility_function,
+        sensitivity,
+        output_range,
+        method="gumbel_trick",
+    ):
         self.utility_function = utility_function
         self.sensitivity = sensitivity
         self.output_range = output_range
+        self.method = method
         super(ExponentialMechanism, self).__init__(epsilon)
 
     def release(self, values):
@@ -153,12 +161,22 @@ class ExponentialMechanism(ReleaseMechanism):
         self._update_accountant()
 
         utilities = self.utility_function(values)
-        indices = backend.exponential_mechanism(
-            utilities,
-            self.sensitivity,
-            self.epsilon,
-            k,
-        )
+        if self.method == "weighted_index":
+            indices = backend.exponential_mechanism_weighted_index(
+                utilities,
+                self.sensitivity,
+                self.epsilon,
+                k,
+            )
+        elif self.method == "gumbel_trick":
+            indices = backend.exponential_mechanism_gumbel_trick(
+                utilities,
+                self.sensitivity,
+                self.epsilon,
+                k,
+            )
+        else:
+            raise ValueError()
 
         return np.array([self.output_range[i] for i in indices])
 
