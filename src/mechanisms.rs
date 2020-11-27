@@ -93,21 +93,24 @@ pub fn exponential_mechanism_sample_and_flip(
     k: usize)
 -> Vec<u64> {
 
-    let log_weights: Vec<f64> = utilities.par_iter()
-        .map(|u| epsilon * u / (2.0f64 * sensitivity))
+    let argmax: usize = utils::argmax(&utilities);
+    let max_utility: f64 = utilities[argmax];
+
+    let mut normalized_log_weights: Vec<f64> = utilities.par_iter()
+        .map(|u| epsilon * (u - max_utility) / (2.0f64 * sensitivity))
         .collect();
+
     let n: u64 = utilities.len().try_into().unwrap();
     let mut indices: Vec<u64> = vec![0; k];
     for i in 0..k {
         let mut flag: bool = false;
+        let mut index: usize = 0;
         while !flag {
-            let index: u64 = samplers::uniform_integer(&n);
-            let p: f64 = (epsilon * log_weights[i] / (2.0f64 * sensitivity)).exp();
+            index = samplers::uniform_integer(&n).try_into().unwrap();
+            let p: f64 = normalized_log_weights[index].exp();
             flag = samplers::bernoulli(&p);
-            if flag {
-                indices[i] = index;
-            }
         }
+        indices[i] = index.try_into().unwrap();
     }
     indices
 }
