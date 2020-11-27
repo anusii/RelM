@@ -128,8 +128,14 @@ class ExponentialMechanism(ReleaseMechanism):
 
     Args:
         epsilon: the maximum privacy loss of the mechanism.
-        utility_function: the utility function.
+        utility_function: the utility function. This should accpet an array of values
+                          produced by the query function and return an 1D array of
+                          utilities of the same size as output_range.
         sensitivity: the sensitivity of the utility function.
+        output_range: an array of possible output values for the mechanism.
+        method: a string that specifies which algorithm will be used to sample
+                from the output distribution. Currently, three options are supported:
+                "weighted_index", "gumbel_trick", and "sample_and_flip".
     """
 
     def __init__(
@@ -144,36 +150,40 @@ class ExponentialMechanism(ReleaseMechanism):
         self.sensitivity = sensitivity
         self.output_range = output_range
         self.method = method
+        if method == "weighted_index":
+            sampler = lambda utilities: backend.exponential_mechanism_weighted_index(
+                utilities, sensitivity, epsilon
+            )
+        elif method == "gumbel_trick":
+            sampler = lambda utilities: backend.exponential_mechanism_gumbel_trick(
+                utilities, sensitivity, epsilon
+            )
+        elif method == "sample_and_flip":
+            sampler = lambda utilities: backend.exponential_mechanism_sample_and_flip(
+                utilities, sensitivity, epsilon
+            )
+        else:
+            raise ValueError("Sampling method '%s' not supported." % method)
+        self.sampler = sampler
         super(ExponentialMechanism, self).__init__(epsilon)
 
     def release(self, values):
-        # return self._release(values, k=1)
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy array of the output of a query.
+
+        Returns:
+            An element of output_range set of the mechanism.
+        """
+
         self._check_valid()
         self._is_valid = False
         self._update_accountant()
 
         utilities = self.utility_function(values)
-        if self.method == "weighted_index":
-            index = backend.exponential_mechanism_weighted_index(
-                utilities,
-                self.sensitivity,
-                self.epsilon,
-            )
-        elif self.method == "gumbel_trick":
-            index = backend.exponential_mechanism_gumbel_trick(
-                utilities,
-                self.sensitivity,
-                self.epsilon,
-            )
-        elif self.method == "sample_and_flip":
-            index = backend.exponential_mechanism_sample_and_flip(
-                utilities,
-                self.sensitivity,
-                self.epsilon,
-            )
-        else:
-            raise ValueError()
-
+        index = self.sampler(utilities)
         return self.output_range[index]
 
     @property
