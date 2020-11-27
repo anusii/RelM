@@ -20,11 +20,18 @@ pub fn ln_rn(x: f64) -> f64 {
 
 
 pub fn argmax(slice: &Vec<f64>) -> usize {
-    slice.iter()
-         .enumerate()
-         .max_by(|(_, x), (_, y)| x.partial_cmp(y).unwrap_or(Equal))
-         .map(|(i, _)| i)
-         .unwrap()
+    let mut max_val = slice[0];
+    let mut max_idx: usize = 0;
+    let mut idx = 0;
+    for &val in slice {
+        if val > max_val {
+            max_idx = idx;
+            max_val = val;
+        }
+        idx += 1;
+    }
+
+    max_idx
 }
 
 
