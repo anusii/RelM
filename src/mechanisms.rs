@@ -84,3 +84,30 @@ pub fn exponential_mechanism_gumbel_trick(
     }
     indices
 }
+
+
+pub fn exponential_mechanism_sample_and_flip(
+    utilities: Vec<f64>,
+    sensitivity: f64,
+    epsilon: f64,
+    k: usize)
+-> Vec<u64> {
+
+    let log_weights: Vec<f64> = utilities.par_iter()
+        .map(|u| epsilon * u / (2.0f64 * sensitivity))
+        .collect();
+    let n: u64 = utilities.len().try_into().unwrap();
+    let mut indices: Vec<u64> = vec![0; k];
+    for i in 0..k {
+        let mut flag: bool = false;
+        while !flag {
+            let index: u64 = samplers::uniform_integer(&n);
+            let p: f64 = (epsilon * log_weights[i] / (2.0f64 * sensitivity)).exp();
+            flag = samplers::bernoulli(&p);
+            if flag {
+                indices[i] = index;
+            }
+        }
+    }
+    indices
+}

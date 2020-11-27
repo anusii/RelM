@@ -1,5 +1,5 @@
 use rand::prelude::*;
-use rand::distributions::WeightedIndex;
+use rand::distributions::{WeightedIndex, Bernoulli};
 
 use rug::Integer;
 use crate::utils;
@@ -10,6 +10,18 @@ pub fn discrete(choices: &Vec<u64>, dist: &WeightedIndex<f64>) -> u64 {
     choices[dist.sample(&mut rng)]
 }
 
+
+pub fn uniform_integer(n: &u64) -> u64 {
+    let mut rng = rand::thread_rng();
+    let result: u64 = rng.gen_range(0, *n);
+    result
+}
+
+pub fn bernoulli(p: &f64) -> bool {
+    let mut rng = rand::thread_rng();
+    let dist = Bernoulli::new(*p).unwrap();
+    dist.sample(&mut rand::thread_rng())
+}
 
 pub fn uniform(scale: f64) -> f64 {
     /// Returns a sample from the [0, scale) uniform distribution

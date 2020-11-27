@@ -83,6 +83,7 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         ).to_pyarray(py)
     }
 
+
     #[pyfn(m, "exponential_mechanism_gumbel_trick")]
     fn py_exponential_mechanism_gumbel_trick<'a>(
         py: Python<'a>,
@@ -93,6 +94,24 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
     ) -> &'a PyArray1<u64> {
         let utilities = utilities.to_vec().unwrap();
         mechanisms::exponential_mechanism_gumbel_trick(
+            utilities,
+            sensitivity,
+            epsilon,
+            k,
+        ).to_pyarray(py)
+    }
+
+
+    #[pyfn(m, "exponential_mechanism_sample_and_flip")]
+    fn py_exponential_mechanism_sample_and_flip<'a>(
+        py: Python<'a>,
+        utilities: &'a PyArray1<f64>,
+        sensitivity: f64,
+        epsilon: f64,
+        k: usize,
+    ) -> &'a PyArray1<u64> {
+        let utilities = utilities.to_vec().unwrap();
+        mechanisms::exponential_mechanism_sample_and_flip(
             utilities,
             sensitivity,
             epsilon,

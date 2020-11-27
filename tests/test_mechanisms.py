@@ -111,6 +111,42 @@ def test_ExponentialMechanismGumbelTrick(benchmark):
     assert pval > 0.001
 
 
+def test_ExponentialMechanismSampleAndFlip(benchmark):
+    n = 6  # This gets *really* slow if n in mcuh bigger than 6.
+    output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    mechanism = ExponentialMechanism(
+        epsilon=1.0,
+        utility_function=utility_function,
+        sensitivity=1.0,
+        output_range=output_range,
+        method="sample_and_flip",
+    )
+    _test_mechanism(benchmark, mechanism)
+    # The Goodness-of-Fit test does not work well for SampleAndFlip. If n is set large
+    # enough to make the fit good enough, then there are many low-probability
+    # outputs in the output_range.  This means that the acceptance rate
+    # in the rejection sampling subroutine is very low.  This makes this method
+    # extremely slow for large n.
+    # Goodness of fit test
+    # n = 6
+    # output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    # utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    # data = np.zeros(1)
+    # TRIALS = 2 ** 12
+    # mechanism = ExponentialMechanism(
+    #     epsilon=1.0,
+    #     utility_function=utility_function,
+    #     sensitivity=1.0,
+    #     output_range=output_range,
+    #     method="sample_and_flip",
+    # )
+    # values = mechanism._release(data, k=TRIALS)
+    # z = scipy.stats.laplace.rvs(scale=2.0, size=TRIALS)
+    # score, pval = scipy.stats.ks_2samp(values, z)
+    # assert pval > 0.001
+
+
 def test_above_threshold(benchmark):
     mechanism = AboveThreshold(epsilon=1, sensitivity=1.0, threshold=0.1)
     _test_mechanism(benchmark, mechanism)

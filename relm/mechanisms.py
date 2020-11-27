@@ -175,6 +175,13 @@ class ExponentialMechanism(ReleaseMechanism):
                 self.epsilon,
                 k,
             )
+        elif self.method == "sample_and_flip":
+            indices = backend.exponential_mechanism_sample_and_flip(
+                utilities,
+                self.sensitivity,
+                self.epsilon,
+                k,
+            )
         else:
             raise ValueError()
 
