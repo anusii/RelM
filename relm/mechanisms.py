@@ -147,45 +147,34 @@ class ExponentialMechanism(ReleaseMechanism):
         super(ExponentialMechanism, self).__init__(epsilon)
 
     def release(self, values):
-        return self._release(values, k=1)
-
-    def _release(self, values, k):
-        """
-        Release k independent outputs from the mechanism.  This is useful for
-        goodness-of-fit testing.  Using k > 1 is inconsistent with all privacy
-        accounting and should never be used to prepare real data releases.
-        """
-
+        # return self._release(values, k=1)
         self._check_valid()
         self._is_valid = False
         self._update_accountant()
 
         utilities = self.utility_function(values)
         if self.method == "weighted_index":
-            indices = backend.exponential_mechanism_weighted_index(
+            index = backend.exponential_mechanism_weighted_index(
                 utilities,
                 self.sensitivity,
                 self.epsilon,
-                k,
             )
         elif self.method == "gumbel_trick":
-            indices = backend.exponential_mechanism_gumbel_trick(
+            index = backend.exponential_mechanism_gumbel_trick(
                 utilities,
                 self.sensitivity,
                 self.epsilon,
-                k,
             )
         elif self.method == "sample_and_flip":
-            indices = backend.exponential_mechanism_sample_and_flip(
+            index = backend.exponential_mechanism_sample_and_flip(
                 utilities,
                 self.sensitivity,
                 self.epsilon,
-                k,
             )
         else:
             raise ValueError()
 
-        return np.array([self.output_range[i] for i in indices])
+        return self.output_range[index]
 
     @property
     def privacy_consumed(self):
