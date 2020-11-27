@@ -58,9 +58,7 @@ pub fn exponential_mechanism_weighted_index(
                                      .map(|u| u.exp())
                                      .collect();
     let dist = WeightedIndex::new(weights).unwrap();
-    let n: u64 = utilities.len().try_into().unwrap();
-    let choices: Vec<u64> = (0..n).collect();
-    samplers::discrete(&choices, &dist)
+    samplers::discrete(&dist)
 }
 
 

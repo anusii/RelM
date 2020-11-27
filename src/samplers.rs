@@ -1,14 +1,21 @@
 use rand::prelude::*;
 use rand::distributions::{WeightedIndex, Bernoulli};
+use std::convert::TryInto;
 
 use rug::Integer;
 use crate::utils;
 
 
-pub fn discrete(choices: &Vec<u64>, dist: &WeightedIndex<f64>) -> u64 {
+// pub fn discrete(choices: &Vec<u64>, dist: &WeightedIndex<f64>) -> u64 {
+//     let mut rng = rand::thread_rng();
+//     choices[dist.sample(&mut rng)]
+//}
+
+pub fn discrete(dist: &WeightedIndex<f64>) -> u64 {
     let mut rng = rand::thread_rng();
-    choices[dist.sample(&mut rng)]
+    dist.sample(&mut rng).try_into().unwrap()
 }
+
 
 
 pub fn uniform_integer(n: &u64) -> u64 {
