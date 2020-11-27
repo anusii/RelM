@@ -72,15 +72,14 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         utilities: &'a PyArray1<f64>,
         sensitivity: f64,
         epsilon: f64,
-        k: usize,
-    ) -> &'a PyArray1<u64> {
+    ) -> PyResult<u64> {
         let utilities = utilities.to_vec().unwrap();
-        mechanisms::exponential_mechanism_weighted_index(
+        let index: u64 = mechanisms::exponential_mechanism_weighted_index(
             utilities,
             sensitivity,
             epsilon,
-            k,
-        ).to_pyarray(py)
+        );
+        Ok(index)
     }
 
 
@@ -90,15 +89,14 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         utilities: &'a PyArray1<f64>,
         sensitivity: f64,
         epsilon: f64,
-        k: usize,
-    ) -> &'a PyArray1<u64> {
+    ) -> PyResult<u64> {
         let utilities = utilities.to_vec().unwrap();
-        mechanisms::exponential_mechanism_gumbel_trick(
+        let index: u64 = mechanisms::exponential_mechanism_gumbel_trick(
             utilities,
             sensitivity,
             epsilon,
-            k,
-        ).to_pyarray(py)
+        );
+        Ok(index)
     }
 
 
@@ -108,15 +106,14 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         utilities: &'a PyArray1<f64>,
         sensitivity: f64,
         epsilon: f64,
-        k: usize,
-    ) -> &'a PyArray1<u64> {
+    ) -> PyResult<u64> {
         let utilities = utilities.to_vec().unwrap();
-        mechanisms::exponential_mechanism_sample_and_flip(
+        let index: u64 = mechanisms::exponential_mechanism_sample_and_flip(
             utilities,
             sensitivity,
             epsilon,
-            k,
-        ).to_pyarray(py)
+        );
+        Ok(index)
     }
 
     Ok(())

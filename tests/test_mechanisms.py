@@ -67,14 +67,17 @@ def test_ExponentialMechanismWeightedIndex(benchmark):
     utility_function = lambda x: -np.abs(output_range - np.mean(x))
     data = np.zeros(1)
     TRIALS = 2 ** 12
-    mechanism = ExponentialMechanism(
-        epsilon=1.0,
-        utility_function=utility_function,
-        sensitivity=1.0,
-        output_range=output_range,
-        method="weighted_index",
-    )
-    values = mechanism._release(data, k=TRIALS)
+    values = np.empty(TRIALS)
+    for i in range(TRIALS):
+        mechanism = ExponentialMechanism(
+            epsilon=1.0,
+            utility_function=utility_function,
+            sensitivity=1.0,
+            output_range=output_range,
+            method="weighted_index",
+        )
+        values[i] = mechanism.release(data)
+
     z = scipy.stats.laplace.rvs(scale=2.0, size=TRIALS)
     score, pval = scipy.stats.ks_2samp(values, z)
     assert pval > 0.001
@@ -98,14 +101,17 @@ def test_ExponentialMechanismGumbelTrick(benchmark):
     utility_function = lambda x: -np.abs(output_range - np.mean(x))
     data = np.zeros(1)
     TRIALS = 2 ** 12
-    mechanism = ExponentialMechanism(
-        epsilon=1.0,
-        utility_function=utility_function,
-        sensitivity=1.0,
-        output_range=output_range,
-        method="gumbel_trick",
-    )
-    values = mechanism._release(data, k=TRIALS)
+    values = np.empty(TRIALS)
+    for i in range(TRIALS):
+        mechanism = ExponentialMechanism(
+            epsilon=1.0,
+            utility_function=utility_function,
+            sensitivity=1.0,
+            output_range=output_range,
+            method="gumbel_trick",
+        )
+        values[i] = mechanism.release(data)
+
     z = scipy.stats.laplace.rvs(scale=2.0, size=TRIALS)
     score, pval = scipy.stats.ks_2samp(values, z)
     assert pval > 0.001
@@ -124,25 +130,22 @@ def test_ExponentialMechanismSampleAndFlip(benchmark):
     )
     _test_mechanism(benchmark, mechanism)
     # Goodness of fit test
-    # Notice that this is a different GoF test than for the other
-    # ExponentialMechanism methods.  That is because sample_and_flip
-    # does not work well with large output_range sets.
     n = 6
     output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
     utility_function = lambda x: -np.abs(output_range - np.mean(x))
     data = np.zeros(1)
     TRIALS = 2 ** 12
-    mechanism = ExponentialMechanism(
-        epsilon=1.0,
-        utility_function=utility_function,
-        sensitivity=1.0,
-        output_range=output_range,
-        method="sample_and_flip",
-    )
-    values = mechanism._release(data, k=TRIALS)
-    # weights = np.exp(-np.abs(output_range) / 2.0)
-    # probs = weights / np.sum(weights)
-    # z = np.random.choice(output_range, size=TRIALS, replace=True, p=probs)
+    values = np.empty(TRIALS)
+    for i in range(TRIALS):
+        mechanism = ExponentialMechanism(
+            epsilon=1.0,
+            utility_function=utility_function,
+            sensitivity=1.0,
+            output_range=output_range,
+            method="sample_and_flip",
+        )
+        values[i] = mechanism.release(data)
+
     z = scipy.stats.laplace.rvs(scale=2.0, size=TRIALS)
     score, pval = scipy.stats.ks_2samp(values, z)
     assert pval > 0.001

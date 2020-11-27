@@ -51,8 +51,7 @@ pub fn exponential_mechanism_weighted_index(
     utilities: Vec<f64>,
     sensitivity: f64,
     epsilon: f64,
-    k: usize)
--> Vec<u64> {
+) -> u64 {
 
     let weights: Vec<f64> = utilities.par_iter()
                                      .map(|u| epsilon * u / (2.0f64 * sensitivity))
@@ -61,7 +60,7 @@ pub fn exponential_mechanism_weighted_index(
     let dist = WeightedIndex::new(weights).unwrap();
     let n: u64 = utilities.len().try_into().unwrap();
     let choices: Vec<u64> = (0..n).collect();
-    (0..k).map(|_| samplers::discrete(&choices, &dist)).collect()
+    samplers::discrete(&choices, &dist)
 }
 
 
@@ -69,20 +68,15 @@ pub fn exponential_mechanism_gumbel_trick(
     utilities: Vec<f64>,
     sensitivity: f64,
     epsilon: f64,
-    k: usize)
--> Vec<u64> {
+) -> u64 {
 
     let log_weights: Vec<f64> = utilities.par_iter()
         .map(|u| epsilon * u / (2.0f64 * sensitivity))
         .collect();
-    let mut indices: Vec<u64> = vec![0; k];
-    for i in 0..k {
-        let noisy_log_weights: Vec<f64> = log_weights.par_iter()
-            .map(|w| w + samplers::gumbel(1.0f64))
-            .collect();
-        indices[i] = utils::argmax(&noisy_log_weights).try_into().unwrap();
-    }
-    indices
+    let noisy_log_weights: Vec<f64> = log_weights.par_iter()
+        .map(|w| w + samplers::gumbel(1.0f64))
+        .collect();
+    utils::argmax(&noisy_log_weights).try_into().unwrap()
 }
 
 
@@ -90,8 +84,7 @@ pub fn exponential_mechanism_sample_and_flip(
     utilities: Vec<f64>,
     sensitivity: f64,
     epsilon: f64,
-    k: usize)
--> Vec<u64> {
+) -> u64 {
 
     let argmax: usize = utils::argmax(&utilities);
     let max_utility: f64 = utilities[argmax];
@@ -101,16 +94,12 @@ pub fn exponential_mechanism_sample_and_flip(
         .collect();
 
     let n: u64 = utilities.len().try_into().unwrap();
-    let mut indices: Vec<u64> = vec![0; k];
-    for i in 0..k {
-        let mut flag: bool = false;
-        let mut index: usize = 0;
-        while !flag {
-            index = samplers::uniform_integer(&n).try_into().unwrap();
-            let p: f64 = normalized_log_weights[index].exp();
-            flag = samplers::bernoulli(&p);
-        }
-        indices[i] = index.try_into().unwrap();
+    let mut flag: bool = false;
+    let mut index: usize = 0;
+    while !flag {
+        index = samplers::uniform_integer(&n).try_into().unwrap();
+        let p: f64 = normalized_log_weights[index].exp();
+        flag = samplers::bernoulli(&p);
     }
-    indices
+    index.try_into().unwrap()
 }
