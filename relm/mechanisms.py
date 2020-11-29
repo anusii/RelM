@@ -146,26 +146,11 @@ class ExponentialMechanism(ReleaseMechanism):
         output_range,
         method="gumbel_trick",
     ):
+        super(ExponentialMechanism, self).__init__(epsilon)
         self.utility_function = utility_function
         self.sensitivity = sensitivity
         self.output_range = output_range
         self.method = method
-        if method == "weighted_index":
-            sampler = lambda utilities: backend.exponential_mechanism_weighted_index(
-                utilities, sensitivity, epsilon
-            )
-        elif method == "gumbel_trick":
-            sampler = lambda utilities: backend.exponential_mechanism_gumbel_trick(
-                utilities, sensitivity, epsilon
-            )
-        elif method == "sample_and_flip":
-            sampler = lambda utilities: backend.exponential_mechanism_sample_and_flip(
-                utilities, sensitivity, epsilon
-            )
-        else:
-            raise ValueError("Sampling method '%s' not supported." % method)
-        self.sampler = sampler
-        super(ExponentialMechanism, self).__init__(epsilon)
 
     def release(self, values):
         """
@@ -183,7 +168,7 @@ class ExponentialMechanism(ReleaseMechanism):
         self._update_accountant()
 
         utilities = self.utility_function(values)
-        index = self.sampler(utilities)
+        index = self._sampler(utilities)
         return self.output_range[index]
 
     @property
@@ -195,6 +180,30 @@ class ExponentialMechanism(ReleaseMechanism):
             return 0
         else:
             return self.epsilon
+
+    @property
+    def method(self):
+        return self._method
+
+    @method.setter
+    def method(self, value):
+        if value == "weighted_index":
+            sampler = lambda utilities: backend.exponential_mechanism_weighted_index(
+                utilities, self.sensitivity, self.epsilon
+            )
+        elif value == "gumbel_trick":
+            sampler = lambda utilities: backend.exponential_mechanism_gumbel_trick(
+                utilities, self.sensitivity, self.epsilon
+            )
+        elif value == "sample_and_flip":
+            sampler = lambda utilities: backend.exponential_mechanism_sample_and_flip(
+                utilities, self.sensitivity, self.epsilon
+            )
+        else:
+            raise ValueError("Sampling method '%s' not supported." % method)
+
+        self._method = value
+        self._sampler = sampler
 
 
 class SparseGeneric(ReleaseMechanism):
