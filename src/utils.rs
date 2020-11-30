@@ -1,4 +1,5 @@
 use rug::{float::Round, Float, Integer};
+use std::cmp::Ordering::Equal;
 
 pub fn clamp(x: f64, bound: f64) -> f64 {
     if x < -bound {
@@ -15,6 +16,22 @@ pub fn ln_rn(x: f64) -> f64 {
     let mut y = Float::with_val(53, x);
     y.ln_round(Round::Nearest);
     y.to_f64()
+}
+
+
+pub fn argmax(slice: &Vec<f64>) -> usize {
+    let mut max_val = slice[0];
+    let mut max_idx: usize = 0;
+    let mut idx = 0;
+    for &val in slice {
+        if val > max_val {
+            max_idx = idx;
+            max_val = val;
+        }
+        idx += 1;
+    }
+
+    max_idx
 }
 
 

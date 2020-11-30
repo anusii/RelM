@@ -4,6 +4,7 @@ import pytest
 from relm.mechanisms import (
     LaplaceMechanism,
     GeometricMechanism,
+    ExponentialMechanism,
     SnappingMechanism,
     AboveThreshold,
     SparseIndicator,
@@ -45,6 +46,108 @@ def test_GeometricMechanism(benchmark):
     y = scipy.stats.geom.rvs(p=1 - q, size=n)
     z = x - y
     score, pval = scipy.stats.ks_2samp(values - data, z)
+    assert pval > 0.001
+
+
+def test_ExponentialMechanismWeightedIndex(benchmark):
+    n = 6
+    output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    mechanism = ExponentialMechanism(
+        epsilon=1.0,
+        utility_function=utility_function,
+        sensitivity=1.0,
+        output_range=output_range,
+        method="weighted_index",
+    )
+    _test_mechanism(benchmark, mechanism)
+    # Goodness of fit test
+    n = 6
+    output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    data = np.zeros(1)
+    TRIALS = 2 ** 12
+    values = np.empty(TRIALS)
+    for i in range(TRIALS):
+        mechanism = ExponentialMechanism(
+            epsilon=1.0,
+            utility_function=utility_function,
+            sensitivity=1.0,
+            output_range=output_range,
+            method="weighted_index",
+        )
+        values[i] = mechanism.release(data)
+
+    z = scipy.stats.laplace.rvs(scale=2.0, size=TRIALS)
+    score, pval = scipy.stats.ks_2samp(values, z)
+    assert pval > 0.001
+
+
+def test_ExponentialMechanismGumbelTrick(benchmark):
+    n = 6
+    output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    mechanism = ExponentialMechanism(
+        epsilon=1.0,
+        utility_function=utility_function,
+        sensitivity=1.0,
+        output_range=output_range,
+        method="gumbel_trick",
+    )
+    _test_mechanism(benchmark, mechanism)
+    # Goodness of fit test
+    n = 6
+    output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    data = np.zeros(1)
+    TRIALS = 2 ** 12
+    values = np.empty(TRIALS)
+    for i in range(TRIALS):
+        mechanism = ExponentialMechanism(
+            epsilon=1.0,
+            utility_function=utility_function,
+            sensitivity=1.0,
+            output_range=output_range,
+            method="gumbel_trick",
+        )
+        values[i] = mechanism.release(data)
+
+    z = scipy.stats.laplace.rvs(scale=2.0, size=TRIALS)
+    score, pval = scipy.stats.ks_2samp(values, z)
+    assert pval > 0.001
+
+
+def test_ExponentialMechanismSampleAndFlip(benchmark):
+    n = 6  # This gets *really* slow if n in mcuh bigger than 6.
+    output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    mechanism = ExponentialMechanism(
+        epsilon=1.0,
+        utility_function=utility_function,
+        sensitivity=1.0,
+        output_range=output_range,
+        method="sample_and_flip",
+    )
+    _test_mechanism(benchmark, mechanism)
+    # Goodness of fit test
+    n = 6
+    output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
+    utility_function = lambda x: -np.abs(output_range - np.mean(x))
+    data = np.zeros(1)
+    TRIALS = 2 ** 12
+    values = np.empty(TRIALS)
+    for i in range(TRIALS):
+        mechanism = ExponentialMechanism(
+            epsilon=1.0,
+            utility_function=utility_function,
+            sensitivity=1.0,
+            output_range=output_range,
+            method="sample_and_flip",
+        )
+        values[i] = mechanism.release(data)
+
+    z = scipy.stats.laplace.rvs(scale=2.0, size=TRIALS)
+    score, pval = scipy.stats.ks_2samp(values, z)
     assert pval > 0.001
 
 

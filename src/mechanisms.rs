@@ -1,3 +1,6 @@
+use rand::distributions::WeightedIndex;
+use std::convert::TryInto;
+
 use rayon::prelude::*;
 use crate::samplers;
 use crate::utils;
@@ -44,3 +47,57 @@ pub fn geometric_mechanism(data: Vec<i64>, sensitivity: f64, epsilon: f64) -> Ve
 }
 
 
+pub fn exponential_mechanism_weighted_index(
+    utilities: Vec<f64>,
+    sensitivity: f64,
+    epsilon: f64,
+) -> u64 {
+
+    let weights: Vec<f64> = utilities.par_iter()
+                                     .map(|u| epsilon * u / (2.0f64 * sensitivity))
+                                     .map(|u| u.exp())
+                                     .collect();
+    let dist = WeightedIndex::new(weights).unwrap();
+    samplers::discrete(&dist)
+}
+
+
+pub fn exponential_mechanism_gumbel_trick(
+    utilities: Vec<f64>,
+    sensitivity: f64,
+    epsilon: f64,
+) -> u64 {
+
+    let log_weights: Vec<f64> = utilities.par_iter()
+        .map(|u| epsilon * u / (2.0f64 * sensitivity))
+        .collect();
+    let noisy_log_weights: Vec<f64> = log_weights.par_iter()
+        .map(|w| w + samplers::gumbel(1.0f64))
+        .collect();
+    utils::argmax(&noisy_log_weights).try_into().unwrap()
+}
+
+
+pub fn exponential_mechanism_sample_and_flip(
+    utilities: Vec<f64>,
+    sensitivity: f64,
+    epsilon: f64,
+) -> u64 {
+
+    let argmax: usize = utils::argmax(&utilities);
+    let max_utility: f64 = utilities[argmax];
+
+    let mut normalized_log_weights: Vec<f64> = utilities.par_iter()
+        .map(|u| epsilon * (u - max_utility) / (2.0f64 * sensitivity))
+        .collect();
+
+    let n: u64 = utilities.len().try_into().unwrap();
+    let mut flag: bool = false;
+    let mut index: usize = 0;
+    while !flag {
+        index = samplers::uniform_integer(&n).try_into().unwrap();
+        let p: f64 = normalized_log_weights[index].exp();
+        flag = samplers::bernoulli(&p);
+    }
+    index.try_into().unwrap()
+}

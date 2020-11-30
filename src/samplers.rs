@@ -1,8 +1,34 @@
 use rand::prelude::*;
+use rand::distributions::{WeightedIndex, Bernoulli};
+use std::convert::TryInto;
+
 use rug::Integer;
 use crate::utils;
 
 
+// pub fn discrete(choices: &Vec<u64>, dist: &WeightedIndex<f64>) -> u64 {
+//     let mut rng = rand::thread_rng();
+//     choices[dist.sample(&mut rng)]
+//}
+
+pub fn discrete(dist: &WeightedIndex<f64>) -> u64 {
+    let mut rng = rand::thread_rng();
+    dist.sample(&mut rng).try_into().unwrap()
+}
+
+
+
+pub fn uniform_integer(n: &u64) -> u64 {
+    let mut rng = rand::thread_rng();
+    let result: u64 = rng.gen_range(0, *n);
+    result
+}
+
+pub fn bernoulli(p: &f64) -> bool {
+    let mut rng = rand::thread_rng();
+    let dist = Bernoulli::new(*p).unwrap();
+    dist.sample(&mut rand::thread_rng())
+}
 
 pub fn uniform(scale: f64) -> f64 {
     /// Returns a sample from the [0, scale) uniform distribution
@@ -21,6 +47,17 @@ pub fn geometric(scale: f64) -> f64 {
     /// * `scale` - The scale parameter of the geometric distribution
     let mut rng = rand::thread_rng();
     (rng.gen::<f64>().ln() / (1.0 - scale).ln()).floor()
+}
+
+
+pub fn gumbel(scale: f64) -> f64 {
+    /// Returns a sample from the Gumbel distribution
+    ///
+    /// # Arguments
+    ///
+    /// * `scale` = The scale parameter of the Gumbel distribution
+    let mut rng = rand::thread_rng();
+    -scale * (-rng.gen::<f64>().ln()).ln()
 }
 
 
