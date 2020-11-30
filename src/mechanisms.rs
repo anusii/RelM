@@ -1,4 +1,8 @@
+use rand::{thread_rng, seq};
 use rand::distributions::WeightedIndex;
+use rand::seq::SliceRandom;
+use rand::prelude::IteratorRandom;
+
 use std::convert::TryInto;
 
 use rayon::prelude::*;
@@ -84,20 +88,61 @@ pub fn exponential_mechanism_sample_and_flip(
     epsilon: f64,
 ) -> u64 {
 
+    let scale: f64 = epsilon / (2.0f64 * sensitivity);
     let argmax: usize = utils::argmax(&utilities);
     let max_utility: f64 = utilities[argmax];
 
-    let mut normalized_log_weights: Vec<f64> = utilities.par_iter()
-        .map(|u| epsilon * (u - max_utility) / (2.0f64 * sensitivity))
-        .collect();
-
     let n: u64 = utilities.len().try_into().unwrap();
     let mut flag: bool = false;
-    let mut index: usize = 0;
+    let mut current: usize = 0;
     while !flag {
-        index = samplers::uniform_integer(&n).try_into().unwrap();
-        let p: f64 = normalized_log_weights[index].exp();
+        current = samplers::uniform_integer(&n).try_into().unwrap();
+        let p: f64 = (scale * (utilities[current] - max_utility)).exp();
         flag = samplers::bernoulli(&p);
     }
-    index.try_into().unwrap()
+    current.try_into().unwrap()
+}
+
+
+pub fn permute_and_flip_mechanism(
+    utilities: Vec<f64>,
+    sensitivity: f64,
+    epsilon: f64,
+) -> u64 {
+
+    let scale: f64 = epsilon / (2.0f64 * sensitivity);
+    let argmax: usize = utils::argmax(&utilities);
+    let max_utility: f64 = utilities[argmax];
+
+    let n: usize = utilities.len();
+    let mut indices: Vec<usize> = (0..n).collect();
+
+    let mut flag: bool = false;
+    let mut idx: usize = 0;
+    let mut current: usize = 0;
+
+    // indices.shuffle(&mut thread_rng());
+    // while !flag {
+    //     current = indices[idx];
+    //     let p: f64 = (scale * (utilities[current]-max_utility)).exp();
+    //     flag = samplers::bernoulli(&p);
+    //     idx += 1;
+    // }
+
+    let mut rng = thread_rng();
+    while !flag {
+        let temp = (idx..n).choose(&mut rng).unwrap();
+        //let foo = indices[temp];
+        current = indices[temp];
+        indices[temp] = indices[idx];
+        // indices[idx] = foo;
+        // current = indices[idx];
+        // current = foo;
+        let p: f64 = (scale * (utilities[current]-max_utility)).exp();
+        flag = samplers::bernoulli(&p);
+        idx += 1;
+    }
+
+    current.try_into().unwrap()
+
 }
