@@ -96,8 +96,7 @@ pub fn exponential_mechanism_sample_and_flip(
     let mut index: usize = 0;
     while !flag {
         index = samplers::uniform_integer(&n).try_into().unwrap();
-        let p: f64 = normalized_log_weights[index].exp();
-        flag = samplers::bernoulli(&p);
+        flag = samplers::log_bernoulli(normalized_log_weights[index]);
     }
     index.try_into().unwrap()
 }
