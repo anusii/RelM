@@ -6,11 +6,6 @@ use rug::Integer;
 use crate::utils;
 
 
-// pub fn discrete(choices: &Vec<u64>, dist: &WeightedIndex<f64>) -> u64 {
-//     let mut rng = rand::thread_rng();
-//     choices[dist.sample(&mut rng)]
-//}
-
 pub fn discrete(dist: &WeightedIndex<f64>) -> u64 {
     let mut rng = rand::thread_rng();
     dist.sample(&mut rng).try_into().unwrap()
@@ -18,15 +13,15 @@ pub fn discrete(dist: &WeightedIndex<f64>) -> u64 {
 
 
 
-pub fn uniform_integer(n: &u64) -> u64 {
+pub fn uniform_integer(n: u64) -> u64 {
     let mut rng = rand::thread_rng();
-    let result: u64 = rng.gen_range(0, *n);
+    let result: u64 = rng.gen_range(0, n);
     result
 }
 
-pub fn bernoulli(p: &f64) -> bool {
+pub fn bernoulli(p: f64) -> bool {
     let mut rng = rand::thread_rng();
-    let dist = Bernoulli::new(*p).unwrap();
+    let dist = Bernoulli::new(p).unwrap();
     dist.sample(&mut rand::thread_rng())
 }
 
