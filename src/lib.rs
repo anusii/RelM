@@ -116,5 +116,22 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         Ok(index)
     }
 
+
+    #[pyfn(m, "permute_and_flip_mechanism")]
+    fn py_permute_and_flip_mechanism<'a>(
+        py: Python<'a>,
+        utilities: &'a PyArray1<f64>,
+        sensitivity: f64,
+        epsilon: f64,
+    ) -> PyResult<u64> {
+        let utilities = utilities.to_vec().unwrap();
+        let index: u64 = mechanisms::permute_and_flip_mechanism(
+            utilities,
+            sensitivity,
+            epsilon,
+        );
+        Ok(index)
+    }
+
     Ok(())
 }

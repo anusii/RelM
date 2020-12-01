@@ -1,5 +1,4 @@
 use rug::{float::Round, Float, Integer};
-use std::cmp::Ordering::Equal;
 
 pub fn clamp(x: f64, bound: f64) -> f64 {
     if x < -bound {
@@ -19,7 +18,7 @@ pub fn ln_rn(x: f64) -> f64 {
 }
 
 
-pub fn argmax(slice: &Vec<f64>) -> usize {
+pub fn argmax<T: std::cmp::PartialOrd + Copy>(slice: &Vec<T>) -> usize {
     let mut max_val = slice[0];
     let mut max_idx: usize = 0;
     let mut idx = 0;
