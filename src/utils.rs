@@ -63,7 +63,7 @@ pub fn exponential_bias(scale: f64, pow2: i32, required_bits: i32) -> Integer {
 }
 
 
-pub fn bernoulli_bias(scale: f64, required_bits: i32) -> Integer {
+pub fn exp_rn(scale: f64, required_bits: i32) -> Integer {
     let num_bits = (required_bits + 10) as u32;
     let bias = (Float::with_val(num_bits, scale)).exp() << required_bits;
     bias.trunc().to_integer().unwrap()

@@ -31,17 +31,17 @@ pub fn bernoulli(p: &f64) -> bool {
 }
 
 
-pub fn log_bernoulli(log_p: f64) -> bool {
+pub fn bernoulli_log_p(log_p: f64) -> bool {
     let mut rng = rand::thread_rng();
     let mut num_required_bits = 64;
 
-    let bias = utils::bernoulli_bias(log_p, num_required_bits);
+    let bias = utils::exp_rn(log_p, num_required_bits);
     let mut rand_bits = Integer::from(rng.next_u64());
 
     while Integer::from(&rand_bits - &bias).abs() <= 1 {
         num_required_bits += 64;
         // calculate a more precise bias
-        let bias = utils::bernoulli_bias(log_p, num_required_bits);
+        let bias = utils::exp_rn(log_p, num_required_bits);
         // sample the next 64 bits from the random uniform
         rand_bits <<= 64;
         rand_bits += Integer::from(rng.next_u64());
@@ -168,7 +168,6 @@ fn sample_exact_exponential_bit(scale: f64, pow2: i32, rand_bits: u64) -> i64 {
         rand_bits <<= 64;
         rand_bits += Integer::from(rng.next_u64());
     }
-
     if bias > rand_bits {
         return 1;
     } else {
