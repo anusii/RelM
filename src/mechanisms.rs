@@ -111,38 +111,41 @@ pub fn permute_and_flip_mechanism(
 ) -> u64 {
 
     let scale: f64 = epsilon / (2.0f64 * sensitivity);
+
     let argmax: usize = utils::argmax(&utilities);
     let max_utility: f64 = utilities[argmax];
 
     let n: usize = utilities.len();
     let mut indices: Vec<usize> = (0..n).collect();
 
-    let mut flag: bool = false;
-    let mut idx: usize = 0;
-    let mut current: usize = 0;
+    indices.shuffle(&mut thread_rng());
 
-    // indices.shuffle(&mut thread_rng());
+    let bits: Vec<bool> = utilities.par_iter()
+        .map(|u| (scale * (u - max_utility)).exp())
+        .map(|p| samplers::bernoulli(&p))
+        .collect();
+
+    let mut shuffled_bits: Vec<bool> = vec![false; n];
+    for i in 0..n {
+        shuffled_bits[i] = bits[indices[i]];
+    }
+
+    let idx: usize = utils::argmax(&shuffled_bits);
+    indices[idx].try_into().unwrap()
+
+    // let mut flag: bool = false;
+    // let mut idx: usize = 0;
+    // let mut current: usize = 0;
+    //
+    // let mut rng = thread_rng();
     // while !flag {
+    //     let temp = (idx..n).choose(&mut rng).unwrap();
+    //     indices.swap(idx, temp);
     //     current = indices[idx];
     //     let p: f64 = (scale * (utilities[current]-max_utility)).exp();
     //     flag = samplers::bernoulli(&p);
     //     idx += 1;
     // }
-
-    let mut rng = thread_rng();
-    while !flag {
-        let temp = (idx..n).choose(&mut rng).unwrap();
-        //let foo = indices[temp];
-        current = indices[temp];
-        indices[temp] = indices[idx];
-        // indices[idx] = foo;
-        // current = indices[idx];
-        // current = foo;
-        let p: f64 = (scale * (utilities[current]-max_utility)).exp();
-        flag = samplers::bernoulli(&p);
-        idx += 1;
-    }
-
-    current.try_into().unwrap()
-
+    //
+    // current.try_into().unwrap()
 }
