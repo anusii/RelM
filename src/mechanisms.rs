@@ -132,20 +132,4 @@ pub fn permute_and_flip_mechanism(
 
     let idx: usize = utils::argmax(&shuffled_bits);
     indices[idx].try_into().unwrap()
-    //
-    // let mut flag: bool = false;
-    // let mut idx: usize = 0;
-    // let mut current: usize = 0;
-    //
-    // let mut rng = thread_rng();
-    // while !flag {
-    //     let temp = rng.gen_range(idx, n);
-    //     indices.swap(idx, temp);
-    //     current = indices[idx];
-    //     let p: f64 = (scale * (utilities[current]-max_utility)).exp();
-    //     flag = samplers::bernoulli(&p);
-    //     idx += 1;
-    // }
-    //
-    // current.try_into().unwrap()
 }
