@@ -97,8 +97,8 @@ pub fn exponential_mechanism_sample_and_flip(
     let mut current: usize = 0;
     while !flag {
         current = samplers::uniform_integer(&n).try_into().unwrap();
-        let p: f64 = (scale * (utilities[current] - max_utility)).exp();
-        flag = samplers::bernoulli(&p);
+        let log_p = (scale * (utilities[current] - max_utility));
+        flag = samplers::bernoulli_log_p(log_p);
     }
     current.try_into().unwrap()
 }
