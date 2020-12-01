@@ -118,18 +118,37 @@ pub fn permute_and_flip_mechanism(
     let n: usize = utilities.len();
     let mut indices: Vec<usize> = (0..n).collect();
 
-    indices.shuffle(&mut thread_rng());
+    // indices.shuffle(&mut thread_rng());
+    //
+    // let bits: Vec<bool> = utilities.par_iter()
+    //     .map(|u| (scale * (u - max_utility)).exp())
+    //     .map(|p| samplers::bernoulli(&p))
+    //     .collect();
+    //
+    // let mut shuffled_bits: Vec<bool> = vec![false; n];
+    // for i in 0..n {
+    //     shuffled_bits[i] = bits[indices[i]];
+    // }
+    //
+    // let idx: usize = utils::argmax(&shuffled_bits);
+    // indices[idx].try_into().unwrap()
 
-    let bits: Vec<bool> = utilities.par_iter()
-        .map(|u| (scale * (u - max_utility)).exp())
-        .map(|p| samplers::bernoulli(&p))
-        .collect();
+    let mut rng = thread_rng();
 
-    let mut shuffled_bits: Vec<bool> = vec![false; n];
-    for i in 0..n {
-        shuffled_bits[i] = bits[indices[i]];
+    let mut flag: bool = false;
+    let mut current: usize = 0;
+
+    let mut choice = 0;
+    flag = false;
+    for idx in 0..n {
+        let temp = rng.gen_range(idx, n);
+        indices.swap(temp, idx);
+        current = indices[idx];
+        let p: f64 = (scale * (utilities[current]-max_utility)).exp();
+        if samplers::bernoulli(&p) & !flag {
+            flag = true;
+            choice = current;
+        }
     }
-
-    let idx: usize = utils::argmax(&shuffled_bits);
-    indices[idx].try_into().unwrap()
+    choice.try_into().unwrap()
 }
