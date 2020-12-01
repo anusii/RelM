@@ -113,13 +113,13 @@ pub fn permute_and_flip_mechanism(
     let argmax: usize = utils::argmax(&utilities);
     let max_utility: f64 = utilities[argmax];
 
-    let n: usize = utilities.len();
-    let mut indices: Vec<usize> = (0..n).collect();
-
     let mut normalized_log_weights: Vec<f64> = utilities.par_iter()
         .map(|u| (scale * (u - max_utility)))
         .collect();
 
+    let n: usize = utilities.len();
+    let mut indices: Vec<usize> = (0..n).collect();
+    
     let mut rng = thread_rng();
     let mut flag: bool = false;
     let mut idx: usize = 0;
