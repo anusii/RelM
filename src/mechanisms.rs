@@ -1,4 +1,4 @@
-use rand::{thread_rng, seq};
+use rand::{thread_rng, seq, Rng};
 use rand::distributions::WeightedIndex;
 use rand::seq::SliceRandom;
 use rand::prelude::IteratorRandom;
@@ -132,14 +132,14 @@ pub fn permute_and_flip_mechanism(
 
     let idx: usize = utils::argmax(&shuffled_bits);
     indices[idx].try_into().unwrap()
-
+    //
     // let mut flag: bool = false;
     // let mut idx: usize = 0;
     // let mut current: usize = 0;
     //
     // let mut rng = thread_rng();
     // while !flag {
-    //     let temp = (idx..n).choose(&mut rng).unwrap();
+    //     let temp = rng.gen_range(idx, n);
     //     indices.swap(idx, temp);
     //     current = indices[idx];
     //     let p: f64 = (scale * (utilities[current]-max_utility)).exp();
