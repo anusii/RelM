@@ -1,4 +1,8 @@
+use rand::{thread_rng, seq, Rng};
 use rand::distributions::WeightedIndex;
+use rand::seq::SliceRandom;
+use rand::prelude::IteratorRandom;
+
 use std::convert::TryInto;
 
 use rayon::prelude::*;
@@ -84,19 +88,47 @@ pub fn exponential_mechanism_sample_and_flip(
     epsilon: f64,
 ) -> u64 {
 
+    let scale: f64 = epsilon / (2.0f64 * sensitivity);
     let argmax: usize = utils::argmax(&utilities);
     let max_utility: f64 = utilities[argmax];
 
-    let mut normalized_log_weights: Vec<f64> = utilities.par_iter()
-        .map(|u| epsilon * (u - max_utility) / (2.0f64 * sensitivity))
-        .collect();
-
     let n: u64 = utilities.len().try_into().unwrap();
     let mut flag: bool = false;
-    let mut index: usize = 0;
+    let mut current: usize = 0;
     while !flag {
-        index = samplers::uniform_integer(&n).try_into().unwrap();
+        current = samplers::uniform_integer(&n).try_into().unwrap();
         flag = samplers::bernoulli_log_p(normalized_log_weights[index]);
     }
-    index.try_into().unwrap()
+    current.try_into().unwrap()
+}
+
+
+pub fn permute_and_flip_mechanism(
+    utilities: Vec<f64>,
+    sensitivity: f64,
+    epsilon: f64,
+) -> u64 {
+
+    let scale: f64 = epsilon / (2.0f64 * sensitivity);
+
+    let argmax: usize = utils::argmax(&utilities);
+    let max_utility: f64 = utilities[argmax];
+
+    let n: usize = utilities.len();
+    let mut indices: Vec<usize> = (0..n).collect();
+
+    indices.shuffle(&mut thread_rng());
+
+    let bits: Vec<bool> = utilities.par_iter()
+        .map(|u| (scale * (u - max_utility)).exp())
+        .map(|p| samplers::bernoulli(&p))
+        .collect();
+
+    let mut shuffled_bits: Vec<bool> = vec![false; n];
+    for i in 0..n {
+        shuffled_bits[i] = bits[indices[i]];
+    }
+
+    let idx: usize = utils::argmax(&shuffled_bits);
+    indices[idx].try_into().unwrap()
 }
