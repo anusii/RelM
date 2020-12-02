@@ -226,7 +226,7 @@ def test_ReportNoisyMax(benchmark):
 def test_MultiplicativeWeights():
     data = np.random.randint(0, 10, 1000)
     query = np.random.randint(0, 2, 1000)
-    queries = [query] * 1000
+    queries = [query] * 20000
 
     # test privacy consumption
     mechanism = MultiplicativeWeights(50, 25, 0, 0.1, data)
