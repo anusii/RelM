@@ -8,7 +8,8 @@ use crate::samplers;
 use crate::utils;
 
 
-pub fn all_above_threshold(data: Vec<f64>, scale: f64, threshold: f64, precision: i32) -> Vec<usize>{
+pub fn all_above_threshold(data: Vec<f64>, epsilon: f64, threshold: f64, precision: i32) -> Vec<usize>{
+    let scale = 1.0 / epsilon;
     let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, precision);
     data.par_iter()
         .map(|&p| (p * 2.0f64.powi(precision)).round())
@@ -29,8 +30,8 @@ pub fn snapping(data: Vec<f64>, bound: f64, lambda: f64, quanta: f64) -> Vec<f64
 }
 
 
-pub fn laplace_mechanism(data: Vec<f64>, sensitivity: f64, epsilon: f64, precision: i32) -> Vec<f64> {
-    let scale = (sensitivity + 2.0f64.powi(-precision)) / epsilon;
+pub fn laplace_mechanism(data: Vec<f64>, epsilon: f64, precision: i32) -> Vec<f64> {
+    let scale = 1.0 / epsilon;
     let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, precision);
     data.par_iter()
         .map(|&x| (x * 2.0f64.powi(precision)).round())
@@ -40,8 +41,8 @@ pub fn laplace_mechanism(data: Vec<f64>, sensitivity: f64, epsilon: f64, precisi
 }
 
 
-pub fn geometric_mechanism(data: Vec<i64>, sensitivity: f64, epsilon: f64) -> Vec<i64> {
-    let scale = sensitivity / epsilon;
+pub fn geometric_mechanism(data: Vec<i64>, epsilon: f64) -> Vec<i64> {
+    let scale = 1.0 / epsilon;
     let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, 0);
     data.par_iter()
         .map(|&x| x + samplers::fixed_point_laplace(&biases, scale, 0))
@@ -51,12 +52,11 @@ pub fn geometric_mechanism(data: Vec<i64>, sensitivity: f64, epsilon: f64) -> Ve
 
 pub fn exponential_mechanism_weighted_index(
     utilities: Vec<f64>,
-    sensitivity: f64,
     epsilon: f64,
 ) -> u64 {
 
     let weights: Vec<f64> = utilities.par_iter()
-                                     .map(|u| epsilon * u / (2.0f64 * sensitivity))
+                                     .map(|u| epsilon * u)
                                      .map(|u| u.exp())
                                      .collect();
     let dist = WeightedIndex::new(weights).unwrap();
@@ -66,12 +66,11 @@ pub fn exponential_mechanism_weighted_index(
 
 pub fn exponential_mechanism_gumbel_trick(
     utilities: Vec<f64>,
-    sensitivity: f64,
     epsilon: f64,
 ) -> u64 {
 
     let log_weights: Vec<f64> = utilities.par_iter()
-        .map(|u| epsilon * u / (2.0f64 * sensitivity))
+        .map(|u| epsilon * u)
         .collect();
     let noisy_log_weights: Vec<f64> = log_weights.par_iter()
         .map(|w| w + samplers::gumbel(1.0f64))
@@ -82,11 +81,10 @@ pub fn exponential_mechanism_gumbel_trick(
 
 pub fn exponential_mechanism_sample_and_flip(
     utilities: Vec<f64>,
-    sensitivity: f64,
     epsilon: f64,
 ) -> u64 {
 
-    let scale: f64 = epsilon / (2.0f64 * sensitivity);
+    let scale: f64 = epsilon;
     let argmax: usize = utils::argmax(&utilities);
     let max_utility: f64 = utilities[argmax];
 
@@ -104,11 +102,10 @@ pub fn exponential_mechanism_sample_and_flip(
 
 pub fn permute_and_flip_mechanism(
     utilities: Vec<f64>,
-    sensitivity: f64,
     epsilon: f64,
 ) -> u64 {
 
-    let scale: f64 = epsilon / (2.0f64 * sensitivity);
+    let scale: f64 = epsilon;
 
     let argmax: usize = utils::argmax(&utilities);
     let max_utility: f64 = utilities[argmax];
@@ -119,7 +116,7 @@ pub fn permute_and_flip_mechanism(
 
     let n: usize = utilities.len();
     let mut indices: Vec<usize> = (0..n).collect();
-    
+
     let mut rng = thread_rng();
     let mut flag: bool = false;
     let mut idx: usize = 0;
