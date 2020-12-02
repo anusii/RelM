@@ -609,20 +609,21 @@ class MultiplicativeWeights(ReleaseMechanism):
         cutoff: the number of queries that access the private data
         threshold: the error tolerable
         learning_rate: the learning rate of the multiplicative weights algorithm
-        data: a 1D numpy array of the underlying database
+        l1_norm: the l1 norm of the database
+        histogram_size: the number of elements in the database historgam format
     """
 
-    def __init__(self, epsilon, cutoff, threshold, learning_rate, data):
+    def __init__(
+        self, epsilon, cutoff, threshold, learning_rate, l1_norm, histogram_size
+    ):
         super(MultiplicativeWeights, self).__init__(epsilon)
-        self.data = data
+
         self.learning_rate = learning_rate
         self.sparse_numeric = SparseNumeric(
             epsilon, sensitivity=1, threshold=threshold, cutoff=cutoff
         )
-        self.data_est = np.ones(len(data)) / len(data)
-
-        # this assumes that the l1 norm of the database is public
-        self.l1_norm = data.sum()
+        self.data_est = np.ones(histogram_size) / histogram_size
+        self.l1_norm = l1_norm
 
     @property
     def privacy_consumed(self):
@@ -637,22 +638,21 @@ class MultiplicativeWeights(ReleaseMechanism):
         self.data_est *= np.exp(-r * self.learning_rate)
         self.data_est /= self.data_est.sum()
 
-    def release(self, queries):
+    def release(self, values, queries):
         """
         Returns private answers to the queries.
 
         Args:
             queries: a list of queries as 1D 1/0 indicator numpy arrays
+            values: a numpy array of the query results
         Returns:
             a numpy array of the private query responses
         """
 
         results = []
-        for query in queries:
-            true_answer = (query * self.data).sum()
+        for idx, query in enumerate(queries):
             est_answer = (query * self.data_est).sum() * self.l1_norm
-
-            error = true_answer - est_answer
+            error = values[idx] - est_answer
             errors = np.array([error, -error])
             indices, release_values = self.sparse_numeric.release(errors)
 
