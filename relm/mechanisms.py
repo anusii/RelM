@@ -620,3 +620,32 @@ class ReportNoisyMax(ReleaseMechanism):
             return 0
         else:
             return self.epsilon
+
+
+class SmallDB(ReleaseMechanism):
+
+    def __init__(self, epsilon, queries, data, alpha):
+        self.queries = queries
+        self.data = data
+        self.alpha = alpha
+
+        l1_norm = int(len(queries) / (alpha ** 2)) + 1
+        func = lambda code: self.utility_function(queries, data, self.l1_norm, code)
+        self.exponential_mechanism = ExponentialMechanism(
+            epsilon, func, 1, np.arange(len(data) ** l1_norm)
+        )
+
+
+    @staticmethod
+    def utility_function(queries, data, l1_norm, code):
+        y = np.zeros_like(data)
+        l = len(data)
+        for idx in range(l1_norm):
+            y[code % l] += 1
+            code //= l
+
+        return np.abs(queries.dot(y) - queries.dot(data)).max()
+
+    def release(self):
+        pass
+
