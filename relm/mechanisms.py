@@ -611,11 +611,14 @@ class MultiplicativeWeights(ReleaseMechanism):
         learning_rate: the learning rate of the multiplicative weights algorithm
         data: a 1D numpy array of the underlying database
     """
+
     def __init__(self, epsilon, cutoff, threshold, learning_rate, data):
         super(MultiplicativeWeights, self).__init__(epsilon)
         self.data = data
         self.learning_rate = learning_rate
-        self.sparse_numeric = SparseNumeric(epsilon, sensitivity=1, threshold=threshold, cutoff=cutoff)
+        self.sparse_numeric = SparseNumeric(
+            epsilon, sensitivity=1, threshold=threshold, cutoff=cutoff
+        )
         self.data_est = np.ones(len(data)) / len(data)
 
     @property
