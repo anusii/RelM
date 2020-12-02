@@ -243,5 +243,5 @@ def test_MultiplicativeWeights():
     assert np.isclose(results.mean(), (query * data).sum(), rtol=0.1)
     assert (
         abs((mechanism.data_est * query).sum() * data.sum() - (data * query).sum())
-        < 200
+        < 100
     )

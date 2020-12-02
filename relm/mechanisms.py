@@ -661,5 +661,6 @@ class MultiplicativeWeights(ReleaseMechanism):
             else:
                 noisy_answer = est_answer + (1 - 2 * indices[0]) * release_values[0]
                 results.append(noisy_answer)
+                self.update_weights(est_answer, noisy_answer, query)
 
         return np.array(results)
