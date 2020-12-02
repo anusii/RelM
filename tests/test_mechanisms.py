@@ -11,6 +11,7 @@ from relm.mechanisms import (
     SparseIndicator,
     SparseNumeric,
     ReportNoisyMax,
+    MultiplicativeWeights,
 )
 
 
@@ -220,3 +221,19 @@ def test_SnappingMechanism(benchmark):
 def test_ReportNoisyMax(benchmark):
     mechanism = ReportNoisyMax(epsilon=0.1, precision=35)
     _test_mechanism(benchmark, mechanism)
+
+
+def test_MultiplicativeWeights():
+    data = np.random.randint(0, 10, 1000)
+    query = np.random.randint(0, 1, 1000)
+
+    mechanism = MultiplicativeWeights(50, 100, 0, 0.1, data)
+    with pytest.raises(RuntimeError):
+        for _ in range(200):
+            _ = mechanism.release([query])
+
+    assert mechanism.privacy_consumed == 50
+
+    mechanism = MultiplicativeWeights(50, 100, 10, 0.1, data)
+    for _ in range(200):
+        _ = mechanism.release([query])

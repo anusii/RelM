@@ -597,3 +597,64 @@ class ReportNoisyMax(ReleaseMechanism):
             return 0
         else:
             return self.epsilon
+
+
+class MultiplicativeWeights(ReleaseMechanism):
+    """
+    Secure implementation of the private Multiplicative Weights mechanism.
+    This mechanism can be used to answer multiple linear queries.
+
+    Args:
+        epsilon: the privacy parameter to use
+        cutoff: the number of queries that access the private data
+        threshold: the error tolerable
+        learning_rate: the learning rate of the multiplicative weights algorithm
+        data: a 1D numpy array of the underlying database
+    """
+    def __init__(self, epsilon, cutoff, threshold, learning_rate, data):
+        super(MultiplicativeWeights, self).__init__(epsilon)
+        self.data = data
+        self.learning_rate = learning_rate
+        self.sparse_numeric = SparseNumeric(epsilon, sensitivity=1, threshold=threshold, cutoff=cutoff)
+        self.data_est = np.ones(len(data)) / len(data)
+
+    @property
+    def privacy_consumed(self):
+        return self.sparse_numeric.privacy_consumed
+
+    def update_weights(self, est_answer, noisy_answer, query):
+        if noisy_answer < est_answer:
+            r = query
+        else:
+            r = 1 - query
+
+        self.data_est *= np.exp(-r * self.learning_rate)
+        self.data_est /= self.data_est.sum()
+
+    def release(self, queries):
+        """
+        Returns private answers to the queries.
+
+        Args:
+            queries: a list of queries as 1D 1/0 indicator numpy arrays
+        Returns:
+            a numpy array of the private query responses
+        """
+
+        results = []
+        l1_norm = self.data.sum()
+        for query in queries:
+            true_answer = (query * self.data).sum()
+            # this assumes that the l1 norm of the database is public
+            est_answer = (query * self.data_est).sum() * l1_norm
+            error = true_answer - est_answer
+            errors = np.array([error, -error])
+
+            indices, release_values = self.sparse_numeric.release(errors)
+            if len(indices) == 0:
+                results.append(est_answer)
+            else:
+                noisy_answer = est_answer + (1 - 2 * indices[0]) * release_values[0]
+                results.append(noisy_answer)
+
+        return np.array(results)
