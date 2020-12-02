@@ -621,6 +621,9 @@ class MultiplicativeWeights(ReleaseMechanism):
         )
         self.data_est = np.ones(len(data)) / len(data)
 
+        # this assumes that the l1 norm of the database is public
+        self.l1_norm = data.sum()
+
     @property
     def privacy_consumed(self):
         return self.sparse_numeric.privacy_consumed
@@ -645,15 +648,14 @@ class MultiplicativeWeights(ReleaseMechanism):
         """
 
         results = []
-        l1_norm = self.data.sum()
         for query in queries:
             true_answer = (query * self.data).sum()
-            # this assumes that the l1 norm of the database is public
-            est_answer = (query * self.data_est).sum() * l1_norm
+            est_answer = (query * self.data_est).sum() * self.l1_norm
+
             error = true_answer - est_answer
             errors = np.array([error, -error])
-
             indices, release_values = self.sparse_numeric.release(errors)
+
             if len(indices) == 0:
                 results.append(est_answer)
             else:
