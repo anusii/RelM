@@ -1,7 +1,5 @@
-use rand::{thread_rng, seq, Rng};
+use rand::{thread_rng, Rng};
 use rand::distributions::WeightedIndex;
-use rand::seq::SliceRandom;
-use rand::prelude::IteratorRandom;
 
 use std::convert::TryInto;
 
@@ -96,8 +94,8 @@ pub fn exponential_mechanism_sample_and_flip(
     let mut flag: bool = false;
     let mut current: usize = 0;
     while !flag {
-        current = samplers::uniform_integer(&n).try_into().unwrap();
-        let log_p = (scale * (utilities[current] - max_utility));
+        current = samplers::uniform_integer(n).try_into().unwrap();
+        let log_p = scale * (utilities[current] - max_utility);
         flag = samplers::bernoulli_log_p(log_p);
     }
     current.try_into().unwrap()
@@ -115,21 +113,23 @@ pub fn permute_and_flip_mechanism(
     let argmax: usize = utils::argmax(&utilities);
     let max_utility: f64 = utilities[argmax];
 
-    let n: usize = utilities.len();
-    let mut indices: Vec<usize> = (0..n).collect();
-
-    indices.shuffle(&mut thread_rng());
-
-    let bits: Vec<bool> = utilities.par_iter()
-        .map(|u| (scale * (u - max_utility)).exp())
-        .map(|p| samplers::bernoulli(&p))
+    let mut normalized_log_weights: Vec<f64> = utilities.par_iter()
+        .map(|u| (scale * (u - max_utility)))
         .collect();
 
-    let mut shuffled_bits: Vec<bool> = vec![false; n];
-    for i in 0..n {
-        shuffled_bits[i] = bits[indices[i]];
+    let n: usize = utilities.len();
+    let mut indices: Vec<usize> = (0..n).collect();
+    
+    let mut rng = thread_rng();
+    let mut flag: bool = false;
+    let mut idx: usize = 0;
+    let mut current: usize = 0;
+    while !flag {
+        let temp = rng.gen_range(idx, n);
+        indices.swap(idx, temp);
+        current = indices[idx];
+        flag = samplers::bernoulli_log_p(normalized_log_weights[current]);
+        idx += 1;
     }
-
-    let idx: usize = utils::argmax(&shuffled_bits);
-    indices[idx].try_into().unwrap()
+    current.try_into().unwrap()
 }
