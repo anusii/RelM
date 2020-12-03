@@ -11,6 +11,7 @@ from relm.mechanisms import (
     SparseIndicator,
     SparseNumeric,
     ReportNoisyMax,
+    SmallDB,
 )
 
 
@@ -220,3 +221,15 @@ def test_SnappingMechanism(benchmark):
 def test_ReportNoisyMax(benchmark):
     mechanism = ReportNoisyMax(epsilon=0.1, precision=35)
     _test_mechanism(benchmark, mechanism)
+
+
+def test_SmallDB():
+    data = np.random.randint(0, 10, 3)
+    queries = np.vstack([np.random.randint(0, 2, 3) for _ in range(3)])
+    epsilon = 1000000000
+    mechanism = SmallDB(epsilon, queries, data, 0.9)
+
+    assert np.allclose(
+        queries.dot(data) / data.sum(), mechanism.release(queries), atol=0.1
+    )
+    assert epsilon == mechanism.privacy_consumed

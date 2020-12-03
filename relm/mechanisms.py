@@ -185,6 +185,7 @@ class ExponentialMechanism(ReleaseMechanism):
         self._update_accountant()
 
         utilities = self.utility_function(values)
+        print("########", utilities)
         index = self._sampler(utilities)
         return self.output_range[index]
 
@@ -623,29 +624,43 @@ class ReportNoisyMax(ReleaseMechanism):
 
 
 class SmallDB(ReleaseMechanism):
-
     def __init__(self, epsilon, queries, data, alpha):
-        self.queries = queries
-        self.data = data
-        self.alpha = alpha
-
         l1_norm = int(len(queries) / (alpha ** 2)) + 1
-        func = lambda code: self.utility_function(queries, data, self.l1_norm, code)
-        self.exponential_mechanism = ExponentialMechanism(
-            epsilon, func, 1, np.arange(len(data) ** l1_norm)
-        )
 
+        func = lambda code: self.utility_function(queries, data, l1_norm, code)
+        output_range = np.arange(len(data) ** l1_norm)
+        # print("####", len(data) ** l1_norm)
+
+        self.exponential_mechanism = ExponentialMechanism(
+            epsilon, func, 1, output_range
+        )
+        code = self.exponential_mechanism.release(output_range)
+        self.db = self.decode(code, l1_norm, len(data))
+
+    @property
+    def privacy_consumed(self):
+        return self.exponential_mechanism.privacy_consumed
 
     @staticmethod
-    def utility_function(queries, data, l1_norm, code):
-        y = np.zeros_like(data)
-        l = len(data)
+    def decode(code, l1_norm, l):
+        y = np.zeros(l, dtype=np.uint64)
         for idx in range(l1_norm):
             y[code % l] += 1
             code //= l
+        return y
 
-        return np.abs(queries.dot(y) - queries.dot(data)).max()
+    @staticmethod
+    def utility_function(queries, data, l1_norm, codes):
+        out = []
+        l = len(data)
+        for code in codes:
+            y = SmallDB.decode(code, l1_norm, l)
 
-    def release(self):
-        pass
+            est_answer = queries.dot(y) / l1_norm
+            answer = queries.dot(data) / data.sum()
+            out.append(-np.abs(est_answer - answer).max().astype(np.float64))
 
+        return np.array(out)
+
+    def release(self, queries):
+        return np.dot(queries, self.db) / self.db.sum()
