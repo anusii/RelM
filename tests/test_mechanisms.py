@@ -227,17 +227,18 @@ def test_MultiplicativeWeights():
     data = np.random.randint(0, 10, 1000)
     query = np.random.randint(0, 2, 1000)
     queries = [query] * 20000
-    values = [(query * data).sum() for query in queries]
+
     # test privacy consumption
-    mechanism = MultiplicativeWeights(50, 25, 0, 0.1, data.sum(), len(data))
+    mechanism = MultiplicativeWeights(50, 25, 0, 0.1, data)
     with pytest.raises(RuntimeError):
-        results = mechanism.release(values, queries)
+        results = mechanism.release(queries)
 
     assert mechanism.privacy_consumed == 50
 
     # ridiculous mechanism to test convergence
-    mechanism = MultiplicativeWeights(10000, 2000, 100, 0.5, data.sum(), len(data))
-    results = mechanism.release(values, queries)
+    mechanism = MultiplicativeWeights(10000, 2000, 100, 0.5, data)
+    _ = mechanism.release([query])
+    results = mechanism.release(queries)
     assert len(results) == len(queries)
     assert np.isclose(results.mean(), (query * data).sum(), rtol=0.1)
     assert (
