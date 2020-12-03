@@ -624,6 +624,16 @@ class ReportNoisyMax(ReleaseMechanism):
 
 
 class SmallDB(ReleaseMechanism):
+    """
+    A offline Release Mechanism for answering a large number of queries.
+
+    Args:
+        epsilon: the privacy parameter
+        queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
+        data: a 1D array of the database in histogram format
+        alpha: the relative accuracy of the mechanism
+    """
+
     def __init__(self, epsilon, queries, data, alpha):
         l1_norm = int(len(queries) / (alpha ** 2)) + 1
 
@@ -663,4 +673,13 @@ class SmallDB(ReleaseMechanism):
         return np.array(out)
 
     def release(self, queries):
+        """
+        Releases differential private responses to queries.
+
+        Args:
+            queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
+
+        Returns:
+            A numpy array of perturbed values.
+        """
         return np.dot(queries, self.db) / self.db.sum()
