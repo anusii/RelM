@@ -652,6 +652,9 @@ class SmallDB(ReleaseMechanism):
 
     @staticmethod
     def decode(code, l1_norm, l):
+        """
+        Transform integer code into small database.
+        """
         y = np.zeros(l, dtype=np.uint64)
         for idx in range(l1_norm):
             y[code % l] += 1
