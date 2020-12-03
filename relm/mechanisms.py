@@ -639,7 +639,6 @@ class SmallDB(ReleaseMechanism):
 
         func = lambda code: self.utility_function(queries, data, l1_norm, code)
         output_range = np.arange(len(data) ** l1_norm)
-        # print("####", len(data) ** l1_norm)
 
         self.exponential_mechanism = ExponentialMechanism(
             epsilon, func, 1, output_range
