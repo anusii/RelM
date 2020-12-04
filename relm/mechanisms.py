@@ -630,6 +630,7 @@ class MultiplicativeWeights(ReleaseMechanism):
         cutoff = 4 * np.log(len(data)) / (self.alpha ** 2)
         self.threshold = 18 * cutoff / (epsilon * self.l1_norm)
         self.threshold *= np.log(2 * num_queries) + np.log(4 * cutoff / self.beta)
+        self.threshold *= self.l1_norm
         self.cutoff = int(cutoff)
 
         self.sparse_numeric = SparseNumeric(
