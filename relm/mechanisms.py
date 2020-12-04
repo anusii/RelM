@@ -637,9 +637,7 @@ class MultiplicativeWeights(ReleaseMechanism):
             epsilon, sensitivity=1, threshold=self.threshold, cutoff=self.cutoff
         )
 
-
         # this assumes that the l1 norm of the database is public
-
 
     @property
     def privacy_consumed(self):
