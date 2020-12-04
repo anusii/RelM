@@ -606,23 +606,39 @@ class MultiplicativeWeights(ReleaseMechanism):
 
     Args:
         epsilon: the privacy parameter to use
-        cutoff: the number of queries that access the private data
-        threshold: the error tolerable
+        error: the error of the mechanism
+        num_queries: the number of queries answered by the mechanism
         learning_rate: the learning rate of the multiplicative weights algorithm
         data: a 1D numpy array of the underlying database
     """
 
-    def __init__(self, epsilon, cutoff, threshold, learning_rate, data):
+    def __init__(self, epsilon, error, num_queries, learning_rate, data):
         super(MultiplicativeWeights, self).__init__(epsilon)
         self.data = data
         self.learning_rate = learning_rate
-        self.sparse_numeric = SparseNumeric(
-            epsilon, sensitivity=1, threshold=threshold, cutoff=cutoff
-        )
+        self.l1_norm = data.sum()
         self.data_est = np.ones(len(data)) / len(data)
+        # normalize error
+        self.alpha = error / (self.l1_norm * 3)
+
+        # solve inequality of Theorem 4.14 (Dwork and Roth) for beta
+        self.beta = epsilon * self.l1_norm * self.alpha ** 3
+        self.beta /= 32 * np.log(len(data))
+        self.beta -= np.log(num_queries)
+        self.beta = np.exp(-self.beta) * 32 * np.log(len(data)) / (self.alpha ** 2)
+
+        cutoff = 4 * np.log(len(data)) / (self.alpha ** 2)
+        self.threshold = 18 * cutoff / (epsilon * self.l1_norm)
+        self.threshold *= np.log(2 * num_queries) + np.log(4 * cutoff / self.beta)
+        self.cutoff = int(cutoff)
+
+        self.sparse_numeric = SparseNumeric(
+            epsilon, sensitivity=1, threshold=self.threshold, cutoff=self.cutoff
+        )
+
 
         # this assumes that the l1 norm of the database is public
-        self.l1_norm = data.sum()
+
 
     @property
     def privacy_consumed(self):

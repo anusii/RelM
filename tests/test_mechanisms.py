@@ -229,14 +229,18 @@ def test_MultiplicativeWeights():
     queries = [query] * 20000
 
     # test privacy consumption
-    mechanism = MultiplicativeWeights(50, 25, 0, 0.1, data)
+    mechanism = MultiplicativeWeights(50, 0.01, 20000, 100, data)
+    print(mechanism.beta)
+    print(mechanism.threshold)
+    print(mechanism.cutoff)
+    raise ValueError
     with pytest.raises(RuntimeError):
         results = mechanism.release(queries)
 
     assert mechanism.privacy_consumed == 50
 
     # ridiculous mechanism to test convergence
-    mechanism = MultiplicativeWeights(10000, 2000, 100, 0.5, data)
+    mechanism = MultiplicativeWeights(10000, 0.01, 20000, 0.1, data)
     _ = mechanism.release([query])
     results = mechanism.release(queries)
     assert len(results) == len(queries)
