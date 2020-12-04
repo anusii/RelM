@@ -228,7 +228,7 @@ def test_MultiplicativeWeights():
     query = np.random.randint(0, 2, 1000)
     queries = [query] * 20000
 
-    mechanism = MultiplicativeWeights(10000, 100, 20000, 0.1, data)
+    mechanism = MultiplicativeWeights(10000, 100, 20000, data)
     results = mechanism.release(queries)
 
     assert len(results) == len(queries)
