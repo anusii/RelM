@@ -1,6 +1,10 @@
 import math
 import numpy as np
 import secrets
+
+from collections import Counter
+from itertools import combinations_with_replacement
+
 from relm import backend
 
 
@@ -620,3 +624,61 @@ class ReportNoisyMax(ReleaseMechanism):
             return 0
         else:
             return self.epsilon
+
+
+class SmallDB(ReleaseMechanism):
+    def __init__(self, epsilon, data, alpha):
+        """
+        A offline Release Mechanism for answering a large number of queries.
+
+        Args:
+         epsilon: the privacy parameter
+         queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
+         data: a 1D array of the database in histogram format
+         alpha: the relative accuracy of the mechanism
+        """
+        super(SmallDB, self).__init__(epsilon)
+        self.data = data
+        self.alpha = alpha
+
+    @property
+    def privacy_consumed(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
+
+    def release(self, queries):
+        """
+        Releases differential private responses to queries.
+
+        Args:
+         queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
+
+        Returns:
+         A numpy array of perturbed values.
+        """
+        l1_norm = int(len(queries) / (self.alpha ** 2)) + 1
+
+        n = len(self.data)
+        small_db_elements = combinations_with_replacement(np.arange(n), l1_norm)
+        small_db_counts = list(map(Counter, small_db_elements))
+        output_range = np.zeros(shape=(len(small_db_counts), n), dtype=np.float)
+        for counts, small_db_array in zip(small_db_counts, output_range):
+            for k, v in counts.items():
+                small_db_array[k] = v
+
+        small_db_values = (output_range @ queries.transpose()) / l1_norm
+        utility_function = lambda x: -np.max(np.abs(x - small_db_values), axis=1)
+
+        mechanism = ExponentialMechanism(
+            self.epsilon, utility_function, 1.0, output_range, method="sample_and_flip"
+        )
+
+        values = (self.data @ queries.transpose()) / self.data.sum()
+        small_db = mechanism.release(values)
+
+        return small_db
