@@ -661,24 +661,35 @@ class SmallDB(ReleaseMechanism):
         Returns:
          A numpy array of perturbed values.
         """
+        n = len(self.data)
         l1_norm = int(len(queries) / (self.alpha ** 2)) + 1
 
-        n = len(self.data)
+        # Create a list of all possible small databases
         small_db_elements = combinations_with_replacement(np.arange(n), l1_norm)
+        # Compute a more efficient encoding of the possible small databases
         small_db_counts = list(map(Counter, small_db_elements))
+        # Turn the efficient representation of the possible small databases
+        # into an array of counts.  We do this so that we can evaluate the
+        # queries on the databases using matrix multiplication.
         output_range = np.zeros(shape=(len(small_db_counts), n), dtype=np.float)
         for counts, small_db_array in zip(small_db_counts, output_range):
             for k, v in counts.items():
                 small_db_array[k] = v
 
+        # Cmpute the normalized queries responses on the candidate small databases
         small_db_values = (output_range @ queries.transpose()) / l1_norm
-        utility_function = lambda x: -np.max(np.abs(x - small_db_values), axis=1)
 
+        # Define a utility function that computes the utility of each candidate
+        # small database given the query responses on the real database.
+        utility_function = lambda x: -np.max(np.abs(x - small_db_values), axis=1)
+        # Define the mechanisms that will be used to select a small database from the
+        # list of candidates
         mechanism = ExponentialMechanism(
             self.epsilon, utility_function, 1.0, output_range, method="sample_and_flip"
         )
-
+        # Compute the query response on the real database
         values = (self.data @ queries.transpose()) / self.data.sum()
+        # Choose a small database from the list of candidates.
         small_db = mechanism.release(values)
 
         return small_db
