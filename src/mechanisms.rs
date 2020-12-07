@@ -147,8 +147,7 @@ pub fn small_db(
         let error = small_db_max_error(&db, &queries, &answers, &breaks, l1_norm);
         let utility = -error;
         let log_p = 0.5 * epsilon * utility;
-        let flag = samplers::bernoulli_log_p(log_p);
-        if flag { break }
+        if samplers::bernoulli_log_p(log_p) { break }
     }
 
     // convert the sparse small db to a dense vector
