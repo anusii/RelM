@@ -236,11 +236,19 @@ def test_SmallDB():
 
 
 def test_rust_SmallDB():
-    data = np.random.randint(0, 10, 3)
-    queries = np.vstack([np.random.randint(0, 2, 3) for _ in range(3)])
-    for i in range(3):
-        print(f"Actual {i} Q Idxs: ", np.where(queries[i, :])[0])
-    epsilon = 1000000000
-    mechanism = SmallDB(epsilon, queries, data, 0.9)
 
-    raise NotImplementedError
+    size = 1000
+
+    data = np.random.randint(0, 10, size)
+    queries = np.vstack([np.random.randint(0, 2, size) for _ in range(3)])
+
+    epsilon = 1
+    mechanism = SmallDB(epsilon, queries, data, 0.9)
+    errors = abs(queries.dot(data) / data.sum() - mechanism.release(queries))
+
+    assert len(mechanism.db) == size
+    assert mechanism.db.sum() == int(len(queries) / (0.9 ** 2)) + 1
+
+    epsilon = 1
+    mechanism = SmallDB(epsilon, queries, data, 0.001)
+    errors = abs(queries.dot(data) / data.sum() - mechanism.release(queries))

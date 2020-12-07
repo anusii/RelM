@@ -647,38 +647,17 @@ class SmallDB(ReleaseMechanism):
 
         answers = queries.dot(data) / data.sum()
         breaks = np.cumsum(queries.sum(axis=1).astype(np.uint64))
-        queries = np.concatenate([np.where(queries[i, :])[0] for i in range(queries.shape[0])]).astype(np.uint64)
+        queries = np.concatenate(
+            [np.where(queries[i, :])[0] for i in range(queries.shape[0])]
+        ).astype(np.uint64)
 
-        db = backend.small_db(epsilon, l1_norm, len(data), queries, answers, breaks)
-
+        self.db = backend.small_db(
+            epsilon, l1_norm, len(data), queries, answers, breaks
+        )
 
     @property
     def privacy_consumed(self):
         return self.exponential_mechanism.privacy_consumed
-
-    @staticmethod
-    def decode(code, l1_norm, l):
-        """
-        Transform integer code into small database.
-        """
-        y = np.zeros(l, dtype=np.uint64)
-        for idx in range(l1_norm):
-            y[code % l] += 1
-            code //= l
-        return y
-
-    @staticmethod
-    def utility_function(queries, data, l1_norm, codes):
-        out = []
-        l = len(data)
-        for code in codes:
-            y = SmallDB.decode(code, l1_norm, l)
-
-            est_answer = queries.dot(y) / l1_norm
-            answer = queries.dot(data) / data.sum()
-            out.append(-np.abs(est_answer - answer).max().astype(np.float64))
-
-        return np.array(out)
 
     def release(self, queries):
         """

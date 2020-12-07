@@ -136,35 +136,36 @@ pub fn permute_and_flip_mechanism(
 
 pub fn small_db(
     epsilon: f64, l1_norm: usize, size: u64, queries: Vec<u64>, answers: Vec<f64>, breaks: Vec<usize>
-) -> HashMap<u64, u64> {
+) -> Vec<u64> {
+
+    // store the db in a sparse vector (implemented with a HashMap)
     let mut db: HashMap<u64, u64> = HashMap::with_capacity(l1_norm);
 
-    let mut idx = 0;
-
     loop {
+        // sample another random small db
         random_small_db(&mut db, l1_norm, size);
 
         let error = small_db_max_error(&db, &queries, &answers, &breaks, l1_norm);
 
         let log_p = -0.5 * epsilon * error;
         let flag = samplers::bernoulli_log_p(log_p);
-        if flag {
-            break
-        }
-        idx += 1;
-        if idx > 100 {
-            println!("Wooohoo!");
-            break;
-        }
+        if flag { break }
     }
 
-    db
+    // convert the sparse small db to a dense vector
+    let mut db_vec: Vec<u64> = vec![0; size as usize];
+    for (&idx, &val) in db.iter() {
+        db_vec[idx as usize] = val;
+    }
+
+    db_vec
 }
 
 
 fn random_small_db(db: &mut HashMap<u64, u64>, l1_norm: usize, size: u64) {
     db.clear();
     let mut rng = thread_rng();
+
     for _ in 0..l1_norm {
         let idx: u64 = rng.gen_range(0, size);
         db.entry(idx).or_insert(0);
