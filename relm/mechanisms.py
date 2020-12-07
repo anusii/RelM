@@ -637,14 +637,20 @@ class SmallDB(ReleaseMechanism):
     def __init__(self, epsilon, queries, data, alpha):
         l1_norm = int(len(queries) / (alpha ** 2)) + 1
 
-        func = lambda code: self.utility_function(queries, data, l1_norm, code)
-        output_range = np.arange(len(data) ** l1_norm)
+        assert (np.sort(np.unique(queries)) == np.array([0, 1])).all()
+        assert (data >= 0).all()
 
-        self.exponential_mechanism = ExponentialMechanism(
-            epsilon, func, 1, output_range
-        )
-        code = self.exponential_mechanism.release(output_range)
-        self.db = self.decode(code, l1_norm, len(data))
+        if data.dtype == np.int64:
+            data = data.astype(np.uint64)
+
+        assert data.dtype == np.uint64
+
+        answers = queries.dot(data) / data.sum()
+        breaks = np.cumsum(queries.sum(axis=1).astype(np.uint64))
+        queries = np.concatenate([np.where(queries[i, :])[0] for i in range(queries.shape[0])]).astype(np.uint64)
+
+        db = backend.small_db(epsilon, l1_norm, len(data), queries, answers, breaks)
+
 
     @property
     def privacy_consumed(self):

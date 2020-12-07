@@ -1,7 +1,7 @@
 #![allow(unused_doc_comments)]
 
 use pyo3::prelude::{pymodule, PyModule, PyResult, Python};
-use numpy::{PyArray1, ToPyArray};
+use numpy::{PyArray1, ToPyArray, PyArray2};
 
 
 mod utils;
@@ -121,6 +121,25 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
             epsilon,
         );
         Ok(index)
+    }
+
+    #[pyfn(m, "small_db")]
+    fn py_small_db<'a>(
+        py: Python<'a>,
+        epsilon: f64,
+        l1_norm: usize,
+        size: u64,
+        queries: &'a PyArray1<u64>,
+        answers: &'a PyArray1<f64>,
+        breaks: &'a PyArray1<u64>
+) -> PyResult<f64> {
+        let queries = queries.to_vec().unwrap();
+        let answers = answers.to_vec().unwrap();
+        let breaks = breaks.to_vec().unwrap();
+        let breaks = breaks.iter().map(|&x| x as usize).collect();
+        let db = mechanisms::small_db(epsilon, l1_norm, size, queries, answers, breaks);
+
+        Ok(1.0)
     }
 
     Ok(())

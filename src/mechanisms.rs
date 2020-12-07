@@ -1,7 +1,9 @@
 use rand::{thread_rng, Rng};
 use rand::distributions::WeightedIndex;
+use ndarray::Array2;
 
 use std::convert::TryInto;
+use std::collections::HashMap;
 
 use rayon::prelude::*;
 use crate::samplers;
@@ -129,4 +131,78 @@ pub fn permute_and_flip_mechanism(
         idx += 1;
     }
     current.try_into().unwrap()
+}
+
+
+pub fn small_db(
+    epsilon: f64, l1_norm: usize, size: u64, queries: Vec<u64>, answers: Vec<f64>, breaks: Vec<usize>
+) -> HashMap<u64, u64> {
+    let mut db: HashMap<u64, u64> = HashMap::with_capacity(l1_norm);
+
+    let mut idx = 0;
+
+    loop {
+        random_small_db(&mut db, l1_norm, size);
+
+        let error = small_db_max_error(&db, &queries, &answers, &breaks, l1_norm);
+
+        let log_p = -0.5 * epsilon * error;
+        let flag = samplers::bernoulli_log_p(log_p);
+        if flag {
+            break
+        }
+        idx += 1;
+        if idx > 100 {
+            println!("Wooohoo!");
+            break;
+        }
+    }
+
+    db
+}
+
+
+fn random_small_db(db: &mut HashMap<u64, u64>, l1_norm: usize, size: u64) {
+    db.clear();
+    let mut rng = thread_rng();
+    for _ in 0..l1_norm {
+        let idx: u64 = rng.gen_range(0, size);
+        db.entry(idx).or_insert(0);
+        if let Some(x) = db.get_mut(&idx) {
+            *x += 1;
+        }
+    }
+}
+
+
+fn small_db_max_error(
+    db: &HashMap<u64, u64>, queries: &Vec<u64>, answers: &Vec<f64>, breaks: &Vec<usize>, l1_norm: usize
+) -> f64 {
+
+    let mut max_error: f64 = 0.0;
+    let mut result: u64 = 0;
+    let mut error: f64 = 0.0;
+
+    let mut start: usize = 0;
+    for (i, &stop) in breaks.iter().enumerate() {
+        result = 0;
+        for j in start..stop {
+            let idx = queries[j];
+            result += match db.get(&idx) {
+                Some(x) => {*x}
+                None => 0
+            };
+        }
+
+        start = stop;
+
+        let normalized_result = (result as f64) / (l1_norm as f64);
+
+        error = (normalized_result - answers[i]).abs();
+        if error > max_error {
+            max_error = error;
+        }
+    }
+
+    max_error
 }

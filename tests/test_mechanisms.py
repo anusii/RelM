@@ -233,3 +233,14 @@ def test_SmallDB():
         queries.dot(data) / data.sum(), mechanism.release(queries), atol=0.1
     )
     assert epsilon == mechanism.privacy_consumed
+
+
+def test_rust_SmallDB():
+    data = np.random.randint(0, 10, 3)
+    queries = np.vstack([np.random.randint(0, 2, 3) for _ in range(3)])
+    for i in range(3):
+        print(f"Actual {i} Q Idxs: ", np.where(queries[i, :])[0])
+    epsilon = 1000000000
+    mechanism = SmallDB(epsilon, queries, data, 0.9)
+
+    raise NotImplementedError
