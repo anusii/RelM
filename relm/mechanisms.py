@@ -5,7 +5,6 @@ from relm import backend
 
 
 class ReleaseMechanism:
-
     def __init__(self, epsilon):
         self.epsilon = epsilon
         self._is_valid = True
