@@ -240,3 +240,14 @@ def test_SmallDB():
     epsilon = 1
     mechanism = SmallDB(epsilon, queries, data, 0.001)
     errors = abs(queries.dot(data) / data.sum() - mechanism.release(queries))
+
+    _ = SmallDB(epsilon, np.ones((1, size)), data, 0.001)
+    _ = SmallDB(epsilon, np.zeros((1, size)), data, 0.001)
+    with pytest.raises(ValueError):
+        queries = np.ones((1, size))
+        queries[0, 2] = -1
+        _ = SmallDB(epsilon, queries, data, 0.001)
+
+    with pytest.raises(ValueError):
+        data[0] = -2
+        _ = SmallDB(epsilon, np.ones((1, size)), data, 0.001)

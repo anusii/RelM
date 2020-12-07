@@ -638,7 +638,7 @@ class SmallDB(ReleaseMechanism):
         super(SmallDB, self).__init__(epsilon)
         self.alpha = alpha
 
-        if not (np.sort(np.unique(queries)) == np.array([0, 1])).all():
+        if ((queries != 0) & (queries != 1)).any():
             raise ValueError(
                 f"queries: queries must only contain 1s and 0s. Found {np.unique(queries)}"
             )
