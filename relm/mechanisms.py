@@ -630,13 +630,19 @@ class SmallDB(ReleaseMechanism):
     Args:
         epsilon: the privacy parameter
         queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
-        alpha: the relative accuracy of the mechanism
+        alpha: the relative error of the mechanism in range [0, 1]
     """
 
     def __init__(self, epsilon, queries, data, alpha):
 
         super(SmallDB, self).__init__(epsilon)
         self.alpha = alpha
+
+        if not type(alpha) is float:
+            raise TypeError(f"alpha: alpha must be a float, found{type(alpha)}")
+
+        if (alpha < 0) or (alpha > 1):
+            raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
 
         if ((queries != 0) & (queries != 1)).any():
             raise ValueError(
@@ -652,7 +658,7 @@ class SmallDB(ReleaseMechanism):
             data = data.astype(np.uint64)
 
         if data.dtype != np.uint64:
-            raise ValueError(
+            raise TypeError(
                 f"data: data must have either the numpy.uint64 or numpy.int64 dtype. Found {data.dtype}"
             )
 

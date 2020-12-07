@@ -241,6 +241,7 @@ def test_SmallDB():
     mechanism = SmallDB(epsilon, queries, data, 0.001)
     errors = abs(queries.dot(data) / data.sum() - mechanism.release(queries))
 
+    # input validation
     _ = SmallDB(epsilon, np.ones((1, size)), data, 0.001)
     _ = SmallDB(epsilon, np.zeros((1, size)), data, 0.001)
     with pytest.raises(ValueError):
@@ -249,5 +250,18 @@ def test_SmallDB():
         _ = SmallDB(epsilon, queries, data, 0.001)
 
     with pytest.raises(ValueError):
-        data[0] = -2
-        _ = SmallDB(epsilon, np.ones((1, size)), data, 0.001)
+        data_copy = data.copy()
+        data_copy[3] = -2
+        _ = SmallDB(epsilon, np.ones((1, size)), data_copy, 0.001)
+
+    with pytest.raises(TypeError):
+        _ = SmallDB(epsilon, np.ones((1, size)), data.astype(np.int32), 0.001)
+
+    with pytest.raises(TypeError):
+        _ = SmallDB(epsilon, np.ones((1, size)), data, 1)
+
+    with pytest.raises(ValueError):
+        _ = SmallDB(epsilon, np.ones((1, size)), data, -0.1)
+
+    with pytest.raises(ValueError):
+        _ = SmallDB(epsilon, np.ones((1, size)), data, 1.1)
