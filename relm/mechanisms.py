@@ -637,13 +637,25 @@ class SmallDB(ReleaseMechanism):
 
         super(SmallDB, self).__init__(epsilon)
         self.alpha = alpha
-        assert (np.sort(np.unique(queries)) == np.array([0, 1])).all()
-        assert (data >= 0).all()
+
+        if not (np.sort(np.unique(queries)) == np.array([0, 1])).all():
+            raise ValueError(
+                f"queries: queries must only contain 1s and 0s. Found {np.unique(queries)}"
+            )
+
+        if not (data >= 0).all():
+            raise ValueError(
+                f"data: data must only non-negative values. Found {np.unique(data[data < 0])}"
+            )
 
         if data.dtype == np.int64:
             data = data.astype(np.uint64)
 
-        assert data.dtype == np.uint64
+        if data.dtype != np.uint64:
+            raise ValueError(
+                f"data: data must have either the numpy.uint64 or numpy.int64 dtype. Found {data.dtype}"
+            )
+
         self.data = data
         self.db = None
 

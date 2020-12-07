@@ -1,6 +1,5 @@
 use rand::{thread_rng, Rng};
 use rand::distributions::WeightedIndex;
-use ndarray::Array2;
 
 use std::convert::TryInto;
 use std::collections::HashMap;
@@ -146,8 +145,8 @@ pub fn small_db(
         random_small_db(&mut db, l1_norm, size);
 
         let error = small_db_max_error(&db, &queries, &answers, &breaks, l1_norm);
-
-        let log_p = -0.5 * epsilon * error;
+        let utility = -error;
+        let log_p = 0.5 * epsilon * utility;
         let flag = samplers::bernoulli_log_p(log_p);
         if flag { break }
     }
