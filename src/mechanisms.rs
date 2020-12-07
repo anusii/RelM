@@ -163,11 +163,17 @@ pub fn small_db(
 
 
 fn random_small_db(db: &mut HashMap<u64, u64>, l1_norm: usize, size: u64) {
+    /// generates a random sparse database with size `size` and a norm of `l1_norm` in place
+    /// overwrites previous db for time and space efficiency
+
     db.clear();
     let mut rng = thread_rng();
 
     for _ in 0..l1_norm {
+
+        // randomly select an index of the database to increment
         let idx: u64 = rng.gen_range(0, size);
+
         db.entry(idx).or_insert(0);
         if let Some(x) = db.get_mut(&idx) {
             *x += 1;
@@ -185,8 +191,13 @@ fn small_db_max_error(
     let mut error: f64 = 0.0;
 
     let mut start: usize = 0;
+
+    // breaks determines the index of `queries` at which the distinct queries end/start
+    // iterate through queries
     for (i, &stop) in breaks.iter().enumerate() {
+        // calculate result of query
         result = 0;
+        // iterate through the indices stored in the query
         for j in start..stop {
             let idx = queries[j];
             result += match db.get(&idx) {
@@ -197,8 +208,8 @@ fn small_db_max_error(
 
         start = stop;
 
+        // store largest error
         let normalized_result = (result as f64) / (l1_norm as f64);
-
         error = (normalized_result - answers[i]).abs();
         if error > max_error {
             max_error = error;

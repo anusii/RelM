@@ -5,6 +5,7 @@ from relm import backend
 
 
 class ReleaseMechanism:
+
     def __init__(self, epsilon):
         self.epsilon = epsilon
         self._is_valid = True
@@ -630,13 +631,13 @@ class SmallDB(ReleaseMechanism):
     Args:
         epsilon: the privacy parameter
         queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
-        data: a 1D array of the database in histogram format
         alpha: the relative accuracy of the mechanism
     """
 
     def __init__(self, epsilon, queries, data, alpha):
-        l1_norm = int(len(queries) / (alpha ** 2)) + 1
 
+        super(SmallDB, self).__init__(epsilon)
+        self.alpha = alpha
         assert (np.sort(np.unique(queries)) == np.array([0, 1])).all()
         assert (data >= 0).all()
 
@@ -644,20 +645,15 @@ class SmallDB(ReleaseMechanism):
             data = data.astype(np.uint64)
 
         assert data.dtype == np.uint64
-
-        answers = queries.dot(data) / data.sum()
-        breaks = np.cumsum(queries.sum(axis=1).astype(np.uint64))
-        queries = np.concatenate(
-            [np.where(queries[i, :])[0] for i in range(queries.shape[0])]
-        ).astype(np.uint64)
-
-        self.db = backend.small_db(
-            epsilon, l1_norm, len(data), queries, answers, breaks
-        )
+        self.data = data
+        self.db = None
 
     @property
     def privacy_consumed(self):
-        return self.exponential_mechanism.privacy_consumed
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
 
     def release(self, queries):
         """
@@ -665,8 +661,28 @@ class SmallDB(ReleaseMechanism):
 
         Args:
             queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
+            data: a 1D array of the database in histogram format
 
         Returns:
             A numpy array of perturbed values.
         """
+
+        self._check_valid()
+
+        l1_norm = int(len(queries) / (self.alpha ** 2)) + 1
+
+        answers = queries.dot(self.data) / self.data.sum()
+
+        # store the indices of 1s of the queries in a flattened vector
+        sparse_queries = np.concatenate(
+            [np.where(queries[i, :])[0] for i in range(queries.shape[0])]
+        ).astype(np.uint64)
+
+        # store the indices of where each line ends in sparse_queries
+        breaks = np.cumsum(queries.sum(axis=1).astype(np.uint64))
+
+        self.db = backend.small_db(
+            self.epsilon, l1_norm, len(self.data), sparse_queries, answers, breaks
+        )
+
         return np.dot(queries, self.db) / self.db.sum()
