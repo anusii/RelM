@@ -629,11 +629,11 @@ class SmallDB(ReleaseMechanism):
 
     Args:
         epsilon: the privacy parameter
-        queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
+        data: a 1D array of the database in histogram format
         alpha: the relative error of the mechanism in range [0, 1]
     """
 
-    def __init__(self, epsilon, queries, data, alpha):
+    def __init__(self, epsilon, data, alpha):
 
         super(SmallDB, self).__init__(epsilon)
         self.alpha = alpha
@@ -643,11 +643,6 @@ class SmallDB(ReleaseMechanism):
 
         if (alpha < 0) or (alpha > 1):
             raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
-
-        if ((queries != 0) & (queries != 1)).any():
-            raise ValueError(
-                f"queries: queries must only contain 1s and 0s. Found {np.unique(queries)}"
-            )
 
         if not (data >= 0).all():
             raise ValueError(
@@ -678,7 +673,6 @@ class SmallDB(ReleaseMechanism):
 
         Args:
             queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
-            data: a 1D array of the database in histogram format
 
         Returns:
             A numpy array of perturbed values.
@@ -686,8 +680,12 @@ class SmallDB(ReleaseMechanism):
 
         self._check_valid()
 
-        l1_norm = int(len(queries) / (self.alpha ** 2)) + 1
+        if ((queries != 0) & (queries != 1)).any():
+            raise ValueError(
+                f"queries: queries must only contain 1s and 0s. Found {np.unique(queries)}"
+            )
 
+        l1_norm = int(len(queries) / (self.alpha ** 2)) + 1
         answers = queries.dot(self.data) / self.data.sum()
 
         # store the indices of 1s of the queries in a flattened vector
@@ -701,5 +699,7 @@ class SmallDB(ReleaseMechanism):
         self.db = backend.small_db(
             self.epsilon, l1_norm, len(self.data), sparse_queries, answers, breaks
         )
+
+        self._is_valid = False
 
         return np.dot(queries, self.db) / self.db.sum()

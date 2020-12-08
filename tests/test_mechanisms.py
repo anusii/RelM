@@ -231,37 +231,40 @@ def test_SmallDB():
     queries = np.vstack([np.random.randint(0, 2, size) for _ in range(3)])
 
     epsilon = 1
-    mechanism = SmallDB(epsilon, queries, data, 0.9)
+    mechanism = SmallDB(epsilon, data, 0.9)
     errors = abs(queries.dot(data) / data.sum() - mechanism.release(queries))
 
     assert len(mechanism.db) == size
     assert mechanism.db.sum() == int(len(queries) / (0.9 ** 2)) + 1
 
     epsilon = 1
-    mechanism = SmallDB(epsilon, queries, data, 0.001)
+    mechanism = SmallDB(epsilon, data, 0.001)
     errors = abs(queries.dot(data) / data.sum() - mechanism.release(queries))
 
     # input validation
-    _ = SmallDB(epsilon, np.ones((1, size)), data, 0.001)
-    _ = SmallDB(epsilon, np.zeros((1, size)), data, 0.001)
+    mechanism = SmallDB(epsilon, data, 0.001)
+    _ = mechanism.release(np.ones((1, size)))
+    mechanism = SmallDB(epsilon, data, 0.001)
+    _ = mechanism.release(np.zeros((1, size)))
     with pytest.raises(ValueError):
-        queries = np.ones((1, size))
-        queries[0, 2] = -1
-        _ = SmallDB(epsilon, queries, data, 0.001)
+        mechanism = SmallDB(epsilon, data, 0.001)
+        qs = np.ones((1, size))
+        qs[0, 2] = -1
+        _ = mechanism.release(qs)
 
     with pytest.raises(ValueError):
         data_copy = data.copy()
         data_copy[3] = -2
-        _ = SmallDB(epsilon, np.ones((1, size)), data_copy, 0.001)
+        _ = SmallDB(epsilon, data_copy, 0.001)
 
     with pytest.raises(TypeError):
-        _ = SmallDB(epsilon, np.ones((1, size)), data.astype(np.int32), 0.001)
+        _ = SmallDB(epsilon, data.astype(np.int32), 0.001)
 
     with pytest.raises(TypeError):
-        _ = SmallDB(epsilon, np.ones((1, size)), data, 1)
+        _ = SmallDB(epsilon, data, 1)
 
     with pytest.raises(ValueError):
-        _ = SmallDB(epsilon, np.ones((1, size)), data, -0.1)
+        _ = SmallDB(epsilon, data, -0.1)
 
     with pytest.raises(ValueError):
-        _ = SmallDB(epsilon, np.ones((1, size)), data, 1.1)
+        _ = SmallDB(epsilon, data, 1.1)
