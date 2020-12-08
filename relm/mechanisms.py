@@ -712,19 +712,19 @@ class MultiplicativeWeights(ReleaseMechanism):
 
     Args:
         epsilon: the privacy parameter to use
-        error: the error of the mechanism
-        num_queries: the number of queries answered by the mechanism
         data: a 1D numpy array of the underlying database
+        alpha: the relative error of the mechanism
+        num_queries: the number of queries answered by the mechanism
     """
 
-    def __init__(self, epsilon, error, num_queries, data):
+    def __init__(self, epsilon, data, alpha, num_queries):
         super(MultiplicativeWeights, self).__init__(epsilon)
         self.data = data
 
         self.l1_norm = data.sum()
         self.data_est = np.ones(len(data)) / len(data)
-        # normalize error
-        self.alpha = error / (self.l1_norm * 3)
+
+        self.alpha = alpha
         self.learning_rate = self.alpha / 2
 
         # solve inequality of Theorem 4.14 (Dwork and Roth) for beta
