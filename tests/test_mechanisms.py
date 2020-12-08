@@ -232,14 +232,16 @@ def test_SmallDB():
 
     epsilon = 1
     mechanism = SmallDB(epsilon, data, 0.9)
-    errors = abs(queries.dot(data) / data.sum() - mechanism.release(queries))
+    db = mechanism.release(queries)
+    errors = abs(queries.dot(data) / data.sum() - queries.dot(db) / db.sum())
 
-    assert len(mechanism.db) == size
-    assert mechanism.db.sum() == int(len(queries) / (0.9 ** 2)) + 1
+    assert len(db) == size
+    assert db.sum() == int(len(queries) / (0.9 ** 2)) + 1
 
     epsilon = 1
     mechanism = SmallDB(epsilon, data, 0.001)
-    errors = abs(queries.dot(data) / data.sum() - mechanism.release(queries))
+    db = mechanism.release(queries)
+    errors = abs(queries.dot(data) / data.sum() - queries.dot(db) / db.sum())
 
     # input validation
     mechanism = SmallDB(epsilon, data, 0.001)

@@ -696,10 +696,10 @@ class SmallDB(ReleaseMechanism):
         # store the indices of where each line ends in sparse_queries
         breaks = np.cumsum(queries.sum(axis=1).astype(np.uint64))
 
-        self.db = backend.small_db(
+        db = backend.small_db(
             self.epsilon, l1_norm, len(self.data), sparse_queries, answers, breaks
         )
 
         self._is_valid = False
 
-        return np.dot(queries, self.db) / self.db.sum()
+        return db
