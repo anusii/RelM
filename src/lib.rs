@@ -18,14 +18,14 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
     fn py_all_above_threshold<'a>(
         py: Python<'a>,
         data: &'a PyArray1<f64>,
-        scale: f64,
+        epsilon: f64,
         threshold: f64,
         precision: i32,
     ) -> &'a PyArray1<usize> {
         /// Simple python wrapper of the exponential function. Converts
         /// the rust vector into a numpy array
         let data = data.to_vec().unwrap();
-        mechanisms::all_above_threshold(data, scale, threshold, precision).to_pyarray(py)
+        mechanisms::all_above_threshold(data, epsilon, threshold, precision).to_pyarray(py)
     }
 
     #[pyfn(m, "snapping")]
@@ -46,23 +46,21 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
     fn py_laplace_mechanism<'a>(
         py: Python<'a>,
         data: &'a PyArray1<f64>,
-        sensitivity: f64,
         epsilon: f64,
         precision: i32,
     ) -> &'a PyArray1<f64> {
         let data = data.to_vec().unwrap();
-        mechanisms::laplace_mechanism(data, sensitivity, epsilon, precision).to_pyarray(py)
+        mechanisms::laplace_mechanism(data, epsilon, precision).to_pyarray(py)
     }
 
     #[pyfn(m, "geometric_mechanism")]
     fn py_geometric_mechanism<'a>(
         py: Python<'a>,
         data: &'a PyArray1<i64>,
-        sensitivity: f64,
         epsilon: f64,
     ) -> &'a PyArray1<i64> {
         let data = data.to_vec().unwrap();
-        mechanisms::geometric_mechanism(data, sensitivity, epsilon).to_pyarray(py)
+        mechanisms::geometric_mechanism(data, epsilon).to_pyarray(py)
     }
 
 
@@ -70,13 +68,11 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
     fn py_exponential_mechanism_weighted_index<'a>(
         py: Python<'a>,
         utilities: &'a PyArray1<f64>,
-        sensitivity: f64,
         epsilon: f64,
     ) -> PyResult<u64> {
         let utilities = utilities.to_vec().unwrap();
         let index: u64 = mechanisms::exponential_mechanism_weighted_index(
             utilities,
-            sensitivity,
             epsilon,
         );
         Ok(index)
@@ -87,13 +83,11 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
     fn py_exponential_mechanism_gumbel_trick<'a>(
         py: Python<'a>,
         utilities: &'a PyArray1<f64>,
-        sensitivity: f64,
         epsilon: f64,
     ) -> PyResult<u64> {
         let utilities = utilities.to_vec().unwrap();
         let index: u64 = mechanisms::exponential_mechanism_gumbel_trick(
             utilities,
-            sensitivity,
             epsilon,
         );
         Ok(index)
@@ -104,13 +98,11 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
     fn py_exponential_mechanism_sample_and_flip<'a>(
         py: Python<'a>,
         utilities: &'a PyArray1<f64>,
-        sensitivity: f64,
         epsilon: f64,
     ) -> PyResult<u64> {
         let utilities = utilities.to_vec().unwrap();
         let index: u64 = mechanisms::exponential_mechanism_sample_and_flip(
             utilities,
-            sensitivity,
             epsilon,
         );
         Ok(index)
@@ -121,16 +113,32 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
     fn py_permute_and_flip_mechanism<'a>(
         py: Python<'a>,
         utilities: &'a PyArray1<f64>,
-        sensitivity: f64,
         epsilon: f64,
     ) -> PyResult<u64> {
         let utilities = utilities.to_vec().unwrap();
         let index: u64 = mechanisms::permute_and_flip_mechanism(
             utilities,
-            sensitivity,
             epsilon,
         );
         Ok(index)
+    }
+
+    #[pyfn(m, "small_db")]
+    fn py_small_db<'a>(
+        py: Python<'a>,
+        epsilon: f64,
+        l1_norm: usize,
+        size: u64,
+        queries: &'a PyArray1<u64>,
+        answers: &'a PyArray1<f64>,
+        breaks: &'a PyArray1<u64>
+) -> &'a PyArray1<u64> {
+        let queries = queries.to_vec().unwrap();
+        let answers = answers.to_vec().unwrap();
+        let breaks = breaks.to_vec().unwrap();
+        let breaks = breaks.iter().map(|&x| x as usize).collect();
+
+        mechanisms::small_db(epsilon, l1_norm, size, queries, answers, breaks).to_pyarray(py)
     }
 
     Ok(())

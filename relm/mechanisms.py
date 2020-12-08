@@ -60,9 +60,12 @@ class LaplaceMechanism(ReleaseMechanism):
     """
 
     def __init__(self, epsilon, sensitivity, precision):
+        super(LaplaceMechanism, self).__init__(epsilon)
         self.sensitivity = sensitivity
         self.precision = precision
-        super(LaplaceMechanism, self).__init__(epsilon)
+        self.effective_epsilon = self.epsilon / (
+            self.sensitivity + 2.0 ** -self.precision
+        )
 
     def release(self, values):
         """
@@ -78,7 +81,7 @@ class LaplaceMechanism(ReleaseMechanism):
         self._check_valid()
         self._is_valid = False
         self._update_accountant()
-        args = (values, self.sensitivity, self.epsilon, self.precision)
+        args = (values, self.effective_epsilon, self.precision)
         return backend.laplace_mechanism(*args)
 
     @property
@@ -92,7 +95,7 @@ class LaplaceMechanism(ReleaseMechanism):
             return self.epsilon
 
 
-class GeometricMechanism(LaplaceMechanism):
+class GeometricMechanism(ReleaseMechanism):
     """
     Secure implementation of the Geometric mechanism. This mechanism can be used once
     after which its privacy budget will be exhausted and it can no longer be used.
@@ -103,7 +106,9 @@ class GeometricMechanism(LaplaceMechanism):
     """
 
     def __init__(self, epsilon, sensitivity):
-        super(GeometricMechanism, self).__init__(epsilon, sensitivity, precision=0)
+        super(GeometricMechanism, self).__init__(epsilon)
+        self.sensitivity = sensitivity
+        self.effective_epsilon = self.epsilon / self.sensitivity
 
     def release(self, values):
         """
@@ -118,7 +123,17 @@ class GeometricMechanism(LaplaceMechanism):
         self._check_valid()
         self._is_valid = False
         self._update_accountant()
-        return backend.geometric_mechanism(values, self.sensitivity, self.epsilon)
+        return backend.geometric_mechanism(values, self.effective_epsilon)
+
+    @property
+    def privacy_consumed(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
 
 
 class ExponentialMechanism(ReleaseMechanism):
@@ -152,6 +167,8 @@ class ExponentialMechanism(ReleaseMechanism):
         self.output_range = output_range
         self.method = method
 
+        self.effective_epsilon = self.epsilon / (2.0 * sensitivity)
+
     def release(self, values):
         """
         Releases a differential private query response.
@@ -168,6 +185,7 @@ class ExponentialMechanism(ReleaseMechanism):
         self._update_accountant()
 
         utilities = self.utility_function(values)
+        print("########", utilities)
         index = self._sampler(utilities)
         return self.output_range[index]
 
@@ -189,15 +207,15 @@ class ExponentialMechanism(ReleaseMechanism):
     def method(self, value):
         if value == "weighted_index":
             sampler = lambda utilities: backend.exponential_mechanism_weighted_index(
-                utilities, self.sensitivity, self.epsilon
+                utilities, self.effective_epsilon
             )
         elif value == "gumbel_trick":
             sampler = lambda utilities: backend.exponential_mechanism_gumbel_trick(
-                utilities, self.sensitivity, self.epsilon
+                utilities, self.effective_epsilon
             )
         elif value == "sample_and_flip":
             sampler = lambda utilities: backend.exponential_mechanism_sample_and_flip(
-                utilities, self.sensitivity, self.epsilon
+                utilities, self.effective_epsilon
             )
         else:
             raise ValueError("Sampling method '%s' not supported." % method)
@@ -232,6 +250,8 @@ class PermuteAndFlipMechanism(ReleaseMechanism):
         self.sensitivity = sensitivity
         self.output_range = output_range
 
+        self.effective_epsilon = self.epsilon / (2.0 * sensitivity)
+
     def release(self, values):
         """
         Releases a differential private query response.
@@ -248,9 +268,7 @@ class PermuteAndFlipMechanism(ReleaseMechanism):
         self._update_accountant()
 
         utilities = self.utility_function(values)
-        index = backend.permute_and_flip_mechanism(
-            utilities, self.sensitivity, self.epsilon
-        )
+        index = backend.permute_and_flip_mechanism(utilities, self.effective_epsilon)
         return self.output_range[index]
 
     @property
@@ -277,7 +295,8 @@ class SparseGeneric(ReleaseMechanism):
         precision=35,
     ):
         epsilon = epsilon1 + epsilon2 + epsilon3
-        self.epsilon = epsilon
+        super(SparseGeneric, self).__init__(epsilon)
+
         self.epsilon1 = epsilon1
         self.epsilon2 = epsilon2
         self.epsilon3 = epsilon3
@@ -288,18 +307,19 @@ class SparseGeneric(ReleaseMechanism):
         self.precision = precision
         self.current_count = 0
 
-        temp = np.array([threshold], dtype=np.float64)
-        args = (temp, sensitivity, epsilon1, precision)
+        self.effective_epsilon1 = self.epsilon1 / self.sensitivity
+        self.effective_epsilon2 = self.epsilon2 / (self.cutoff * self.sensitivity)
+        if not self.monotonic:
+            self.effective_epsilon2 /= 2.0
+        self.effective_epsilon3 = self.epsilon3 / (self.cutoff * self.sensitivity)
+
+        temp = np.array([self.threshold], dtype=np.float64)
+        args = (temp, self.effective_epsilon1, self.precision)
         self.perturbed_threshold = backend.laplace_mechanism(*args)[0]
-        super(SparseGeneric, self).__init__(epsilon)
 
     def all_above_threshold(self, values):
-        if self.monotonic:
-            b = (self.sensitivity * self.cutoff) / self.epsilon2
-        else:
-            b = (2.0 * self.sensitivity * self.cutoff) / self.epsilon2
         return backend.all_above_threshold(
-            values, b, self.perturbed_threshold, self.precision
+            values, self.effective_epsilon2, self.perturbed_threshold, self.precision
         )
 
     def release(self, values):
@@ -326,8 +346,11 @@ class SparseGeneric(ReleaseMechanism):
 
         if self.epsilon3 > 0:
             sliced_values = values[indices]
-            temp = self.sensitivity * self.cutoff
-            args = (sliced_values, temp, self.epsilon3, self.precision)
+            args = (
+                sliced_values,
+                self.effective_epsilon3,
+                self.precision,
+            )
             release_values = backend.laplace_mechanism(*args)
             return indices, release_values
         else:
@@ -565,9 +588,10 @@ class ReportNoisyMax(ReleaseMechanism):
     """
 
     def __init__(self, epsilon, precision):
+        super(ReportNoisyMax, self).__init__(epsilon)
         self.sensitivity = 1.0
         self.precision = precision
-        super(ReportNoisyMax, self).__init__(epsilon)
+        self.effective_epsilon = self.epsilon / self.sensitivity
 
     def release(self, values):
         """
@@ -582,7 +606,7 @@ class ReportNoisyMax(ReleaseMechanism):
         self._check_valid()
         self._is_valid = False
         self._update_accountant()
-        args = (values, self.sensitivity, self.epsilon, self.precision)
+        args = (values, self.effective_epsilon, self.precision)
         perturbed_values = backend.laplace_mechanism(*args)
         valmax = np.max(perturbed_values)
         argmax = secrets.choice(np.where(perturbed_values == valmax)[0])
@@ -597,6 +621,88 @@ class ReportNoisyMax(ReleaseMechanism):
             return 0
         else:
             return self.epsilon
+
+
+class SmallDB(ReleaseMechanism):
+    """
+    A offline Release Mechanism for answering a large number of queries.
+
+    Args:
+        epsilon: the privacy parameter
+        data: a 1D array of the database in histogram format
+        alpha: the relative error of the mechanism in range [0, 1]
+    """
+
+    def __init__(self, epsilon, data, alpha):
+
+        super(SmallDB, self).__init__(epsilon)
+        self.alpha = alpha
+
+        if not type(alpha) is float:
+            raise TypeError(f"alpha: alpha must be a float, found{type(alpha)}")
+
+        if (alpha < 0) or (alpha > 1):
+            raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
+
+        if not (data >= 0).all():
+            raise ValueError(
+                f"data: data must only non-negative values. Found {np.unique(data[data < 0])}"
+            )
+
+        if data.dtype == np.int64:
+            data = data.astype(np.uint64)
+
+        if data.dtype != np.uint64:
+            raise TypeError(
+                f"data: data must have either the numpy.uint64 or numpy.int64 dtype. Found {data.dtype}"
+            )
+
+        self.data = data
+        self.db = None
+
+    @property
+    def privacy_consumed(self):
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
+
+    def release(self, queries):
+        """
+        Releases differential private responses to queries.
+
+        Args:
+            queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
+
+        Returns:
+            A numpy array of perturbed values.
+        """
+
+        self._check_valid()
+
+        if ((queries != 0) & (queries != 1)).any():
+            raise ValueError(
+                f"queries: queries must only contain 1s and 0s. Found {np.unique(queries)}"
+            )
+
+        l1_norm = int(len(queries) / (self.alpha ** 2)) + 1
+        answers = queries.dot(self.data) / self.data.sum()
+
+        # store the indices of 1s of the queries in a flattened vector
+        sparse_queries = np.concatenate(
+            [np.where(queries[i, :])[0] for i in range(queries.shape[0])]
+        ).astype(np.uint64)
+
+        # store the indices of where each line ends in sparse_queries
+        breaks = np.cumsum(queries.sum(axis=1).astype(np.uint64))
+
+        db = backend.small_db(
+            self.epsilon, l1_norm, len(self.data), sparse_queries, answers, breaks
+        )
+
+        self._is_valid = False
+
+        return db
 
 
 class MultiplicativeWeights(ReleaseMechanism):

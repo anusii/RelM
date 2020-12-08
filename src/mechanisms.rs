@@ -2,13 +2,15 @@ use rand::{thread_rng, Rng};
 use rand::distributions::WeightedIndex;
 
 use std::convert::TryInto;
+use std::collections::HashMap;
 
 use rayon::prelude::*;
 use crate::samplers;
 use crate::utils;
 
 
-pub fn all_above_threshold(data: Vec<f64>, scale: f64, threshold: f64, precision: i32) -> Vec<usize>{
+pub fn all_above_threshold(data: Vec<f64>, epsilon: f64, threshold: f64, precision: i32) -> Vec<usize>{
+    let scale = 1.0 / epsilon;
     let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, precision);
     data.par_iter()
         .map(|&p| (p * 2.0f64.powi(precision)).round())
@@ -29,8 +31,8 @@ pub fn snapping(data: Vec<f64>, bound: f64, lambda: f64, quanta: f64) -> Vec<f64
 }
 
 
-pub fn laplace_mechanism(data: Vec<f64>, sensitivity: f64, epsilon: f64, precision: i32) -> Vec<f64> {
-    let scale = (sensitivity + 2.0f64.powi(-precision)) / epsilon;
+pub fn laplace_mechanism(data: Vec<f64>, epsilon: f64, precision: i32) -> Vec<f64> {
+    let scale = 1.0 / epsilon;
     let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, precision);
     data.par_iter()
         .map(|&x| (x * 2.0f64.powi(precision)).round())
@@ -40,8 +42,8 @@ pub fn laplace_mechanism(data: Vec<f64>, sensitivity: f64, epsilon: f64, precisi
 }
 
 
-pub fn geometric_mechanism(data: Vec<i64>, sensitivity: f64, epsilon: f64) -> Vec<i64> {
-    let scale = sensitivity / epsilon;
+pub fn geometric_mechanism(data: Vec<i64>, epsilon: f64) -> Vec<i64> {
+    let scale = 1.0 / epsilon;
     let biases: Vec<u64> = utils::fp_laplace_bit_biases(scale, 0);
     data.par_iter()
         .map(|&x| x + samplers::fixed_point_laplace(&biases, scale, 0))
@@ -51,12 +53,11 @@ pub fn geometric_mechanism(data: Vec<i64>, sensitivity: f64, epsilon: f64) -> Ve
 
 pub fn exponential_mechanism_weighted_index(
     utilities: Vec<f64>,
-    sensitivity: f64,
     epsilon: f64,
 ) -> u64 {
 
     let weights: Vec<f64> = utilities.par_iter()
-                                     .map(|u| epsilon * u / (2.0f64 * sensitivity))
+                                     .map(|u| epsilon * u)
                                      .map(|u| u.exp())
                                      .collect();
     let dist = WeightedIndex::new(weights).unwrap();
@@ -66,12 +67,11 @@ pub fn exponential_mechanism_weighted_index(
 
 pub fn exponential_mechanism_gumbel_trick(
     utilities: Vec<f64>,
-    sensitivity: f64,
     epsilon: f64,
 ) -> u64 {
 
     let log_weights: Vec<f64> = utilities.par_iter()
-        .map(|u| epsilon * u / (2.0f64 * sensitivity))
+        .map(|u| epsilon * u)
         .collect();
     let noisy_log_weights: Vec<f64> = log_weights.par_iter()
         .map(|w| w + samplers::gumbel(1.0f64))
@@ -82,11 +82,10 @@ pub fn exponential_mechanism_gumbel_trick(
 
 pub fn exponential_mechanism_sample_and_flip(
     utilities: Vec<f64>,
-    sensitivity: f64,
     epsilon: f64,
 ) -> u64 {
 
-    let scale: f64 = epsilon / (2.0f64 * sensitivity);
+    let scale: f64 = epsilon;
     let argmax: usize = utils::argmax(&utilities);
     let max_utility: f64 = utilities[argmax];
 
@@ -104,11 +103,10 @@ pub fn exponential_mechanism_sample_and_flip(
 
 pub fn permute_and_flip_mechanism(
     utilities: Vec<f64>,
-    sensitivity: f64,
     epsilon: f64,
 ) -> u64 {
 
-    let scale: f64 = epsilon / (2.0f64 * sensitivity);
+    let scale: f64 = epsilon;
 
     let argmax: usize = utils::argmax(&utilities);
     let max_utility: f64 = utilities[argmax];
@@ -119,7 +117,7 @@ pub fn permute_and_flip_mechanism(
 
     let n: usize = utilities.len();
     let mut indices: Vec<usize> = (0..n).collect();
-    
+
     let mut rng = thread_rng();
     let mut flag: bool = false;
     let mut idx: usize = 0;
@@ -132,4 +130,89 @@ pub fn permute_and_flip_mechanism(
         idx += 1;
     }
     current.try_into().unwrap()
+}
+
+
+pub fn small_db(
+    epsilon: f64, l1_norm: usize, size: u64, queries: Vec<u64>, answers: Vec<f64>, breaks: Vec<usize>
+) -> Vec<u64> {
+
+    // store the db in a sparse vector (implemented with a HashMap)
+    let mut db: HashMap<u64, u64> = HashMap::with_capacity(l1_norm);
+
+    loop {
+        // sample another random small db
+        random_small_db(&mut db, l1_norm, size);
+
+        let error = small_db_max_error(&db, &queries, &answers, &breaks, l1_norm);
+        let utility = -error;
+        let log_p = 0.5 * epsilon * utility;
+        if samplers::bernoulli_log_p(log_p) { break }
+    }
+
+    // convert the sparse small db to a dense vector
+    let mut db_vec: Vec<u64> = vec![0; size as usize];
+    for (&idx, &val) in db.iter() {
+        db_vec[idx as usize] = val;
+    }
+
+    db_vec
+}
+
+
+fn random_small_db(db: &mut HashMap<u64, u64>, l1_norm: usize, size: u64) {
+    /// generates a random sparse database with size `size` and a norm of `l1_norm` in place
+    /// overwrites previous db for time and space efficiency
+
+    db.clear();
+    let mut rng = thread_rng();
+
+    for _ in 0..l1_norm {
+
+        // randomly select an index of the database to increment
+        let idx: u64 = rng.gen_range(0, size);
+
+        db.entry(idx).or_insert(0);
+        if let Some(x) = db.get_mut(&idx) {
+            *x += 1;
+        }
+    }
+}
+
+
+fn small_db_max_error(
+    db: &HashMap<u64, u64>, queries: &Vec<u64>, answers: &Vec<f64>, breaks: &Vec<usize>, l1_norm: usize
+) -> f64 {
+
+    let mut max_error: f64 = 0.0;
+    let mut result: u64 = 0;
+    let mut error: f64 = 0.0;
+
+    let mut start: usize = 0;
+
+    // breaks determines the index of `queries` at which the distinct queries end/start
+    // iterate through queries
+    for (i, &stop) in breaks.iter().enumerate() {
+        // calculate result of query
+        result = 0;
+        // iterate through the indices stored in the query
+        for j in start..stop {
+            let idx = queries[j];
+            result += match db.get(&idx) {
+                Some(x) => {*x}
+                None => 0
+            };
+        }
+
+        start = stop;
+
+        // store largest error
+        let normalized_result = (result as f64) / (l1_norm as f64);
+        error = (normalized_result - answers[i]).abs();
+        if error > max_error {
+            max_error = error;
+        }
+    }
+
+    max_error
 }
