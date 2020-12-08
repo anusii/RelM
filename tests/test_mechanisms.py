@@ -226,22 +226,29 @@ def test_ReportNoisyMax(benchmark):
 def test_SmallDB():
 
     size = 1000
-
     data = np.random.randint(0, 10, size)
     queries = np.vstack([np.random.randint(0, 2, size) for _ in range(3)])
 
     epsilon = 1
-    mechanism = SmallDB(epsilon, data, 0.9)
-    db = mechanism.release(queries)
-    errors = abs(queries.dot(data) / data.sum() - queries.dot(db) / db.sum())
+    alpha = 0.1
+    beta = 0.0001
+    errors = []
 
+    for _ in range(10):
+        mechanism = SmallDB(epsilon, data, alpha)
+        db = mechanism.release(queries)
+        errors.append(
+            abs(queries.dot(data) / data.sum() - queries.dot(db) / db.sum()).max()
+        )
+
+    errors = np.array(errors)
+
+    x = np.log(len(data)) * np.log(len(queries)) / (alpha ** 2) + np.log(1 / beta)
+    error_bound = alpha + 2 * x / (epsilon * data.sum())
+
+    assert (errors < error_bound).all()
     assert len(db) == size
-    assert db.sum() == int(len(queries) / (0.9 ** 2)) + 1
-
-    epsilon = 1
-    mechanism = SmallDB(epsilon, data, 0.001)
-    db = mechanism.release(queries)
-    errors = abs(queries.dot(data) / data.sum() - queries.dot(db) / db.sum())
+    assert db.sum() == int(len(queries) / (alpha ** 2)) + 1
 
     # input validation
     mechanism = SmallDB(epsilon, data, 0.001)
