@@ -2,6 +2,7 @@ from .base import ReleaseMechanism
 import numpy as np
 from relm import backend
 import secrets
+import math
 
 
 class LaplaceMechanism(ReleaseMechanism):
