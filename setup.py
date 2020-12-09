@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 try:
     from setuptools_rust import RustExtension
@@ -38,7 +38,7 @@ setup(
         "Operating System :: POSIX",
         "Operating System :: MacOS :: MacOS X",
     ],
-    packages=["relm"],
+    packages=find_packages(),
     rust_extensions=[RustExtension("relm.backend")],
     install_requires=install_requires,
     extras_require=extras_requires,
