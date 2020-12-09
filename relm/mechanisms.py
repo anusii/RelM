@@ -638,7 +638,7 @@ class SmallDB(ReleaseMechanism):
         super(SmallDB, self).__init__(epsilon)
         self.alpha = alpha
 
-        if not type(alpha) is float:
+        if not type(alpha) in (float, np.float64):
             raise TypeError(f"alpha: alpha must be a float, found{type(alpha)}")
 
         if (alpha < 0) or (alpha > 1):
@@ -719,6 +719,36 @@ class MultiplicativeWeights(ReleaseMechanism):
 
     def __init__(self, epsilon, data, alpha, num_queries):
         super(MultiplicativeWeights, self).__init__(epsilon)
+
+        if not type(alpha) in (float, np.float64):
+            raise TypeError(f"alpha: alpha must be a float, found{type(alpha)}")
+
+        if (alpha < 0) or (alpha > 1):
+            raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
+
+        if not (data >= 0).all():
+            raise ValueError(
+                f"data: data must only non-negative values. Found {np.unique(data[data < 0])}"
+            )
+
+        if data.dtype == np.int64:
+            data = data.astype(np.uint64)
+
+        if data.dtype != np.uint64:
+            raise TypeError(
+                f"data: data must have either the numpy.uint64 or numpy.int64 dtype. Found {data.dtype}"
+            )
+
+        if type(num_queries) is not int:
+            raise TypeError(
+                f"num_queries: num_queries must be an int. Found {type(num_queries)}"
+            )
+
+        if num_queries <= 0:
+            raise ValueError(
+                f"num_queries: num_queries must be positive. Found {num_queries}"
+            )
+
         self.data = data
 
         self.l1_norm = data.sum()

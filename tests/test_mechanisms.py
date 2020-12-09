@@ -285,7 +285,11 @@ def test_MultiplicativeWeights():
     query = np.random.randint(0, 2, 1000)
     queries = [query] * 20000
 
-    mechanism = MultiplicativeWeights(10000, data, 100 / data.sum(), 20000)
+    epsilon = 10000
+    num_queries = len(queries)
+    alpha = 100 / data.sum()
+
+    mechanism = MultiplicativeWeights(epsilon, data, alpha, num_queries)
     results = mechanism.release(queries)
 
     assert len(results) == len(queries)
@@ -293,3 +297,29 @@ def test_MultiplicativeWeights():
         abs((mechanism.data_est * query).sum() * data.sum() - (data * query).sum())
         < 100
     )
+
+    with pytest.raises(ValueError):
+        data_copy = data.copy()
+        data_copy[3] = -2
+        _ = MultiplicativeWeights(epsilon, data_copy, alpha, num_queries)
+
+    with pytest.raises(TypeError):
+        _ = MultiplicativeWeights(epsilon, data.astype(np.int32), alpha, num_queries)
+
+    with pytest.raises(TypeError):
+        _ = MultiplicativeWeights(epsilon, data, 1, num_queries)
+
+    with pytest.raises(ValueError):
+        _ = MultiplicativeWeights(epsilon, data, -0.1, num_queries)
+
+    with pytest.raises(ValueError):
+        _ = MultiplicativeWeights(epsilon, data, 1.1, num_queries)
+
+    with pytest.raises(ValueError):
+        _ = MultiplicativeWeights(epsilon, data, alpha, 0)
+
+    with pytest.raises(ValueError):
+        _ = MultiplicativeWeights(epsilon, data, alpha, -1)
+
+    with pytest.raises(TypeError):
+        _ = MultiplicativeWeights(epsilon, data, alpha, float(num_queries))
