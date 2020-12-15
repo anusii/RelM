@@ -33,24 +33,24 @@ class Histogram:
 
         for row in counts.index:
             query = dict(zip(columns, row))
-            idxs.append(self.get_idx(query))
+            idxs.append(self._get_idx(query))
             vals.append(counts.loc[row].dummy)
 
         self.idxs = np.array(idxs)
         self.vals = np.array(vals)
         self.size = incr
 
-    def get_idx(self, query):
-        """
-        Returns the index of the histogram database corresponding to the query.
-        The query must specify a value for each column of the underlying dataframe.
+    def _get_idx(self, query):
 
-        Args:
-            query: a dictionary of column: value pairs specifying the query.
+        # Returns the index of the histogram database corresponding to the query.
+        # The query must specify a value for each column of the underlying dataframe.
 
-        Returns:
-            the index of the database histogram corresponding to the query
-        """
+        # Args:
+        #    query: a dictionary of column: value pairs specifying the query.
+
+        # Returns:
+        #    the index of the database histogram corresponding to the query
+
         idx = 0
         for col, val in query.items():
             i = self.column_dict[col]
@@ -69,7 +69,7 @@ class Histogram:
             the indices of the database histogram corresponding to the query
         """
 
-        idxs = np.array([self.get_idx(query)])
+        idxs = np.array([self._get_idx(query)])
         for i, col in enumerate(self.column_dict.keys()):
             if query.get(col, None) is None:
                 new_idxs = np.arange(len(self.column_sets[i])) * self.column_incr[i]
