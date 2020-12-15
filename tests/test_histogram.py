@@ -7,7 +7,8 @@ def test_Histogram():
     df = pd.read_csv("examples/pcr_testing_age_group_2020-03-09.csv")
     columns = df.columns
 
-    db = Histogram(df)
+    hist = Histogram(df)
+    db = hist.get_db()
 
     for row in df.itertuples(index=False):
         query = dict(zip(columns[:-1], row[:-1]))
@@ -22,7 +23,7 @@ def test_Histogram():
             mask &= df[col] == val
 
         # dp style db
-        _idxs = db.get_idxs(query)
-        val = db.vals[np.isin(db.idxs, _idxs)].sum()
+        query_vec = hist.get_query_vector(query)
+        val = (query_vec * db).sum()
 
         assert mask.sum() == val

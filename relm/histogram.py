@@ -13,13 +13,10 @@ class Histogram:
 
     def __init__(self, df):
         df = df.copy()
-        counts = df.groupby(by=list(df.columns[:-1])).count()
-
         df.fillna(-999999, inplace=True)
-        df['dummy'] = np.ones(len(df))
-
+        df["dummy"] = np.ones(len(df))
+        counts = df.groupby(by=list(df.columns[:-1])).count()
         columns = df.columns[:-1]
-
         self.column_sets = []
         self.column_dict = dict((col, i) for i, col in enumerate(columns))
         self.column_incr = []
@@ -41,6 +38,7 @@ class Histogram:
 
         self.idxs = np.array(idxs)
         self.vals = np.array(vals)
+        self.size = incr
 
     def get_idx(self, query):
         """
@@ -78,23 +76,15 @@ class Histogram:
                 idxs = idxs[:, None] + new_idxs[None, :]
                 idxs = idxs.flatten()
 
-        return idxs
+        vec = np.zeros(self.size)
+        vec[idxs] = 1
+        return vec
 
-#
-# for row in one_day.itertuples(index=False):
-#     query = dict(zip(columns[:-1], row[:-1]))
-#
-#     num_remove = np.random.randint(1, 3)
-#     for col in np.random.choice(columns[:-1], size=num_remove, replace=False):
-#         del query[col]
-#
-#     # ground truth
-#     mask = np.ones(len(one_day)).astype(bool)
-#     for col, val in query.items():
-#         mask &= one_day[col] == val
-#
-#     # dp style db
-#     _idxs = get_idxs(query, column_sets, column_incr, column_dict)
-#     val = vals[np.isin(idxs, _idxs)].sum()
-#
-#     assert mask.sum() == val
+    def get_db(self):
+        """
+        Returns the database in histogram format.
+        """
+
+        db = np.zeros(self.size)
+        db[self.idxs] = self.vals
+        return db
