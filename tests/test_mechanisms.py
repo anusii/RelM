@@ -12,7 +12,7 @@ from relm.mechanisms import (
     SparseNumeric,
     ReportNoisyMax,
     SmallDB,
-    MultiplicativeWeights,
+    PrivateMultiplicativeWeights,
 )
 
 
@@ -280,7 +280,7 @@ def test_SmallDB():
         _ = SmallDB(epsilon, data, 1.1)
 
 
-def test_MultiplicativeWeights():
+def test_PrivateMultiplicativeWeights():
     data = np.random.randint(0, 10, 1000)
     query = np.random.randint(0, 2, 1000)
     queries = [query] * 20000
@@ -289,7 +289,7 @@ def test_MultiplicativeWeights():
     num_queries = len(queries)
     alpha = 100 / data.sum()
 
-    mechanism = MultiplicativeWeights(epsilon, data, alpha, num_queries)
+    mechanism = PrivateMultiplicativeWeights(epsilon, data, alpha, num_queries)
     results = mechanism.release(queries)
 
     assert len(results) == len(queries)
@@ -301,25 +301,27 @@ def test_MultiplicativeWeights():
     with pytest.raises(ValueError):
         data_copy = data.copy()
         data_copy[3] = -2
-        _ = MultiplicativeWeights(epsilon, data_copy, alpha, num_queries)
+        _ = PrivateMultiplicativeWeights(epsilon, data_copy, alpha, num_queries)
 
     with pytest.raises(TypeError):
-        _ = MultiplicativeWeights(epsilon, data.astype(np.int32), alpha, num_queries)
+        _ = PrivateMultiplicativeWeights(
+            epsilon, data.astype(np.int32), alpha, num_queries
+        )
 
     with pytest.raises(TypeError):
-        _ = MultiplicativeWeights(epsilon, data, 1, num_queries)
+        _ = PrivateMultiplicativeWeights(epsilon, data, 1, num_queries)
 
     with pytest.raises(ValueError):
-        _ = MultiplicativeWeights(epsilon, data, -0.1, num_queries)
+        _ = PrivateMultiplicativeWeights(epsilon, data, -0.1, num_queries)
 
     with pytest.raises(ValueError):
-        _ = MultiplicativeWeights(epsilon, data, 1.1, num_queries)
+        _ = PrivateMultiplicativeWeights(epsilon, data, 1.1, num_queries)
 
     with pytest.raises(ValueError):
-        _ = MultiplicativeWeights(epsilon, data, alpha, 0)
+        _ = PrivateMultiplicativeWeights(epsilon, data, alpha, 0)
 
     with pytest.raises(ValueError):
-        _ = MultiplicativeWeights(epsilon, data, alpha, -1)
+        _ = PrivateMultiplicativeWeights(epsilon, data, alpha, -1)
 
     with pytest.raises(TypeError):
-        _ = MultiplicativeWeights(epsilon, data, alpha, float(num_queries))
+        _ = PrivateMultiplicativeWeights(epsilon, data, alpha, float(num_queries))

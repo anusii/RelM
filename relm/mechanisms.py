@@ -705,7 +705,7 @@ class SmallDB(ReleaseMechanism):
         return db
 
 
-class MultiplicativeWeights(ReleaseMechanism):
+class PrivateMultiplicativeWeights(ReleaseMechanism):
     """
     Secure implementation of the private Multiplicative Weights mechanism.
     This mechanism can be used to answer multiple linear queries.
@@ -718,7 +718,7 @@ class MultiplicativeWeights(ReleaseMechanism):
     """
 
     def __init__(self, epsilon, data, alpha, num_queries):
-        super(MultiplicativeWeights, self).__init__(epsilon)
+        super(PrivateMultiplicativeWeights, self).__init__(epsilon)
 
         if not type(alpha) in (float, np.float64):
             raise TypeError(f"alpha: alpha must be a float, found{type(alpha)}")
@@ -749,9 +749,8 @@ class MultiplicativeWeights(ReleaseMechanism):
                 f"num_queries: num_queries must be positive. Found {num_queries}"
             )
 
-        self.data = data
-
         self.l1_norm = data.sum()
+        self.data = data / self.l1_norm
         self.data_est = np.ones(len(data)) / len(data)
 
         self.alpha = alpha
@@ -764,13 +763,16 @@ class MultiplicativeWeights(ReleaseMechanism):
         self.beta = np.exp(-self.beta) * 32 * np.log(len(data)) / (self.alpha ** 2)
 
         cutoff = 4 * np.log(len(data)) / (self.alpha ** 2)
+        self.cutoff = int(cutoff)
         self.threshold = 18 * cutoff / (epsilon * self.l1_norm)
         self.threshold *= np.log(2 * num_queries) + np.log(4 * cutoff / self.beta)
         self.threshold *= self.l1_norm
-        self.cutoff = int(cutoff)
 
         self.sparse_numeric = SparseNumeric(
-            epsilon, sensitivity=1, threshold=self.threshold, cutoff=self.cutoff
+            epsilon,
+            sensitivity=(1 / self.l1_norm),
+            threshold=self.threshold,
+            cutoff=self.cutoff,
         )
 
         # this assumes that the l1 norm of the database is public
@@ -801,7 +803,7 @@ class MultiplicativeWeights(ReleaseMechanism):
         results = []
         for query in queries:
             true_answer = (query * self.data).sum()
-            est_answer = (query * self.data_est).sum() * self.l1_norm
+            est_answer = (query * self.data_est).sum()
 
             error = true_answer - est_answer
             errors = np.array([error, -error])
