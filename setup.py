@@ -16,7 +16,7 @@ except ImportError:
         from setuptools_rust import RustExtension
 
 setup_requires = ["setuptools-rust>=0.10.1", "wheel"]
-install_requires = ["numpy>=1.14.5"]
+install_requires = ["numpy>=1.14.5", "pandas>=1.0.1"]
 
 extras_requires = {
     "docs": ["Sphinx==3.3.0", "sphinx-rtd-theme==0.5.0"],
@@ -24,7 +24,6 @@ extras_requires = {
         "pytest-benchmark==3.2.3",
         "pytest==6.0.1",
         "scipy>=1.4.0",
-        "pandas>=1.0.1",
     ],
 }
 
