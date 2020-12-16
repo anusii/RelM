@@ -12,11 +12,16 @@ class Histogram:
     """
 
     def __init__(self, df):
-        df = df.copy()
-        df.fillna(-999999, inplace=True)
-        df["dummy"] = np.ones(len(df))
-        counts = df.groupby(by=list(df.columns[:-1])).count()
-        columns = df.columns[:-1]
+        _df = df.fillna(-999999)
+        for col in df.columns:
+            mask = _df[col] == -999999
+            arr = _df[col].copy()
+            arr[mask] = arr[mask].astype(df[col].dtype)
+            _df[col] = arr
+
+        _df["dummy"] = np.ones(len(_df))
+        counts = _df.groupby(by=list(_df.columns[:-1])).count()
+        columns = _df.columns[:-1]
         self.column_sets = []
         self.column_dict = dict((col, i) for i, col in enumerate(columns))
         self.column_incr = []
@@ -24,7 +29,7 @@ class Histogram:
         incr = 1
         for column in columns:
             self.column_incr.append(incr)
-            col_vals = set(pd.unique(df[column]))
+            col_vals = set(pd.unique(_df[column]))
             self.column_sets.append(dict((y, x) for x, y in enumerate(col_vals)))
             incr *= len(col_vals)
 
