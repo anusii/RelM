@@ -1,6 +1,7 @@
 from .base import ReleaseMechanism
 import numpy as np
 from relm import backend
+import scipy.sparse as sps
 
 
 class SmallDB(ReleaseMechanism):
@@ -60,21 +61,29 @@ class SmallDB(ReleaseMechanism):
 
         self._check_valid()
 
-        if ((queries != 0) & (queries != 1)).any():
-            raise ValueError(
-                f"queries: queries must only contain 1s and 0s. Found {np.unique(queries)}"
-            )
-
-        l1_norm = int(len(queries) / (self.alpha ** 2)) + 1
+        l1_norm = int(queries.shape[0] / (self.alpha ** 2)) + 1
         answers = queries.dot(self.data) / self.data.sum()
 
-        # store the indices of 1s of the queries in a flattened vector
-        sparse_queries = np.concatenate(
-            [np.where(queries[i, :])[0] for i in range(queries.shape[0])]
-        ).astype(np.uint64)
+        error_str = (
+            f"queries: queries must only contain 1s and 0s. Found {np.unique(queries)}"
+        )
 
-        # store the indices of where each line ends in sparse_queries
-        breaks = np.cumsum(queries.sum(axis=1).astype(np.uint64))
+        if type(queries) is sps.csr.csr_matrix:
+            if ((queries.data != 0) & (queries.data != 1)).any():
+                raise ValueError(error_str)
+            sparse_queries = queries.indices.astype(np.uint64)
+            breaks = queries.indptr[1:].astype(np.uint64)
+
+        else:
+            if ((queries != 0) & (queries != 1)).any():
+                raise ValueError(error_str)
+            # store the indices of 1s of the queries in a flattened vector
+            sparse_queries = np.concatenate(
+                [np.where(queries[i, :])[0] for i in range(queries.shape[0])]
+            ).astype(np.uint64)
+
+            # store the indices of where each line ends in sparse_queries
+            breaks = np.cumsum(queries.sum(axis=1).astype(np.uint64))
 
         db = backend.small_db(
             self.epsilon, l1_norm, len(self.data), sparse_queries, answers, breaks
