@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import scipy.sparse as sps
 
 
 class Histogram:
@@ -81,8 +82,10 @@ class Histogram:
                 idxs = idxs[:, None] + new_idxs[None, :]
                 idxs = idxs.flatten()
 
-        vec = np.zeros(self.size)
-        vec[idxs] = 1
+        rows = np.zeros_like(idxs)
+        vals = np.ones_like(idxs)
+
+        vec = sps.csr_matrix((vals, (rows, idxs)), shape=(1, self.size))
         return vec
 
     def get_db(self):
@@ -90,6 +93,6 @@ class Histogram:
         Returns the database in histogram format.
         """
 
-        db = np.zeros(self.size)
+        db = np.zeros(self.size, dtype=np.uint64)
         db[self.idxs] = self.vals
         return db
