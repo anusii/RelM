@@ -758,7 +758,7 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
 
         # solve inequality of Theorem 4.14 (Dwork and Roth) for beta
         self.beta = epsilon * self.l1_norm * self.alpha ** 3
-        self.beta /= 32 * np.log(len(data))
+        self.beta /= 36 * np.log(len(data))
         self.beta -= np.log(num_queries)
         self.beta = np.exp(-self.beta) * 32 * np.log(len(data)) / (self.alpha ** 2)
 
