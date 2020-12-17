@@ -766,7 +766,6 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
         self.cutoff = int(cutoff)
         self.threshold = 18 * cutoff / (epsilon * self.l1_norm)
         self.threshold *= np.log(2 * num_queries) + np.log(4 * cutoff / self.beta)
-        self.threshold *= self.l1_norm
 
         self.sparse_numeric = SparseNumeric(
             epsilon,
