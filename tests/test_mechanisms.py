@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 import scipy.stats
 import pytest
 from relm.mechanisms import (
@@ -278,6 +279,35 @@ def test_SmallDB():
 
     with pytest.raises(ValueError):
         _ = SmallDB(epsilon, data, 1.1)
+
+
+def test_SmallDB_sparse():
+
+    size = 1000
+    data = np.random.randint(0, 10, size)
+    queries = np.vstack([np.random.randint(0, 2, size) for _ in range(3)])
+    queries = scipy.sparse.csr_matrix(queries)
+
+    epsilon = 1
+    alpha = 0.1
+    beta = 0.0001
+    errors = []
+
+    for _ in range(10):
+        mechanism = SmallDB(epsilon, data, alpha)
+        db = mechanism.release(queries)
+        errors.append(
+            abs(queries.dot(data) / data.sum() - queries.dot(db) / db.sum()).max()
+        )
+
+    errors = np.array(errors)
+
+    x = np.log(len(data)) * np.log(queries.shape[0]) / (alpha ** 2) + np.log(1 / beta)
+    error_bound = alpha + 2 * x / (epsilon * data.sum())
+
+    assert (errors < error_bound).all()
+    assert len(db) == size
+    assert db.sum() == int(queries.shape[0] / (alpha ** 2)) + 1
 
 
 def test_PrivateMultiplicativeWeights():
