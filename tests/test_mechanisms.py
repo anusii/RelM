@@ -311,9 +311,11 @@ def test_SmallDB_sparse():
 
 
 def test_PrivateMultiplicativeWeights():
+
     data = np.random.randint(0, 10, 1000)
     query = np.random.randint(0, 2, 1000)
     queries = [query] * 20000
+    queries = np.vstack(queries)
 
     epsilon = 10000
     num_queries = len(queries)
@@ -355,3 +357,19 @@ def test_PrivateMultiplicativeWeights():
 
     with pytest.raises(TypeError):
         _ = PrivateMultiplicativeWeights(epsilon, data, alpha, float(num_queries))
+
+
+def test_PrivateMultiplicativeWeights_sparse():
+
+    data = np.random.randint(0, 10, 1000)
+    query = np.random.randint(0, 2, 1000)
+    queries = [query] * 200
+    queries = np.vstack(queries)
+    queries = scipy.sparse.csr_matrix(queries)
+
+    epsilon = 10000
+    num_queries = queries.shape[0]
+    alpha = 100 / data.sum()
+
+    mechanism = PrivateMultiplicativeWeights(epsilon, data, alpha, num_queries)
+    _ = mechanism.release(queries)
