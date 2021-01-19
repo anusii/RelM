@@ -51,7 +51,7 @@ class ExponentialMechanism(ReleaseMechanism):
         self._update_accountant()
 
         utilities = self.utility_function(values)
-        #print("########", utilities)
+        # print("########", utilities)
         index = self._sampler(utilities)
         return self.output_range[index]
 
