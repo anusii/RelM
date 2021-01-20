@@ -3,6 +3,10 @@ import numpy as np
 from relm import backend
 import scipy.sparse as sps
 
+# Imports for SmallDB debugging code
+from itertools import combinations_with_replacement
+from relm.mechanisms import ExponentialMechanism
+
 
 class SmallDB(ReleaseMechanism):
     """
@@ -89,6 +93,28 @@ class SmallDB(ReleaseMechanism):
             self.epsilon, l1_norm, len(self.data), sparse_queries, answers, breaks
         )
 
-        self._is_valid = False
+        # For debugging purposes, replace this call to the rust backend with
+        # a call to the ExponentialMechanism code with an appropriate output_range
+        # and utility_function.
 
+        # print("Hit the debugging code")
+        #
+        # n = len(self.data)
+        # f = lambda x: np.bincount(x, minlength=n)
+        # output_range = list(
+        #     map(f, combinations_with_replacement(np.arange(n), l1_norm))
+        # )
+        # utility_function = lambda _: np.array(
+        #     [-np.max(queries.dot(x) / l1_norm - answers) for x in output_range]
+        # )
+        # mechanism = ExponentialMechanism(
+        #     epsilon=self.epsilon,
+        #     utility_function=utility_function,
+        #     sensitivity=1.0,
+        #     output_range=output_range,
+        #     method="sample_and_flip",
+        # )
+        # db = mechanism.release(answers)
+
+        self._is_valid = False
         return db

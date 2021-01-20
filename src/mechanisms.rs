@@ -1,5 +1,6 @@
 use rand::{thread_rng, Rng};
 use rand::distributions::WeightedIndex;
+use rand::seq::IteratorRandom;
 
 use std::convert::TryInto;
 use std::collections::HashMap;
@@ -140,14 +141,52 @@ pub fn small_db(
     // store the db in a sparse vector (implemented with a HashMap)
     let mut db: HashMap<u64, u64> = HashMap::with_capacity(l1_norm);
 
+    // let mut normalizer: f64 = f64::MIN;
+    // for i in 0..1000 {
+    //     random_small_db(&mut db, l1_norm, size);
+    //
+    //     let error = small_db_max_error(&db, &queries, &answers, &breaks, l1_norm);
+    //     let utility = -error * (l1_norm as f64);
+    //     println!("{:?}", utility);
+    //     println!("{:?}", normalizer);
+    //
+    //     if utility > normalizer {
+    //         normalizer = utility;
+    //     }
+    // }
+
+    // let unnormalized_answers = answers.iter().map(|x| x * (l1_norm as f64));
+
+    let min_errors = answers.iter()
+                            .map(|x| x * (l1_norm as f64))
+                            .map(|x| (x - x.round()).abs());
+    let mut max_min_error: f64 = 0.0;
+    for (i, min_error) in min_errors.enumerate() {
+        if min_error > max_min_error {
+            max_min_error = min_error;
+        }
+    }
+
+    let mut normalizer: f64 = -max_min_error;
+
     loop {
         // sample another random small db
         random_small_db(&mut db, l1_norm, size);
 
         let error = small_db_max_error(&db, &queries, &answers, &breaks, l1_norm);
-        let utility = -error;
-        let log_p = 0.5 * epsilon * utility;
+        let utility = -error * (l1_norm as f64);
+        //println!("{:?}", utility);
+        //println!("{:?}", normalizer);
+
+        let log_p = epsilon * (utility - normalizer);
         if samplers::bernoulli_log_p(log_p) { break }
+
+        // if utility > normalizer {
+        //     normalizer = utility;
+        // } else {
+        //     let log_p = epsilon * (utility - normalizer);
+        //     if samplers::bernoulli_log_p(log_p) { break }
+        // }
     }
 
     // convert the sparse small db to a dense vector
@@ -167,14 +206,28 @@ fn random_small_db(db: &mut HashMap<u64, u64>, l1_norm: usize, size: u64) {
     db.clear();
     let mut rng = thread_rng();
 
-    for _ in 0..l1_norm {
+    // Use the "stars and bars" approach to generate a random database
+    let num_bars: usize = (size as usize) - 1;
+    let slots: usize = l1_norm + num_bars;
+    let mut partitions: Vec<i64> = vec![0; num_bars + 2];
+    partitions[0]= -1;
+    let mut temp = (0..slots).choose_multiple(&mut rng, num_bars);
+    temp.sort();
+    for (i,idx) in temp.iter().enumerate() {
+        partitions[i+1] = *idx as i64;
+    }
+    partitions[num_bars+1] = slots as i64;
 
-        // randomly select an index of the database to increment
-        let idx: u64 = rng.gen_range(0, size);
+    let mut values: Vec<u64> = vec![0; size as usize];
+    for i in 0..size.try_into().unwrap() {
+        values[i] = ((partitions[i+1] - partitions[i]) - 1) as u64;
+    }
 
-        db.entry(idx).or_insert(0);
-        if let Some(x) = db.get_mut(&idx) {
-            *x += 1;
+    for i in 0..size.try_into().unwrap() {
+        let value: u64 = ((partitions[i+1] - partitions[i]) - 1) as u64;
+        if value > 0 {
+            let key: u64 = i as u64;
+            db.insert(key, value);
         }
     }
 }
