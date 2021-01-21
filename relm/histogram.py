@@ -113,3 +113,13 @@ class Histogram:
         db = np.zeros(self.size, dtype=np.uint64)
         db[self.idxs] = self.vals
         return db
+
+class ObliviousHistogram(Histogram):
+    def __init__(self, column_dict, column_sets, column_incr, db_size):
+        self.column_dict = column_dict
+        self.column_sets = column_sets
+        self.column_incr = column_incr
+        self.db_size = db_size
+
+    def get_db(self):
+        raise NotImplementedError

@@ -141,22 +141,6 @@ pub fn small_db(
     // store the db in a sparse vector (implemented with a HashMap)
     let mut db: HashMap<u64, u64> = HashMap::with_capacity(l1_norm);
 
-    // let mut normalizer: f64 = f64::MIN;
-    // for i in 0..1000 {
-    //     random_small_db(&mut db, l1_norm, size);
-    //
-    //     let error = small_db_max_error(&db, &queries, &answers, &breaks, l1_norm);
-    //     let utility = -error * (l1_norm as f64);
-    //     println!("{:?}", utility);
-    //     println!("{:?}", normalizer);
-    //
-    //     if utility > normalizer {
-    //         normalizer = utility;
-    //     }
-    // }
-
-    // let unnormalized_answers = answers.iter().map(|x| x * (l1_norm as f64));
-
     let min_errors = answers.iter()
                             .map(|x| x * (l1_norm as f64))
                             .map(|x| (x - x.round()).abs());
@@ -175,18 +159,9 @@ pub fn small_db(
 
         let error = small_db_max_error(&db, &queries, &answers, &breaks, l1_norm);
         let utility = -error * (l1_norm as f64);
-        //println!("{:?}", utility);
-        //println!("{:?}", normalizer);
 
         let log_p = epsilon * (utility - normalizer);
         if samplers::bernoulli_log_p(log_p) { break }
-
-        // if utility > normalizer {
-        //     normalizer = utility;
-        // } else {
-        //     let log_p = epsilon * (utility - normalizer);
-        //     if samplers::bernoulli_log_p(log_p) { break }
-        // }
     }
 
     // convert the sparse small db to a dense vector
