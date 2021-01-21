@@ -38,6 +38,8 @@ class Histogram:
         vals = []
 
         for row in counts.index:
+            if not isinstance(row, tuple):
+                row = (row,)
             query = dict(zip(columns, row))
             idxs.append(self._get_idx(query))
             vals.append(counts.loc[row].dummy)
