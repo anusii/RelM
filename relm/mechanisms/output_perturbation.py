@@ -19,7 +19,7 @@ class LaplaceMechanism(ReleaseMechanism):
         precision: number of fractional bits to use in the internal fixed point representation.
     """
 
-    def __init__(self, epsilon, sensitivity, precision):
+    def __init__(self, epsilon, sensitivity, precision=35):
         super(LaplaceMechanism, self).__init__(epsilon)
         self.sensitivity = sensitivity
         self.precision = precision
@@ -159,7 +159,7 @@ class ReportNoisyMax(ReleaseMechanism):
         precision: number of fractional bits to use in the internal fixed point representation.
     """
 
-    def __init__(self, epsilon, precision):
+    def __init__(self, epsilon, precision=35):
         super(ReportNoisyMax, self).__init__(epsilon)
         self.sensitivity = 1.0
         self.precision = precision

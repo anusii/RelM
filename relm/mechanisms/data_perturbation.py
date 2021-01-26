@@ -18,7 +18,7 @@ class SmallDB(ReleaseMechanism):
         alpha: the relative error of the mechanism in range [0, 1]
     """
 
-    def __init__(self, epsilon, data, alpha):
+    def __init__(self, epsilon, alpha):
 
         super(SmallDB, self).__init__(epsilon)
         self.alpha = alpha
@@ -29,22 +29,6 @@ class SmallDB(ReleaseMechanism):
         if (alpha < 0) or (alpha > 1):
             raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
 
-        if not (data >= 0).all():
-            raise ValueError(
-                f"data: data must only non-negative values. Found {np.unique(data[data < 0])}"
-            )
-
-        if data.dtype == np.int64:
-            data = data.astype(np.uint64)
-
-        if data.dtype != np.uint64:
-            raise TypeError(
-                f"data: data must have either the numpy.uint64 or numpy.int64 dtype. Found {data.dtype}"
-            )
-
-        self.data = data
-        self.db = None
-
     @property
     def privacy_consumed(self):
         if self._is_valid:
@@ -52,7 +36,7 @@ class SmallDB(ReleaseMechanism):
         else:
             return self.epsilon
 
-    def release(self, queries):
+    def release(self, values, queries, db_size):
         """
         Releases differential private responses to queries.
 
@@ -66,7 +50,6 @@ class SmallDB(ReleaseMechanism):
         self._check_valid()
 
         l1_norm = int(queries.shape[0] / (self.alpha ** 2)) + 1
-        answers = queries.dot(self.data) / self.data.sum()
 
         error_str = (
             f"queries: queries must only contain 1s and 0s. Found {np.unique(queries)}"
@@ -90,31 +73,8 @@ class SmallDB(ReleaseMechanism):
             breaks = np.cumsum(queries.sum(axis=1).astype(np.uint64))
 
         db = backend.small_db(
-            self.epsilon, l1_norm, len(self.data), sparse_queries, answers, breaks
+            self.epsilon, l1_norm, db_size, sparse_queries, values, breaks
         )
-
-        # For debugging purposes, replace this call to the rust backend with
-        # a call to the ExponentialMechanism code with an appropriate output_range
-        # and utility_function.
-
-        # print("Hit the debugging code")
-        #
-        # n = len(self.data)
-        # f = lambda x: np.bincount(x, minlength=n)
-        # output_range = list(
-        #     map(f, combinations_with_replacement(np.arange(n), l1_norm))
-        # )
-        # utility_function = lambda _: np.array(
-        #     [-np.max(queries.dot(x) / l1_norm - answers) for x in output_range]
-        # )
-        # mechanism = ExponentialMechanism(
-        #     epsilon=self.epsilon,
-        #     utility_function=utility_function,
-        #     sensitivity=1.0,
-        #     output_range=output_range,
-        #     method="sample_and_flip",
-        # )
-        # db = mechanism.release(answers)
 
         self._is_valid = False
         return db

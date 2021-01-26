@@ -38,6 +38,8 @@ class Histogram:
         vals = []
 
         for row in counts.index:
+            if not isinstance(row, tuple):
+                row = (row,)
             query = dict(zip(columns, row))
             idxs.append(self._get_idx(query))
             vals.append(counts.loc[row].dummy)
@@ -75,15 +77,30 @@ class Histogram:
             the indices of the database histogram corresponding to the query
         """
 
-        idxs = np.array([self._get_idx(query)])
-        for i, col in enumerate(self.column_dict.keys()):
-            if query.get(col, None) is None:
-                new_idxs = np.arange(len(self.column_sets[i])) * self.column_incr[i]
-                idxs = idxs[:, None] + new_idxs[None, :]
-                idxs = idxs.flatten()
+        if not isinstance(query, list):
+            query = [query]
 
-        rows = np.zeros_like(idxs)
-        vals = np.ones_like(idxs)
+        idxs_list = []
+        rows_list = []
+        vals_list = []
+        for sub_query in query:
+            sub_idxs = np.array([self._get_idx(sub_query)])
+            for i, col in enumerate(self.column_dict.keys()):
+                if sub_query.get(col, None) is None:
+                    new_sub_idxs = np.arange(len(self.column_sets[i])) * self.column_incr[i]
+                    sub_idxs = sub_idxs[:, None] + new_sub_idxs[None, :]
+                    sub_idxs = sub_idxs.flatten()
+
+            sub_rows = np.zeros_like(sub_idxs)
+            sub_vals = np.ones_like(sub_idxs)
+
+            idxs_list.append(sub_idxs)
+            rows_list.append(sub_rows)
+            vals_list.append(sub_vals)
+
+        idxs = np.concatenate(idxs_list)
+        rows = np.concatenate(rows_list)
+        vals = np.concatenate(vals_list)
 
         vec = sps.csr_matrix((vals, (rows, idxs)), shape=(1, self.size))
         return vec
@@ -96,3 +113,13 @@ class Histogram:
         db = np.zeros(self.size, dtype=np.uint64)
         db[self.idxs] = self.vals
         return db
+
+class ObliviousHistogram(Histogram):
+    def __init__(self, column_dict, column_sets, column_incr, db_size):
+        self.column_dict = column_dict
+        self.column_sets = column_sets
+        self.column_incr = column_incr
+        self.db_size = db_size
+
+    def get_db(self):
+        raise NotImplementedError
