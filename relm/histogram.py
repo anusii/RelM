@@ -87,7 +87,9 @@ class Histogram:
             sub_idxs = np.array([self._get_idx(sub_query)])
             for i, col in enumerate(self.column_dict.keys()):
                 if sub_query.get(col, None) is None:
-                    new_sub_idxs = np.arange(len(self.column_sets[i])) * self.column_incr[i]
+                    new_sub_idxs = (
+                        np.arange(len(self.column_sets[i])) * self.column_incr[i]
+                    )
                     sub_idxs = sub_idxs[:, None] + new_sub_idxs[None, :]
                     sub_idxs = sub_idxs.flatten()
 
@@ -113,6 +115,7 @@ class Histogram:
         db = np.zeros(self.size, dtype=np.uint64)
         db[self.idxs] = self.vals
         return db
+
 
 class ObliviousHistogram(Histogram):
     def __init__(self, column_dict, column_sets, column_incr, db_size):
