@@ -36,12 +36,15 @@ class SmallDB(ReleaseMechanism):
         else:
             return self.epsilon
 
-    def release(self, values, queries, db_size):
+    def release(self, values, queries, db_size, db_l1_norm):
         """
         Releases differential private responses to queries.
 
         Args:
+            values: a numpy array of the exact query responses
             queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
+            db_size: the number of bins in the histogram representation of the database
+            db_l1_norm: the number of records in the database
 
         Returns:
             A numpy array of perturbed values.
@@ -73,7 +76,7 @@ class SmallDB(ReleaseMechanism):
             breaks = np.cumsum(queries.sum(axis=1).astype(np.uint64))
 
         db = backend.small_db(
-            self.epsilon, l1_norm, db_size, sparse_queries, values, breaks
+            self.epsilon, l1_norm, db_size, db_l1_norm, sparse_queries, values, breaks
         )
 
         self._is_valid = False

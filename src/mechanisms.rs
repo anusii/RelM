@@ -135,32 +135,28 @@ pub fn permute_and_flip_mechanism(
 
 
 pub fn small_db(
-    epsilon: f64, l1_norm: usize, size: u64, queries: Vec<u64>, answers: Vec<f64>, breaks: Vec<usize>
+    epsilon: f64, l1_norm: usize, size: u64, db_l1_norm: u64, queries: Vec<u64>, answers: Vec<f64>, breaks: Vec<usize>
 ) -> Vec<u64> {
 
     // store the db in a sparse vector (implemented with a HashMap)
     let mut db: HashMap<u64, u64> = HashMap::with_capacity(l1_norm);
-
-    let min_errors = answers.iter()
-                            .map(|x| x * (l1_norm as f64))
-                            .map(|x| (x - x.round()).abs());
-    let mut max_min_error: f64 = 0.0;
-    for (i, min_error) in min_errors.enumerate() {
-        if min_error > max_min_error {
-            max_min_error = min_error;
-        }
-    }
-
-    let mut normalizer: f64 = -max_min_error;
 
     loop {
         // sample another random small db
         random_small_db(&mut db, l1_norm, size);
 
         let error = small_db_max_error(&db, &queries, &answers, &breaks, l1_norm);
-        let utility = -error * (l1_norm as f64);
+        // We need to account for the sensitivity of the normalized linear queries.
+        // In many definitions of differential privacy, the size of the database is assumed
+        // to be unknown.  In that case, the sensitivity of a normalized linear query is 1.0.
+        // If we assume that size is known, however, then we can restrict our attention to
+        // databases of a given size.  In that case, the sensitivity of a normalized linear
+        // query is 1.0/size.  This yields much better utility.
+        let utility = -error * (db_l1_norm as f64);
 
-        let log_p = epsilon * (utility - normalizer);
+        // Because the queries are all monotone, we don't need to scale the exponent
+        // by a multiplicative factor of 0.5
+        let log_p = epsilon * utility;
         if samplers::bernoulli_log_p(log_p) { break }
     }
 
