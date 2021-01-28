@@ -141,22 +141,42 @@ pub fn small_db(
     // store the db in a sparse vector (implemented with a HashMap)
     let mut db: HashMap<u64, u64> = HashMap::with_capacity(l1_norm);
 
+    // Implement the "sample-and-flip" exponential mechanism with a sampler
+    // that generates random small databases on demand rather than generating
+    // a list of all small databases and picking random elements from that list.a
+
+    // Unfortunately, we don't know the max_utility ahead of time.
+    // Instead, we compute a crude bound for the max_utility based on the
+    // coarse resolution of the probabilities created by integer counts
+    // in the bins of the small database histograms.
+    let mut min_rounding_error: f64 = 0.5;
+    let n = answers.len();
+    for i in 0..n {
+        let temp = (answers[i] * (l1_norm as f64));
+        let rounding_error = (temp - temp.round()).abs() / (l1_norm as f64);
+        if rounding_error < min_rounding_error{
+            min_rounding_error = rounding_error;
+        }
+    }
+
+    let max_utility = -min_rounding_error;
+
     loop {
         // sample another random small db
         random_small_db(&mut db, l1_norm, size);
 
         let error = small_db_max_error(&db, &queries, &answers, &breaks, l1_norm);
+        let utility = -error;
+
         // We need to account for the sensitivity of the normalized linear queries.
         // In many definitions of differential privacy, the size of the database is assumed
         // to be unknown.  In that case, the sensitivity of a normalized linear query is 1.0.
         // If we assume that size is known, however, then we can restrict our attention to
         // databases of a given size.  In that case, the sensitivity of a normalized linear
         // query is 1.0/size.  This yields much better utility.
-        let utility = -error * (db_l1_norm as f64);
-
-        // Because the queries are all monotone, we don't need to scale the exponent
+        // Also, because the queries are all monotone, we don't need to scale the exponent
         // by a multiplicative factor of 0.5
-        let log_p = epsilon * utility;
+        let log_p = epsilon * (db_l1_norm as f64) * (utility - max_utility);
         if samplers::bernoulli_log_p(log_p) { break }
     }
 
