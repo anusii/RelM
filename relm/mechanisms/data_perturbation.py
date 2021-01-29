@@ -77,7 +77,7 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
         num_queries: the number of queries answered by the mechanism
     """
 
-    def __init__(self, epsilon, data, alpha, num_queries):
+    def __init__(self, epsilon, alpha, num_queries, db_size, db_l1_norm):
         super(PrivateMultiplicativeWeights, self).__init__(epsilon)
 
         if not type(alpha) in (float, np.float64):
@@ -86,18 +86,18 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
         if (alpha < 0) or (alpha > 1):
             raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
 
-        if not (data >= 0).all():
-            raise ValueError(
-                f"data: data must only non-negative values. Found {np.unique(data[data < 0])}"
-            )
-
-        if data.dtype == np.int64:
-            data = data.astype(np.uint64)
-
-        if data.dtype != np.uint64:
-            raise TypeError(
-                f"data: data must have either the numpy.uint64 or numpy.int64 dtype. Found {data.dtype}"
-            )
+        # if not (data >= 0).all():
+        #     raise ValueError(
+        #         f"data: data must only non-negative values. Found {np.unique(data[data < 0])}"
+        #     )
+        #
+        # if data.dtype == np.int64:
+        #     data = data.astype(np.uint64)
+        #
+        # if data.dtype != np.uint64:
+        #     raise TypeError(
+        #         f"data: data must have either the numpy.uint64 or numpy.int64 dtype. Found {data.dtype}"
+        #     )
 
         if type(num_queries) is not int:
             raise TypeError(
@@ -109,27 +109,28 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
                 f"num_queries: num_queries must be positive. Found {num_queries}"
             )
 
-        self.l1_norm = data.sum()
-        self.data = data / self.l1_norm
-        self.data_est = np.ones(len(data)) / len(data)
+        self.db_l1_norm = db_l1_norm
+        self.db_size = db_size
+        self.est_data = np.ones(self.db_size) / self.db_size
 
         self.alpha = alpha
         self.learning_rate = self.alpha / 2
 
         # solve inequality of Theorem 4.14 (Dwork and Roth) for beta
-        self.beta = epsilon * self.l1_norm * self.alpha ** 3
-        self.beta /= 36 * np.log(len(data))
+        self.beta = epsilon * self.db_l1_norm * self.alpha ** 3
+        self.beta /= 36 * np.log(self.db_size)
         self.beta -= np.log(num_queries)
-        self.beta = np.exp(-self.beta) * 32 * np.log(len(data)) / (self.alpha ** 2)
+        self.beta = np.exp(-self.beta) * 32 * np.log(self.db_size) / (self.alpha ** 2)
 
-        cutoff = 4 * np.log(len(data)) / (self.alpha ** 2)
+        cutoff = 4 * np.log(self.db_size) / (self.alpha ** 2)
+
         self.cutoff = int(cutoff)
-        self.threshold = 18 * cutoff / (epsilon * self.l1_norm)
+        self.threshold = 18 * cutoff / (epsilon * self.db_l1_norm)
         self.threshold *= np.log(2 * num_queries) + np.log(4 * cutoff / self.beta)
 
         self.sparse_numeric = SparseNumeric(
             epsilon,
-            sensitivity=(1 / self.l1_norm),
+            sensitivity=(1 / self.db_l1_norm),
             threshold=self.threshold,
             cutoff=self.cutoff,
         )
@@ -146,28 +147,28 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
         else:
             r = 1 - query
 
-        self.data_est *= np.exp(-r * self.learning_rate)
-        self.data_est /= self.data_est.sum()
+        self.est_data *= np.exp(-r * self.learning_rate)
+        self.est_data /= self.est_data.sum()
 
-    def release(self, queries):
+    def release(self, values, queries):
         """
         Returns private answers to the queries.
 
         Args:
+            values: a numpy array of the exact query responses
             queries: a list of queries as 1D 1/0 indicator numpy arrays
         Returns:
             a numpy array of the private query responses
         """
 
         results = []
-        for query in queries:
+        for query, value in zip(queries, values):
             if type(query) is sps.csr.csr_matrix:
                 query = np.asarray(query.todense()).flatten()
 
-            true_answer = (query * self.data).sum()
-            est_answer = (query * self.data_est).sum()
+            est_answer = query.dot(self.est_data)
 
-            error = true_answer - est_answer
+            error = value - est_answer
             errors = np.array([error, -error])
             indices, release_values = self.sparse_numeric.release(errors)
 
