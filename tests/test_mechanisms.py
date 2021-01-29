@@ -308,10 +308,11 @@ def test_PrivateMultiplicativeWeights():
     epsilon = 10000
     num_queries = len(queries)
     alpha = 100 / data.sum()
+    beta = 0.0001
 
     values = queries.dot(data) / data.sum()
 
-    mechanism = PrivateMultiplicativeWeights(epsilon, alpha, num_queries, len(data), data.sum())
+    mechanism = PrivateMultiplicativeWeights(epsilon, alpha, beta, num_queries, len(data), data.sum())
     results = mechanism.release(values, queries)
 
     assert len(results) == len(queries)
@@ -322,26 +323,26 @@ def test_PrivateMultiplicativeWeights():
 
     with pytest.raises(TypeError):
         _ = PrivateMultiplicativeWeights(
-            epsilon, data.astype(np.int32), alpha, num_queries, len(data), data.sum()
+            epsilon, data.astype(np.int32), alpha, beta, num_queries, len(data), data.sum()
         )
 
     with pytest.raises(TypeError):
-        _ = PrivateMultiplicativeWeights(epsilon, 1, num_queries, len(data), data.sum())
+        _ = PrivateMultiplicativeWeights(epsilon, 1, beta, num_queries, len(data), data.sum())
 
     with pytest.raises(ValueError):
-        _ = PrivateMultiplicativeWeights(epsilon, -0.1, num_queries, len(data), data.sum())
+        _ = PrivateMultiplicativeWeights(epsilon, -0.1, beta, num_queries, len(data), data.sum())
 
     with pytest.raises(ValueError):
-        _ = PrivateMultiplicativeWeights(epsilon, 1.1, num_queries, len(data), data.sum())
+        _ = PrivateMultiplicativeWeights(epsilon, 1.1, beta, num_queries, len(data), data.sum())
 
     with pytest.raises(ValueError):
-        _ = PrivateMultiplicativeWeights(epsilon, alpha, 0, len(data), data.sum())
+        _ = PrivateMultiplicativeWeights(epsilon, alpha, beta, 0, len(data), data.sum())
 
     with pytest.raises(ValueError):
-        _ = PrivateMultiplicativeWeights(epsilon, alpha, -1, len(data), data.sum())
+        _ = PrivateMultiplicativeWeights(epsilon, alpha, beta, -1, len(data), data.sum())
 
     with pytest.raises(TypeError):
-        _ = PrivateMultiplicativeWeights(epsilon, alpha, float(num_queries), len(data), data.sum())
+        _ = PrivateMultiplicativeWeights(epsilon, alpha, beta, float(num_queries), len(data), data.sum())
 
 
 def test_PrivateMultiplicativeWeights_sparse():
@@ -355,8 +356,9 @@ def test_PrivateMultiplicativeWeights_sparse():
     epsilon = 10000
     num_queries = queries.shape[0]
     alpha = 100 / data.sum()
+    beta = 0.0001
 
     values = queries.dot(data) / data.sum()
 
-    mechanism = PrivateMultiplicativeWeights(epsilon, alpha, num_queries, len(data), data.sum())
+    mechanism = PrivateMultiplicativeWeights(epsilon, alpha, beta, num_queries, len(data), data.sum())
     _ = mechanism.release(values, queries)

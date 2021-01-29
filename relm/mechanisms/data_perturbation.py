@@ -74,10 +74,10 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
         epsilon: the privacy parameter to use
         data: a 1D numpy array of the underlying database
         alpha: the relative error of the mechanism
-        num_queries: the number of queries answered by the mechanism
+        q_size: the number of queries answered by the mechanism
     """
 
-    def __init__(self, epsilon, alpha, num_queries, db_size, db_l1_norm):
+    def __init__(self, epsilon, alpha, beta, q_size, db_size, db_l1_norm):
         super(PrivateMultiplicativeWeights, self).__init__(epsilon)
 
         if not type(alpha) in (float, np.float64):
@@ -86,27 +86,14 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
         if (alpha < 0) or (alpha > 1):
             raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
 
-        # if not (data >= 0).all():
-        #     raise ValueError(
-        #         f"data: data must only non-negative values. Found {np.unique(data[data < 0])}"
-        #     )
-        #
-        # if data.dtype == np.int64:
-        #     data = data.astype(np.uint64)
-        #
-        # if data.dtype != np.uint64:
-        #     raise TypeError(
-        #         f"data: data must have either the numpy.uint64 or numpy.int64 dtype. Found {data.dtype}"
-        #     )
-
-        if type(num_queries) is not int:
+        if type(q_size) is not int:
             raise TypeError(
-                f"num_queries: num_queries must be an int. Found {type(num_queries)}"
+                f"q_size: q_size must be an int. Found {type(q_size)}"
             )
 
-        if num_queries <= 0:
+        if q_size <= 0:
             raise ValueError(
-                f"num_queries: num_queries must be positive. Found {num_queries}"
+                f"q_size: q_size must be positive. Found {q_size}"
             )
 
         self.db_l1_norm = db_l1_norm
@@ -116,17 +103,21 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
         self.alpha = alpha
         self.learning_rate = self.alpha / 2
 
-        # solve inequality of Theorem 4.14 (Dwork and Roth) for beta
-        self.beta = epsilon * self.db_l1_norm * self.alpha ** 3
-        self.beta /= 36 * np.log(self.db_size)
-        self.beta -= np.log(num_queries)
-        self.beta = np.exp(-self.beta) * 32 * np.log(self.db_size) / (self.alpha ** 2)
+        self.beta = beta
+        # # solve inequality of Theorem 4.14 (Dwork and Roth) for beta
+        # self.beta = epsilon * self.db_l1_norm * self.alpha ** 3
+        # self.beta /= 36 * np.log(self.db_size)
+        # self.beta -= np.log(q_size)
+        # self.beta = np.exp(-self.beta) * 32 * np.log(self.db_size) / (self.alpha ** 2)
+
+        self.q_size = q_size
 
         cutoff = 4 * np.log(self.db_size) / (self.alpha ** 2)
-
         self.cutoff = int(cutoff)
+
         self.threshold = 18 * cutoff / (epsilon * self.db_l1_norm)
-        self.threshold *= np.log(2 * num_queries) + np.log(4 * cutoff / self.beta)
+        #self.threshold = 18 * cutoff / epsilon
+        self.threshold *= np.log(2 * self.q_size) + np.log(4 * cutoff / self.beta)
 
         self.sparse_numeric = SparseNumeric(
             epsilon,
