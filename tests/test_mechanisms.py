@@ -225,85 +225,73 @@ def test_ReportNoisyMax(benchmark):
 
 
 def test_SmallDB():
+    db_size = 3
+    data = np.random.randint(0, 1000, size=db_size)
+    db_l1_norm = data.sum()
+    num_queries = 3
+    queries = np.vstack([np.random.randint(0, 2, db_size) for _ in range(num_queries)])
+    values = queries.dot(data) / data.sum()
 
-    size = 1000
-    data = np.random.randint(0, 10, size)
-    queries = np.vstack([np.random.randint(0, 2, size) for _ in range(3)])
-
-    epsilon = 1
+    epsilon = 1.0
     alpha = 0.1
     beta = 0.0001
     errors = []
 
     for _ in range(10):
-        mechanism = SmallDB(epsilon, data, alpha)
-        db = mechanism.release(queries)
-        errors.append(
-            abs(queries.dot(data) / data.sum() - queries.dot(db) / db.sum()).max()
-        )
+        mechanism = SmallDB(epsilon, alpha)
+        db = mechanism.release(values, queries, db_size, db_l1_norm)
+        errors.append(abs(values - queries.dot(db) / db.sum()).max())
 
     errors = np.array(errors)
 
-    x = np.log(len(data)) * np.log(len(queries)) / (alpha ** 2) + np.log(1 / beta)
-    error_bound = alpha + 2 * x / (epsilon * data.sum())
+    x = (np.log(db_size) * np.log(num_queries) / (alpha ** 2)) + np.log(1 / beta)
+    error_bound = alpha + 2 * x / (epsilon * db_l1_norm)
 
     assert (errors < error_bound).all()
-    assert len(db) == size
-    assert db.sum() == int(len(queries) / (alpha ** 2)) + 1
+    assert len(db) == db_size
+    assert db.sum() == int(queries.shape[0] / (alpha ** 2)) + 1
 
     # input validation
-    mechanism = SmallDB(epsilon, data, 0.001)
-    _ = mechanism.release(np.ones((1, size)))
-    mechanism = SmallDB(epsilon, data, 0.001)
-    _ = mechanism.release(np.zeros((1, size)))
+    with pytest.raises(TypeError):
+        _ = SmallDB(epsilon, 1)
+
     with pytest.raises(ValueError):
-        mechanism = SmallDB(epsilon, data, 0.001)
-        qs = np.ones((1, size))
+        _ = SmallDB(epsilon, -0.1)
+
+    with pytest.raises(ValueError):
+        _ = SmallDB(epsilon, 1.1)
+
+    with pytest.raises(ValueError):
+        mechanism = SmallDB(epsilon, 0.001)
+        qs = np.ones((1, db_size))
         qs[0, 2] = -1
-        _ = mechanism.release(qs)
-
-    with pytest.raises(ValueError):
-        data_copy = data.copy()
-        data_copy[3] = -2
-        _ = SmallDB(epsilon, data_copy, 0.001)
-
-    with pytest.raises(TypeError):
-        _ = SmallDB(epsilon, data.astype(np.int32), 0.001)
-
-    with pytest.raises(TypeError):
-        _ = SmallDB(epsilon, data, 1)
-
-    with pytest.raises(ValueError):
-        _ = SmallDB(epsilon, data, -0.1)
-
-    with pytest.raises(ValueError):
-        _ = SmallDB(epsilon, data, 1.1)
+        _ = mechanism.release(values, qs, db_size, db_l1_norm)
 
 
 def test_SmallDB_sparse():
-
-    size = 1000
-    data = np.random.randint(0, 10, size)
-    queries = np.vstack([np.random.randint(0, 2, size) for _ in range(3)])
+    db_size = 3
+    data = np.random.randint(0, 1000, size=db_size)
+    db_l1_norm = data.sum()
+    num_queries = 3
+    queries = np.vstack([np.random.randint(0, 2, db_size) for _ in range(num_queries)])
     queries = scipy.sparse.csr_matrix(queries)
+    values = queries.dot(data) / data.sum()
 
-    epsilon = 1
+    epsilon = 1.0
     alpha = 0.1
     beta = 0.0001
     errors = []
 
     for _ in range(10):
-        mechanism = SmallDB(epsilon, data, alpha)
-        db = mechanism.release(queries)
-        errors.append(
-            abs(queries.dot(data) / data.sum() - queries.dot(db) / db.sum()).max()
-        )
+        mechanism = SmallDB(epsilon, alpha)
+        db = mechanism.release(values, queries, db_size, db_l1_norm)
+        errors.append(abs(values - queries.dot(db) / db.sum()).max())
 
     errors = np.array(errors)
 
-    x = np.log(len(data)) * np.log(queries.shape[0]) / (alpha ** 2) + np.log(1 / beta)
-    error_bound = alpha + 2 * x / (epsilon * data.sum())
+    x = (np.log(db_size) * np.log(num_queries) / (alpha ** 2)) + np.log(1 / beta)
+    error_bound = alpha + 2 * x / (epsilon * db_l1_norm)
 
     assert (errors < error_bound).all()
-    assert len(db) == size
+    assert len(db) == db_size
     assert db.sum() == int(queries.shape[0] / (alpha ** 2)) + 1
