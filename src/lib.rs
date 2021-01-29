@@ -129,6 +129,7 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         epsilon: f64,
         l1_norm: usize,
         size: u64,
+        db_l1_norm: u64,
         queries: &'a PyArray1<u64>,
         answers: &'a PyArray1<f64>,
         breaks: &'a PyArray1<u64>
@@ -138,7 +139,7 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         let breaks = breaks.to_vec().unwrap();
         let breaks = breaks.iter().map(|&x| x as usize).collect();
 
-        mechanisms::small_db(epsilon, l1_norm, size, queries, answers, breaks).to_pyarray(py)
+        mechanisms::small_db(epsilon, l1_norm, size, db_l1_norm, queries, answers, breaks).to_pyarray(py)
     }
 
     Ok(())

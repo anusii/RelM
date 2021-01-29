@@ -4,6 +4,10 @@ from relm import backend
 import scipy.sparse as sps
 from relm.mechanisms import SparseNumeric
 
+# Imports for SmallDB debugging code
+from itertools import combinations_with_replacement
+from relm.mechanisms import ExponentialMechanism
+
 
 class SmallDB(ReleaseMechanism):
     """
@@ -15,7 +19,7 @@ class SmallDB(ReleaseMechanism):
         alpha: the relative error of the mechanism in range [0, 1]
     """
 
-    def __init__(self, epsilon, data, alpha):
+    def __init__(self, epsilon, alpha):
 
         super(SmallDB, self).__init__(epsilon)
         self.alpha = alpha
@@ -26,22 +30,6 @@ class SmallDB(ReleaseMechanism):
         if (alpha < 0) or (alpha > 1):
             raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
 
-        if not (data >= 0).all():
-            raise ValueError(
-                f"data: data must only non-negative values. Found {np.unique(data[data < 0])}"
-            )
-
-        if data.dtype == np.int64:
-            data = data.astype(np.uint64)
-
-        if data.dtype != np.uint64:
-            raise TypeError(
-                f"data: data must have either the numpy.uint64 or numpy.int64 dtype. Found {data.dtype}"
-            )
-
-        self.data = data
-        self.db = None
-
     @property
     def privacy_consumed(self):
         if self._is_valid:
@@ -49,12 +37,15 @@ class SmallDB(ReleaseMechanism):
         else:
             return self.epsilon
 
-    def release(self, queries):
+    def release(self, values, queries, db_size, db_l1_norm):
         """
         Releases differential private responses to queries.
 
         Args:
+            values: a numpy array of the exact query responses
             queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
+            db_size: the number of bins in the histogram representation of the database
+            db_l1_norm: the number of records in the database
 
         Returns:
             A numpy array of perturbed values.
@@ -63,16 +54,14 @@ class SmallDB(ReleaseMechanism):
         self._check_valid()
 
         l1_norm = int(queries.shape[0] / (self.alpha ** 2)) + 1
-        answers = queries.dot(self.data) / self.data.sum()
 
         sparse_queries, breaks = _process_queries(queries)
 
         db = backend.small_db(
-            self.epsilon, l1_norm, len(self.data), sparse_queries, answers, breaks
+            self.epsilon, l1_norm, db_size, db_l1_norm, sparse_queries, values, breaks
         )
 
         self._is_valid = False
-
         return db
 
 
