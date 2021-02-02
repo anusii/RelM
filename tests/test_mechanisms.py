@@ -13,6 +13,7 @@ from relm.mechanisms import (
     SparseNumeric,
     ReportNoisyMax,
     SmallDB,
+    PrivateMultiplicativeWeights,
 )
 
 
@@ -228,33 +229,36 @@ def test_SmallDB():
     db_size = 3
     data = np.random.randint(0, 1000, size=db_size)
     db_l1_norm = data.sum()
+
     num_queries = 3
     queries = np.vstack([np.random.randint(0, 2, db_size) for _ in range(num_queries)])
+
     values = queries.dot(data) / data.sum()
 
     epsilon = 1.0
     alpha = 0.1
     beta = 0.0001
-    errors = []
 
-    for _ in range(10):
+    mechanism = SmallDB(epsilon, alpha, db_size, db_l1_norm)
+    db = mechanism.release(values, queries)
+
+    assert len(db) == db_size
+    assert db.sum() == int(queries.shape[0] / (alpha ** 2)) + 1
+
+    # Test utility guarantee
+    TRIALS = 10
+    errors = np.empty(TRIALS)
+    for i in range(TRIALS):
         mechanism = SmallDB(epsilon, alpha, db_size, db_l1_norm)
         db = mechanism.release(values, queries)
-        errors.append(abs(values - queries.dot(db) / db.sum()).max())
-
-    errors = np.array(errors)
+        errors[i] = abs(values - queries.dot(db) / db.sum()).max()
 
     x = (np.log(db_size) * np.log(num_queries) / (alpha ** 2)) + np.log(1 / beta)
     error_bound = alpha + 2 * x / (epsilon * db_l1_norm)
 
     assert (errors < error_bound).all()
-    assert len(db) == db_size
-    assert db.sum() == int(queries.shape[0] / (alpha ** 2)) + 1
 
     # input validation
-    with pytest.raises(TypeError):
-        _ = SmallDB(epsilon, 1, db_size, db_l1_norm)
-
     with pytest.raises(ValueError):
         _ = SmallDB(epsilon, -0.1, db_size, db_l1_norm)
 
@@ -272,26 +276,99 @@ def test_SmallDB_sparse():
     db_size = 3
     data = np.random.randint(0, 1000, size=db_size)
     db_l1_norm = data.sum()
+
     num_queries = 3
     queries = np.vstack([np.random.randint(0, 2, db_size) for _ in range(num_queries)])
     queries = scipy.sparse.csr_matrix(queries)
-    values = queries.dot(data) / data.sum()
+
+    values = queries.dot(data) / db_l1_norm
 
     epsilon = 1.0
     alpha = 0.1
     beta = 0.0001
-    errors = []
 
-    for _ in range(10):
+    mechanism = SmallDB(epsilon, alpha, db_size, db_l1_norm)
+    db = mechanism.release(values, queries)
+
+    assert len(db) == db_size
+    assert db.sum() == int(queries.shape[0] / (alpha ** 2)) + 1
+
+    # Test utility guarantee
+    TRIALS = 10
+    errors = np.empty(TRIALS)
+    for i in range(TRIALS):
         mechanism = SmallDB(epsilon, alpha, db_size, db_l1_norm)
         db = mechanism.release(values, queries)
-        errors.append(abs(values - queries.dot(db) / db.sum()).max())
-
-    errors = np.array(errors)
+        errors[i] = abs(values - queries.dot(db) / db.sum()).max()
 
     x = (np.log(db_size) * np.log(num_queries) / (alpha ** 2)) + np.log(1 / beta)
     error_bound = alpha + 2 * x / (epsilon * db_l1_norm)
 
     assert (errors < error_bound).all()
-    assert len(db) == db_size
-    assert db.sum() == int(queries.shape[0] / (alpha ** 2)) + 1
+
+
+def test_PrivateMultiplicativeWeights():
+    db_size = 32
+    data = np.random.randint(0, 1000, size=db_size)
+    db_l1_norm = data.sum()
+
+    q_size = 2 ** db_size
+    num_queries = 1024
+    queries = np.random.randint(0, 2, size=(num_queries, db_size))
+
+    values = queries.dot(data) / db_l1_norm
+
+    epsilon = 1
+    alpha = 0.1
+    beta = 0.0001
+
+    mechanism = PrivateMultiplicativeWeights(
+        epsilon, alpha, beta, q_size, db_size, db_l1_norm
+    )
+    results = mechanism.release(values, queries)
+
+    assert len(results) == len(queries)
+
+    # input validation
+    with pytest.raises(TypeError):
+        _ = PrivateMultiplicativeWeights(
+            epsilon, data.astype(np.int32), alpha, beta, q_size, db_size, db_l1_norm
+        )
+
+    with pytest.raises(ValueError):
+        _ = PrivateMultiplicativeWeights(
+            epsilon, -0.1, beta, q_size, db_size, db_l1_norm
+        )
+
+    with pytest.raises(ValueError):
+        _ = PrivateMultiplicativeWeights(
+            epsilon, 1.1, beta, q_size, db_size, db_l1_norm
+        )
+
+    with pytest.raises(ValueError):
+        _ = PrivateMultiplicativeWeights(epsilon, alpha, beta, 0, db_size, db_l1_norm)
+
+    with pytest.raises(ValueError):
+        _ = PrivateMultiplicativeWeights(epsilon, alpha, beta, -1, db_size, db_l1_norm)
+
+
+def test_PrivateMultiplicativeWeights_sparse():
+    db_size = 32
+    data = np.random.randint(0, 1000, size=db_size)
+    db_l1_norm = data.sum()
+
+    q_size = 2 ** db_size
+    num_queries = 1024
+    queries = np.random.randint(0, 2, size=(num_queries, db_size))
+    queries = scipy.sparse.csr_matrix(queries)
+
+    values = queries.dot(data) / data.sum()
+
+    epsilon = 1.0
+    alpha = 0.1
+    beta = 0.0001
+
+    mechanism = PrivateMultiplicativeWeights(
+        epsilon, alpha, beta, q_size, db_size, db_l1_norm
+    )
+    results = mechanism.release(values, queries)
