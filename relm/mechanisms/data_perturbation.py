@@ -19,16 +19,9 @@ class SmallDB(ReleaseMechanism):
         alpha: the relative error of the mechanism in range [0, 1]
         db_size: the number of bins in the histogram representation of the database
         db_l1_norm: the number of records in the database
-
     """
 
     def __init__(self, epsilon, alpha, db_size, db_l1_norm):
-        if not type(alpha) is float:
-            raise TypeError(f"alpha: alpha must be a float, found{type(alpha)}")
-
-        if (alpha < 0) or (alpha > 1):
-            raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
-
         super(SmallDB, self).__init__(epsilon)
 
         self.alpha = alpha
@@ -41,6 +34,16 @@ class SmallDB(ReleaseMechanism):
             return 0
         else:
             return self.epsilon
+
+    @property
+    def alpha(self):
+        return self._alpha
+
+    @alpha.setter
+    def alpha(self, new_alpha):
+        if (new_alpha < 0) or (new_alpha > 1):
+            raise ValueError(f"alpha: alpha must in [0, 1], found{new_alpha}")
+        self._alpha = float(new_alpha)
 
     def release(self, values, queries):
         """
@@ -84,21 +87,11 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
         data: a 1D numpy array of the underlying database
         alpha: the relative error of the mechanism
         q_size: the number of queries answered by the mechanism
+        db_size: the number of bins in the histogram representation of the database
+        db_l1_norm: the number of records in the database
     """
 
     def __init__(self, epsilon, alpha, beta, q_size, db_size, db_l1_norm):
-        if not type(alpha) in (float, np.float64):
-            raise TypeError(f"alpha: alpha must be a float, found{type(alpha)}")
-
-        if (alpha < 0) or (alpha > 1):
-            raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
-
-        if type(q_size) is not int:
-            raise TypeError(f"q_size: q_size must be an int. Found {type(q_size)}")
-
-        if q_size <= 0:
-            raise ValueError(f"q_size: q_size must be positive. Found {q_size}")
-
         super(PrivateMultiplicativeWeights, self).__init__(epsilon)
 
         self.alpha = alpha
@@ -128,6 +121,26 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
     @property
     def privacy_consumed(self):
         return self.sparse_numeric.privacy_consumed
+
+    @property
+    def alpha(self):
+        return self._alpha
+
+    @alpha.setter
+    def alpha(self, new_alpha):
+        if (new_alpha < 0) or (new_alpha > 1):
+            raise ValueError(f"alpha: alpha must in [0, 1], found{new_alpha}")
+        self._alpha = float(new_alpha)
+
+    @property
+    def q_size(self):
+        return self._q_size
+
+    @q_size.setter
+    def q_size(self, new_q_size):
+        if new_q_size <= 0:
+            raise ValueError(f"q_size: q_size must be positive. Found {new_q_size}")
+        self._q_size = new_q_size
 
     def update_weights(self, est_answer, noisy_answer, query):
         if noisy_answer < est_answer:

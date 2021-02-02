@@ -259,9 +259,6 @@ def test_SmallDB():
     assert (errors < error_bound).all()
 
     # input validation
-    with pytest.raises(TypeError):
-        _ = SmallDB(epsilon, 1, db_size, db_l1_norm)
-
     with pytest.raises(ValueError):
         _ = SmallDB(epsilon, -0.1, db_size, db_l1_norm)
 
@@ -338,9 +335,6 @@ def test_PrivateMultiplicativeWeights():
             epsilon, data.astype(np.int32), alpha, beta, q_size, db_size, db_l1_norm
         )
 
-    with pytest.raises(TypeError):
-        _ = PrivateMultiplicativeWeights(epsilon, 1, beta, q_size, db_size, db_l1_norm)
-
     with pytest.raises(ValueError):
         _ = PrivateMultiplicativeWeights(
             epsilon, -0.1, beta, q_size, db_size, db_l1_norm
@@ -356,11 +350,6 @@ def test_PrivateMultiplicativeWeights():
 
     with pytest.raises(ValueError):
         _ = PrivateMultiplicativeWeights(epsilon, alpha, beta, -1, db_size, db_l1_norm)
-
-    with pytest.raises(TypeError):
-        _ = PrivateMultiplicativeWeights(
-            epsilon, alpha, beta, float(q_size), db_size, db_l1_norm
-        )
 
 
 def test_PrivateMultiplicativeWeights_sparse():
