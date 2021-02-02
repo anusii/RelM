@@ -238,8 +238,8 @@ def test_SmallDB():
     errors = []
 
     for _ in range(10):
-        mechanism = SmallDB(epsilon, alpha)
-        db = mechanism.release(values, queries, db_size, db_l1_norm)
+        mechanism = SmallDB(epsilon, alpha, db_size, db_l1_norm)
+        db = mechanism.release(values, queries)
         errors.append(abs(values - queries.dot(db) / db.sum()).max())
 
     errors = np.array(errors)
@@ -253,19 +253,19 @@ def test_SmallDB():
 
     # input validation
     with pytest.raises(TypeError):
-        _ = SmallDB(epsilon, 1)
+        _ = SmallDB(epsilon, 1, db_size, db_l1_norm)
 
     with pytest.raises(ValueError):
-        _ = SmallDB(epsilon, -0.1)
+        _ = SmallDB(epsilon, -0.1, db_size, db_l1_norm)
 
     with pytest.raises(ValueError):
-        _ = SmallDB(epsilon, 1.1)
+        _ = SmallDB(epsilon, 1.1, db_size, db_l1_norm)
 
     with pytest.raises(ValueError):
-        mechanism = SmallDB(epsilon, 0.001)
+        mechanism = SmallDB(epsilon, 0.001, db_size, db_l1_norm)
         qs = np.ones((1, db_size))
         qs[0, 2] = -1
-        _ = mechanism.release(values, qs, db_size, db_l1_norm)
+        _ = mechanism.release(values, qs)
 
 
 def test_SmallDB_sparse():
@@ -283,8 +283,8 @@ def test_SmallDB_sparse():
     errors = []
 
     for _ in range(10):
-        mechanism = SmallDB(epsilon, alpha)
-        db = mechanism.release(values, queries, db_size, db_l1_norm)
+        mechanism = SmallDB(epsilon, alpha, db_size, db_l1_norm)
+        db = mechanism.release(values, queries)
         errors.append(abs(values - queries.dot(db) / db.sum()).max())
 
     errors = np.array(errors)
