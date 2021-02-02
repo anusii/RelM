@@ -23,17 +23,17 @@ class SmallDB(ReleaseMechanism):
     """
 
     def __init__(self, epsilon, alpha, db_size, db_l1_norm):
-
-        super(SmallDB, self).__init__(epsilon)
-        self.alpha = alpha
-        self.db_size = db_size
-        self.db_l1_norm = db_l1_norm
-
         if not type(alpha) is float:
             raise TypeError(f"alpha: alpha must be a float, found{type(alpha)}")
 
         if (alpha < 0) or (alpha > 1):
             raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
+
+        super(SmallDB, self).__init__(epsilon)
+
+        self.alpha = alpha
+        self.db_size = db_size
+        self.db_l1_norm = db_l1_norm
 
     @property
     def privacy_consumed(self):
@@ -87,8 +87,6 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
     """
 
     def __init__(self, epsilon, alpha, beta, q_size, db_size, db_l1_norm):
-        super(PrivateMultiplicativeWeights, self).__init__(epsilon)
-
         if not type(alpha) in (float, np.float64):
             raise TypeError(f"alpha: alpha must be a float, found{type(alpha)}")
 
@@ -96,36 +94,26 @@ class PrivateMultiplicativeWeights(ReleaseMechanism):
             raise ValueError(f"alpha: alpha must in [0, 1], found{alpha}")
 
         if type(q_size) is not int:
-            raise TypeError(
-                f"q_size: q_size must be an int. Found {type(q_size)}"
-            )
+            raise TypeError(f"q_size: q_size must be an int. Found {type(q_size)}")
 
         if q_size <= 0:
-            raise ValueError(
-                f"q_size: q_size must be positive. Found {q_size}"
-            )
+            raise ValueError(f"q_size: q_size must be positive. Found {q_size}")
 
-        self.db_l1_norm = db_l1_norm
-        self.db_size = db_size
-        self.est_data = np.ones(self.db_size) / self.db_size
+        super(PrivateMultiplicativeWeights, self).__init__(epsilon)
 
         self.alpha = alpha
-        self.learning_rate = self.alpha / 2
-
         self.beta = beta
-        # # solve inequality of Theorem 4.14 (Dwork and Roth) for beta
-        # self.beta = epsilon * self.db_l1_norm * self.alpha ** 3
-        # self.beta /= 36 * np.log(self.db_size)
-        # self.beta -= np.log(q_size)
-        # self.beta = np.exp(-self.beta) * 32 * np.log(self.db_size) / (self.alpha ** 2)
-
         self.q_size = q_size
+        self.db_size = db_size
+        self.db_l1_norm = db_l1_norm
+
+        self.est_data = np.ones(self.db_size) / self.db_size
+        self.learning_rate = self.alpha / 2
 
         cutoff = 4 * np.log(self.db_size) / (self.alpha ** 2)
         self.cutoff = int(cutoff)
 
         self.threshold = 18 * cutoff / (epsilon * self.db_l1_norm)
-        #self.threshold = 18 * cutoff / epsilon
         self.threshold *= np.log(2 * self.q_size) + np.log(4 * cutoff / self.beta)
 
         self.sparse_numeric = SparseNumeric(
