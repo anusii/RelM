@@ -16,12 +16,17 @@ class SmallDB(ReleaseMechanism):
         epsilon: the privacy parameter
         data: a 1D array of the database in histogram format
         alpha: the relative error of the mechanism in range [0, 1]
+        db_size: the number of bins in the histogram representation of the database
+        db_l1_norm: the number of records in the database
+
     """
 
-    def __init__(self, epsilon, alpha):
+    def __init__(self, epsilon, alpha, db_size, db_l1_norm):
 
         super(SmallDB, self).__init__(epsilon)
         self.alpha = alpha
+        self.db_size = db_size
+        self.db_l1_norm = db_l1_norm
 
         if not type(alpha) is float:
             raise TypeError(f"alpha: alpha must be a float, found{type(alpha)}")
@@ -36,15 +41,13 @@ class SmallDB(ReleaseMechanism):
         else:
             return self.epsilon
 
-    def release(self, values, queries, db_size, db_l1_norm):
+    def release(self, values, queries):
         """
         Releases differential private responses to queries.
 
         Args:
             values: a numpy array of the exact query responses
             queries: a 2D numpy array of queries in indicator format with shape (number of queries, db size)
-            db_size: the number of bins in the histogram representation of the database
-            db_l1_norm: the number of records in the database
 
         Returns:
             A numpy array of perturbed values.
@@ -76,7 +79,13 @@ class SmallDB(ReleaseMechanism):
             breaks = np.cumsum(queries.sum(axis=1).astype(np.uint64))
 
         db = backend.small_db(
-            self.epsilon, l1_norm, db_size, db_l1_norm, sparse_queries, values, breaks
+            self.epsilon,
+            l1_norm,
+            self.db_size,
+            self.db_l1_norm,
+            sparse_queries,
+            values,
+            breaks,
         )
 
         self._is_valid = False
