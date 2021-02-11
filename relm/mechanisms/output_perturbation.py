@@ -145,6 +145,53 @@ class SnappingMechanism(ReleaseMechanism):
             return self.epsilon
 
 
+class CauchyMechanism(ReleaseMechanism):
+    """
+    ***Insecure*** implementation of the Cauchy mechanism. This mechanism can be used
+    once after which its privacy budget will be exhausted and it can no longer be used.
+
+    Args:
+        epsilon: the maximum privacy loss of the mechanism.
+        beta: the smoothness parameter for the beta-smooth upper bound on the local
+              sensitivity of the query to which this mechanism will be applied.
+    """
+
+    def __init__(self, epsilon, beta):
+        super(CauchyMechanism, self).__init__(epsilon)
+        self.beta = beta
+        if self.beta > self.epsilon / 6.0:
+            raise ValueError("beta must not be greater than epsilon/6.0.")
+
+    def release(self, values, smooth_sensitivity):
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy array of the output of a query.
+            smooth_senstivity: A beta-smooth upper bound on the local sensitivity of
+                               a query.
+
+        Returns:
+            A numpy array of perturbed values.
+        """
+
+        self._check_valid()
+        self._is_valid = False
+        self._update_accountant()
+        effective_epsilon = self.epsilon / (6.0 * smooth_sensitivity)
+        return backend.cauchy_mechanism(values, effective_epsilon)
+
+    @property
+    def privacy_consumed(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
+
+
 class ReportNoisyMax(ReleaseMechanism):
     """
     Secure implementation of the ReportNoisyMax mechanism. This mechanism can be used
