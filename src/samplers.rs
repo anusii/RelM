@@ -46,9 +46,8 @@ pub fn bernoulli_log_p(log_p: f64) -> bool {
 }
 
 
-#[inline(never)]
 pub fn uniform(scale: f64) -> f64 {
-    /// Samples a real from [0, scale] and rounds towards zero to a floating-point number.
+    /// Samples a real from [0, scale] and rounds towards the nearest floating-point number.
     ///
     const exponent_length: u64 = 11;
     const mantissa_length: u64 = 52;
