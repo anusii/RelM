@@ -46,59 +46,86 @@ pub fn bernoulli_log_p(log_p: f64) -> bool {
 }
 
 
+#[inline(never)]
 pub fn uniform(scale: f64) -> f64 {
     /// Samples a real from [0, scale] and rounds towards zero to a floating-point number.
     ///
-    if scale.is_nan() {
-        return scale;
-    }
-    if scale.is_infinite() {
+    const exponent_length: u64 = 11;
+    const mantissa_length: u64 = 52;
+    debug_assert!(mantissa_length + exponent_length + 1 == 64);
+    const exponent_mantissa_mask: u64 = (1 << (exponent_length + mantissa_length)) - 1;
+    const mantissa_mask: u64 = (1 << mantissa_length) - 1;
+    const max_exponent: u64 = (1 << exponent_length) - 1;
+    const max_mantissa: u64 = (1 << mantissa_length) - 1;
+
+    let scale_bits: u64 = scale.to_bits();
+    let scale_exponent: u64 = (scale_bits & exponent_mantissa_mask) >> mantissa_length;
+    let scale_mantissa: u64 = scale_bits & mantissa_mask;
+    debug_assert!(scale_exponent <= max_exponent);
+    debug_assert!(scale_mantissa <= max_mantissa);
+
+    if scale_exponent == max_exponent {
+        debug_assert!(scale.is_nan() || scale.is_infinite());
         // As you limit x->inf, prob(sample from [0, x) > greatest float) -> 1.
         return scale;
     }
-    if scale == 0.0 {
-        // Knowing that scale > 0 makes the rest simpler.
-        return scale; // NB: can't just return zero (scale can be negative zero).
+
+    if scale_exponent == 0 && scale_mantissa == 0 {
+        debug_assert!(scale == 0.0);
+        // Can't just return zero (scale can be negative zero).
+        return scale; 
     }
     
+    debug_assert!(scale.abs() > 0.0);
     let mut rng = rand::thread_rng();
 
-    let scale_bits = scale.to_bits();
-    let scale_exponent = (scale_bits & ((1 << 63) - 1)) >> 52;
-    debug_assert!(scale_exponent < 0x800u64);
-    let scale_mantissa = scale_bits & ((1 << 52) - 1);
-    debug_assert!(scale_exponent < 0x800u64);
-
     if scale_exponent == 0 {
-        // Scale is subnormal; rejection sampling below will be very slow
-        debug_assert!(scale_mantissa > 0); // We know that scale != 0
-        let abs_res = f64::from_bits(rng.gen_range(0, scale_mantissa));
-        debug_assert!(abs_res < scale.abs());
-        return abs_res.copysign(scale);
+        // scale is subnormal. No need to deal with exponents since [0, scale] has
+        // even intervals. Generate random mantissa in [0, scale_mantissa). Also
+        // generate an extra bit for rounding direction.
+        let mantissa_and_rounding: u64 = rng.gen_range(0, scale_mantissa << 1);
+        let mantissa: u64 = (mantissa_and_rounding >> 1) + (mantissa_and_rounding & 1);
+        let res: f64 = f64::from_bits(mantissa).copysign(scale);
+        debug_assert!(res.abs() <= scale.abs());
+        return res;
     }
+    
+    // Scale is a normal float.
+    loop { // Rejection sampling.
+        // Sample from [0, 2^n) where n is the smallest integer such that scale <= 2^n.
+        let rng_sample: u64 = rng.gen::<u64>();
 
-    loop {
-        let mut exponent = scale_exponent - ((scale_mantissa == 0) as u64);
-        // Sample exponent from geometric distribution with p = .5
-        while exponent > 0 {
-            let partial_geometric_sample = rng.gen::<u64>().leading_zeros() as u64;
-            debug_assert!(partial_geometric_sample <= 64);
-            exponent = exponent.saturating_sub(partial_geometric_sample);
-            if partial_geometric_sample < 64 {
-                break;
+        let rounding: u64 = rng_sample & 1;
+        let mantissa: u64 = (rng_sample >> 1) & mantissa_mask;
+        let mut exponent: u64 = scale_exponent - ((scale_mantissa == 0) as u64);
+
+        // Subtract from exponent a sample from geometric distribution with p = .5
+        // We still have not used the leading 11 bits of rng_sample. Re-use them to
+        // avoid generating another rng sample.
+        let rng_sample_geo: u64 = rng_sample & !((1 << 53) - 1); // Zero out trailing bits
+        if rng_sample == 0 {
+            exponent = exponent.saturating_sub(11);
+            while exponent > 0 {
+                let rng_sample_inner: u64 = rng.gen::<u64>();
+                if rng_sample_inner != 0 {
+                    exponent = exponent.saturating_sub(rng_sample_inner.leading_zeros() as u64);
+                    break;
+                }
+                exponent = exponent.saturating_sub(64);
             }
+        } else {
+            exponent = exponent.saturating_sub(rng_sample_geo.leading_zeros() as u64);
         }
 
         debug_assert!(exponent <= scale_exponent);
-        let mantissa = rng.gen::<u64>() & ((1 << 52) - 1);
         if exponent < scale_exponent || mantissa < scale_mantissa {
-            let abs_res = f64::from_bits((exponent << 52) | mantissa);
-            debug_assert!(abs_res < scale.abs());
-            return abs_res.copysign(scale);
+            let res: f64 = f64::from_bits((exponent << mantissa_length)
+                                          + mantissa
+                                          + rounding).copysign(scale);
+            debug_assert!(res.abs() <= scale.abs());
+            return res;
         }
-
         // result > scale; rejecting.
-        // The rejection ratio is < 50% always and = 0 when scale is a power of 2.
     }
 }
 
