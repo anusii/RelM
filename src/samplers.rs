@@ -47,11 +47,59 @@ pub fn bernoulli_log_p(log_p: f64) -> bool {
 
 
 pub fn uniform(scale: f64) -> f64 {
-    /// Returns a sample from the [0, scale) uniform distribution
+    /// Samples a real from [0, scale] and rounds towards zero to a floating-point number.
     ///
-
+    if scale.is_nan() {
+        return scale;
+    }
+    if scale.is_infinite() {
+        // As you limit x->inf, prob(sample from [0, x) > greatest float) -> 1.
+        return scale;
+    }
+    if scale == 0.0 {
+        // Knowing that scale > 0 makes the rest simpler.
+        return scale; // NB: can't just return zero (scale can be negative zero).
+    }
+    
     let mut rng = rand::thread_rng();
-    scale * rng.gen::<f64>()
+
+    let scale_bits = scale.to_bits();
+    let scale_exponent = (scale_bits & ((1 << 63) - 1)) >> 52;
+    debug_assert!(scale_exponent < 0x800u64);
+    let scale_mantissa = scale_bits & ((1 << 52) - 1);
+    debug_assert!(scale_exponent < 0x800u64);
+
+    if scale_exponent == 0 {
+        // Scale is subnormal; rejection sampling below will be very slow
+        debug_assert!(scale_mantissa > 0); // We know that scale != 0
+        let abs_res = f64::from_bits(rng.gen_range(0, scale_mantissa));
+        debug_assert!(abs_res < scale.abs());
+        return abs_res.copysign(scale);
+    }
+
+    loop {
+        let mut exponent = scale_exponent - ((scale_mantissa == 0) as u64);
+        // Sample exponent from geometric distribution with p = .5
+        while exponent > 0 {
+            let partial_geometric_sample = rng.gen::<u64>().leading_zeros() as u64;
+            debug_assert!(partial_geometric_sample <= 64);
+            exponent = exponent.saturating_sub(partial_geometric_sample);
+            if partial_geometric_sample < 64 {
+                break;
+            }
+        }
+
+        debug_assert!(exponent <= scale_exponent);
+        let mantissa = rng.gen::<u64>() & ((1 << 52) - 1);
+        if exponent < scale_exponent || mantissa < scale_mantissa {
+            let abs_res = f64::from_bits((exponent << 52) | mantissa);
+            debug_assert!(abs_res < scale.abs());
+            return abs_res.copysign(scale);
+        }
+
+        // result > scale; rejecting.
+        // The rejection ratio is < 50% always and = 0 when scale is a power of 2.
+    }
 }
 
 
