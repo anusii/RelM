@@ -66,7 +66,7 @@ pub fn uniform(scale: f64) -> f64 {
     if scale_exponent == max_exponent {
         debug_assert!(scale.is_nan() || scale.is_infinite());
         // As you limit x->inf, prob(sample from [0, x) > greatest float) -> 1.
-        return scale;
+        return scale + 0.0; // Pedantic: add 0 to handle signalling NaNs.
     }
 
     if scale_exponent == 0 && scale_mantissa == 0 {
@@ -101,9 +101,9 @@ pub fn uniform(scale: f64) -> f64 {
         // Subtract from exponent a sample from geometric distribution with p = .5
         // We still have not used the leading 11 bits of rng_sample. Re-use them to
         // avoid generating another rng sample.
-        let rng_sample_geo: u64 = rng_sample & !((1 << 53) - 1); // Zero out trailing bits
-        if rng_sample == 0 {
-            exponent = exponent.saturating_sub(11);
+        let rng_sample_geo: u64 = rng_sample & !((1 << (mantissa_length + 1)) - 1);
+        if rng_sample_geo == 0 {
+            exponent = exponent.saturating_sub(64 - mantissa_length - 1);
             while exponent > 0 {
                 let rng_sample_inner: u64 = rng.gen::<u64>();
                 if rng_sample_inner != 0 {
