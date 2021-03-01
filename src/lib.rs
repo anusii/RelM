@@ -63,6 +63,15 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         mechanisms::geometric_mechanism(data, epsilon).to_pyarray(py)
     }
 
+    #[pyfn(m, "cauchy_mechanism")]
+    fn py_cauchy_mechanism<'a>(
+        py: Python<'a>,
+        data: &'a PyArray1<f64>,
+        epsilon: f64,
+    ) -> &'a PyArray1<f64> {
+        let data = data.to_vec().unwrap();
+        mechanisms::cauchy_mechanism(data, epsilon).to_pyarray(py)
+    }
 
     #[pyfn(m, "exponential_mechanism_weighted_index")]
     fn py_exponential_mechanism_weighted_index<'a>(

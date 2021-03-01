@@ -9,7 +9,7 @@ class PrivacyAccountant:
     def __init__(self, privacy_budget):
         self.privacy_budget = privacy_budget
         self._privacy_losses = dict()
-        self._max_privacy_loss = 0
+        self.privacy_allocated = 0
 
     @property
     def privacy_consumed(self):
@@ -32,11 +32,11 @@ class PrivacyAccountant:
                 "mechanism: attempted to add a mechanism to two accountants."
             )
 
-        if self._max_privacy_loss + mechanism.epsilon > self.privacy_budget:
+        if self.privacy_allocated + mechanism.epsilon > self.privacy_budget:
             raise ValueError(
                 f"mechanism: using this mechanism could exceed the privacy budget of {self.privacy_budget}"
-                f" with a total privacy loss of {self._max_privacy_loss + mechanism.epsilon}"
+                f" with a total privacy alocated of {self.privacy_allocated + mechanism.epsilon}"
             )
         mechanism.accountant = self
         self._privacy_losses[hash(mechanism)] = mechanism.privacy_consumed
-        self._max_privacy_loss += mechanism.epsilon
+        self.privacy_allocated += mechanism.epsilon
