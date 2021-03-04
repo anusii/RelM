@@ -63,22 +63,19 @@ pub fn uniform(scale: f64) -> f64 {
     debug_assert!(scale_exponent <= max_exponent);
     debug_assert!(scale_mantissa <= max_mantissa);
 
-    if scale_exponent == max_exponent {
-        debug_assert!(scale.is_nan() || scale.is_infinite());
+    if scale_exponent == max_exponent || (scale_exponent == 0 && scale_mantissa == 0) {
+        debug_assert!(scale.is_nan() || scale.is_infinite() || scale == 0.0);
         // As you limit x->inf, prob(sample from [0, x) > greatest float) -> 1.
-        return scale + 0.0; // Pedantic: add 0 to handle signalling NaNs.
-    }
-
-    if scale_exponent == 0 && scale_mantissa == 0 {
-        debug_assert!(scale == 0.0);
-        // Can't just return zero (scale can be negative zero).
-        return scale; 
+        // Sub 0 to handle signalling NaNs while keeping sign.
+        return scale - 0.0;
     }
     
-    debug_assert!(scale.abs() > 0.0);
+    debug_assert!(scale != 0.0);
+    debug_assert!(scale.is_finite());
     let mut rng = rand::thread_rng();
 
     if scale_exponent == 0 {
+        debug_assert!(!scale.is_normal());
         // scale is subnormal. No need to deal with exponents since [0, scale] has
         // even intervals. Generate random mantissa in [0, scale_mantissa). Also
         // generate an extra bit for rounding direction.
@@ -89,6 +86,7 @@ pub fn uniform(scale: f64) -> f64 {
         return res;
     }
     
+    debug_assert!(scale.is_normal());
     // Scale is a normal float.
     loop { // Rejection sampling.
         // Sample from [0, 2^n) where n is the smallest integer such that scale <= 2^n.
@@ -124,6 +122,9 @@ pub fn uniform(scale: f64) -> f64 {
             debug_assert!(res.abs() <= scale.abs());
             return res;
         }
+
+        debug_assert!(f64::from_bits((exponent << mantissa_length) + mantissa + rounding)
+                      > scale.abs());
         // result > scale; rejecting.
     }
 }
@@ -148,17 +149,6 @@ pub fn gumbel(scale: f64) -> f64 {
     /// * `scale` = The scale parameter of the Gumbel distribution
     let mut rng = rand::thread_rng();
     -scale * (-rng.gen::<f64>().ln()).ln()
-}
-
-
-pub fn uniform_double(scale: f64) -> f64 {
-    /// Returns a sample from the [0, scale) uniform distribution
-    ///
-
-    let mut rng = rand::thread_rng();
-    let exponent: f64 = geometric(0.5) + 53.0;
-    let significand = (rng.gen::<u64>() >> 11) | (1 << 52);
-    scale * (significand as f64) * 2.0_f64.powf(-exponent)
 }
 
 

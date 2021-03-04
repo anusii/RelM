@@ -142,5 +142,17 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         mechanisms::small_db(epsilon, l1_norm, size, db_l1_norm, queries, answers, breaks).to_pyarray(py)
     }
 
+    // For testing
+    #[pyfn(m, "sample_uniform")]
+    fn py_sample_uniform<'a>(
+        py: Python<'a>,
+        scale: f64,
+        size: u64,
+    ) -> &'a PyArray1<f64> {
+        (0..size).map(|_| samplers::uniform(scale))
+                 .collect::<Vec<f64>>()
+                 .to_pyarray(py)
+    }
+
     Ok(())
 }
