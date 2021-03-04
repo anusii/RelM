@@ -46,24 +46,50 @@ pub fn bernoulli_log_p(log_p: f64) -> bool {
 }
 
 
+fn capped_geometric2(cap: u64, rng: &mut rand::rngs::ThreadRng) -> u64 {
+    /// Samples an integer from the geometric distribution with success
+    /// probability = .5. Results greater than `cap` saturate to `cap`.
+    ///
+    let mut res = 0;
+    while res < cap {
+        let sample = rng.next_u64();
+        if sample != 0 {
+            res += sample.trailing_zeros() as u64;
+            break;
+        }
+        res = res.saturating_add(64);
+    }
+    if res >= cap {
+        cap
+    } else {
+        res
+    }
+}
+
+
+fn extract_bits(x: u64, i: u64, len: u64) -> u64 {
+    // Returns len bits from x, beginning at index i.
+    // The least-significant bit has index 0.
+    (x >> i) & ((1 << len) - 1)
+}
+
+
 pub fn uniform(scale: f64) -> f64 {
     /// Samples a real from [0, scale] and rounds towards the nearest floating-point number.
     ///
-    const exponent_length: u64 = 11;
-    const mantissa_length: u64 = 52;
-    debug_assert!(mantissa_length + exponent_length + 1 == 64);
-    const exponent_mantissa_mask: u64 = (1 << (exponent_length + mantissa_length)) - 1;
-    const mantissa_mask: u64 = (1 << mantissa_length) - 1;
-    const max_exponent: u64 = (1 << exponent_length) - 1;
-    const max_mantissa: u64 = (1 << mantissa_length) - 1;
+    const EXPONENT_LEN: u64 = 11;
+    const MANTISSA_LEN: u64 = 52;
+    debug_assert!(MANTISSA_LEN + EXPONENT_LEN + 1 == 64);
+    const MAX_EXPONENT: u64 = (1 << EXPONENT_LEN) - 1;
+    const MAX_MANTISSA: u64 = (1 << MANTISSA_LEN) - 1;
 
     let scale_bits: u64 = scale.to_bits();
-    let scale_exponent: u64 = (scale_bits & exponent_mantissa_mask) >> mantissa_length;
-    let scale_mantissa: u64 = scale_bits & mantissa_mask;
-    debug_assert!(scale_exponent <= max_exponent);
-    debug_assert!(scale_mantissa <= max_mantissa);
+    let scale_exponent: u64 = extract_bits(scale_bits, MANTISSA_LEN, EXPONENT_LEN);
+    let scale_mantissa: u64 = extract_bits(scale_bits, 0, MANTISSA_LEN);
+    debug_assert!(scale_exponent <= MAX_EXPONENT);
+    debug_assert!(scale_mantissa <= MAX_MANTISSA);
 
-    if scale_exponent == max_exponent || (scale_exponent == 0 && scale_mantissa == 0) {
+    if scale_exponent == MAX_EXPONENT || (scale_exponent == 0 && scale_mantissa == 0) {
         debug_assert!(scale.is_nan() || scale.is_infinite() || scale == 0.0);
         // As you limit x->inf, prob(sample from [0, x) > greatest float) -> 1.
         // Sub 0 to handle signalling NaNs while keeping sign.
@@ -90,40 +116,34 @@ pub fn uniform(scale: f64) -> f64 {
     // Scale is a normal float.
     loop { // Rejection sampling.
         // Sample from [0, 2^n) where n is the smallest integer such that scale <= 2^n.
-        let rng_sample: u64 = rng.gen::<u64>();
+        let rng_sample: u64 = rng.next_u64();
 
-        let rounding: u64 = rng_sample & 1;
-        let mantissa: u64 = (rng_sample >> 1) & mantissa_mask;
+        let rounding: u64 = extract_bits(rng_sample, EXPONENT_LEN, 1);
+        let mantissa: u64 = extract_bits(rng_sample, 1 + EXPONENT_LEN, MANTISSA_LEN);
         let mut exponent: u64 = scale_exponent - ((scale_mantissa == 0) as u64);
 
         // Subtract from exponent a sample from geometric distribution with p = .5
         // We still have not used the leading 11 bits of rng_sample. Re-use them to
         // avoid generating another rng sample.
-        let rng_sample_geo: u64 = rng_sample & !((1 << (mantissa_length + 1)) - 1);
+        let rng_sample_geo: u64 = extract_bits(rng_sample, 0, EXPONENT_LEN);
         if rng_sample_geo == 0 {
-            exponent = exponent.saturating_sub(64 - mantissa_length - 1);
-            while exponent > 0 {
-                let rng_sample_inner: u64 = rng.gen::<u64>();
-                if rng_sample_inner != 0 {
-                    exponent = exponent.saturating_sub(rng_sample_inner.leading_zeros() as u64);
-                    break;
-                }
-                exponent = exponent.saturating_sub(64);
-            }
+            exponent = exponent.saturating_sub(EXPONENT_LEN);
+            exponent -= capped_geometric2(exponent, &mut rng);
         } else {
-            exponent = exponent.saturating_sub(rng_sample_geo.leading_zeros() as u64);
+            exponent = exponent.saturating_sub(rng_sample_geo.trailing_zeros() as u64);
         }
 
         debug_assert!(exponent <= scale_exponent);
         if exponent < scale_exponent || mantissa < scale_mantissa {
-            let res: f64 = f64::from_bits((exponent << mantissa_length)
+            // result < scale; accept
+            let res: f64 = f64::from_bits((exponent << MANTISSA_LEN)
                                           + mantissa
                                           + rounding).copysign(scale);
             debug_assert!(res.abs() <= scale.abs());
             return res;
         }
 
-        debug_assert!(f64::from_bits((exponent << mantissa_length) + mantissa + rounding)
+        debug_assert!(f64::from_bits((exponent << MANTISSA_LEN) + mantissa + rounding)
                       > scale.abs());
         // result > scale; rejecting.
     }
