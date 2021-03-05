@@ -96,53 +96,53 @@ class GeometricMechanism(ReleaseMechanism):
             return self.epsilon
 
 
-class SnappingMechanism(ReleaseMechanism):
-    """
-    Secure implementation of the Snapping mechanism. This mechanism can be used once
-    after which its privacy budget will be exhausted and it can no longer be used.
-
-    Args:
-        epsilon: the maximum privacy loss of the mechanism.
-        B: the bound of the range to use for the snapping mechanism.
-            B should ideally be larger than the range of outputs expected but the larger B is
-            the less accurate the results.
-    """
-
-    def __init__(self, epsilon, B):
-        lam = (1 + 2 ** (-49) * B) / epsilon
-        if (B <= lam) or (B >= (2 ** 46 * lam)):
-            raise ValueError()
-        self.lam = lam
-        self.quanta = 2 ** math.ceil(math.log2(self.lam))
-        self.B = B
-        super(SnappingMechanism, self).__init__(epsilon)
-
-    def release(self, values):
-        """
-        Releases a differential private query response.
-
-        Args:
-            values: numpy array of the output of a query.
-
-        Returns:
-            A numpy array of perturbed values.
-        """
-        self._check_valid()
-        args = (values, self.B, self.lam, self.quanta)
-        release_values = backend.snapping(*args)
-        self._is_valid = False
-        self._update_accountant()
-        return release_values
-
-    @property
-    def privacy_consumed(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon
+# class SnappingMechanism(ReleaseMechanism):
+#     """
+#     Secure implementation of the Snapping mechanism. This mechanism can be used once
+#     after which its privacy budget will be exhausted and it can no longer be used.
+#
+#     Args:
+#         epsilon: the maximum privacy loss of the mechanism.
+#         B: the bound of the range to use for the snapping mechanism.
+#             B should ideally be larger than the range of outputs expected but the larger B is
+#             the less accurate the results.
+#     """
+#
+#     def __init__(self, epsilon, B):
+#         lam = (1 + 2 ** (-49) * B) / epsilon
+#         if (B <= lam) or (B >= (2 ** 46 * lam)):
+#             raise ValueError()
+#         self.lam = lam
+#         self.quanta = 2 ** math.ceil(math.log2(self.lam))
+#         self.B = B
+#         super(SnappingMechanism, self).__init__(epsilon)
+#
+#     def release(self, values):
+#         """
+#         Releases a differential private query response.
+#
+#         Args:
+#             values: numpy array of the output of a query.
+#
+#         Returns:
+#             A numpy array of perturbed values.
+#         """
+#         self._check_valid()
+#         args = (values, self.B, self.lam, self.quanta)
+#         release_values = backend.snapping(*args)
+#         self._is_valid = False
+#         self._update_accountant()
+#         return release_values
+#
+#     @property
+#     def privacy_consumed(self):
+#         """
+#         Computes the privacy budget consumed by the mechanism so far.
+#         """
+#         if self._is_valid:
+#             return 0
+#         else:
+#             return self.epsilon
 
 
 class ReportNoisyMax(ReleaseMechanism):
