@@ -46,32 +46,32 @@ pub fn bernoulli_log_p(log_p: f64) -> bool {
 }
 
 
-fn capped_geometric2(cap: u64, rng: &mut rand::rngs::ThreadRng) -> u64 {
-    /// Samples an integer from the geometric distribution with success
-    /// probability = .5. Results greater than `cap` saturate to `cap`.
-    ///
-    let mut res = 0;
-    while res < cap {
-        let sample = rng.next_u64();
-        if sample != 0 {
-            res += sample.trailing_zeros() as u64;
-            break;
-        }
-        res = res.saturating_add(64);
-    }
-    if res >= cap {
-        cap
-    } else {
-        res
-    }
-}
-
-
-fn extract_bits(x: u64, i: u64, len: u64) -> u64 {
-    // Returns len bits from x, beginning at index i.
-    // The least-significant bit has index 0.
-    (x >> i) & ((1 << len) - 1)
-}
+// fn capped_geometric2(cap: u64, rng: &mut rand::rngs::ThreadRng) -> u64 {
+//     /// Samples an integer from the geometric distribution with success
+//     /// probability = .5. Results greater than `cap` saturate to `cap`.
+//     ///
+//     let mut res = 0;
+//     while res < cap {
+//         let sample = rng.next_u64();
+//         if sample != 0 {
+//             res += sample.trailing_zeros() as u64;
+//             break;
+//         }
+//         res = res.saturating_add(64);
+//     }
+//     if res >= cap {
+//         cap
+//     } else {
+//         res
+//     }
+// }
+//
+//
+// fn extract_bits(x: u64, i: u64, len: u64) -> u64 {
+//     // Returns len bits from x, beginning at index i.
+//     // The least-significant bit has index 0.
+//     (x >> i) & ((1 << len) - 1)
+// }
 
 
 // pub fn uniform(scale: f64) -> f64 {
