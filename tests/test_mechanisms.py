@@ -7,7 +7,7 @@ from relm.mechanisms import (
     GeometricMechanism,
     ExponentialMechanism,
     PermuteAndFlipMechanism,
-    SnappingMechanism,
+    # SnappingMechanism,
     AboveThreshold,
     SparseIndicator,
     SparseNumeric,
