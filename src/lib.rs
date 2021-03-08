@@ -153,16 +153,16 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
 
     // Need some comments to trigger build process
     // // For testing
-    // #[pyfn(m, "sample_uniform")]
-    // fn py_sample_uniform<'a>(
-    //     py: Python<'a>,
-    //     scale: f64,
-    //     size: u64,
-    // ) -> &'a PyArray1<f64> {
-    //     (0..size).map(|_| samplers::uniform(scale))
-    //              .collect::<Vec<f64>>()
-    //              .to_pyarray(py)
-    // }
-    //
+    #[pyfn(m, "sample_uniform")]
+    fn py_sample_uniform<'a>(
+        py: Python<'a>,
+        scale: f64,
+        size: u64,
+    ) -> &'a PyArray1<f64> {
+        (0..size).map(|_| samplers::uniform(scale))
+                 .collect::<Vec<f64>>()
+                 .to_pyarray(py)
+    }
+
     Ok(())
 }
