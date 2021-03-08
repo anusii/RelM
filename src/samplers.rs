@@ -1,5 +1,6 @@
 use rand::prelude::*;
-use rand::distributions::{WeightedIndex, Bernoulli};
+// use rand::distributions::{WeightedIndex, Bernoulli};
+use rand_distr::{WeightedIndex, Bernoulli, Cauchy, Distribution};
 use std::convert::TryInto;
 
 use rug::Integer;
@@ -12,17 +13,24 @@ pub fn discrete(dist: &WeightedIndex<f64>) -> u64 {
 }
 
 
-
 pub fn uniform_integer(n: u64) -> u64 {
     let mut rng = rand::thread_rng();
-    let result: u64 = rng.gen_range(0, n);
+    let result: u64 = rng.gen_range(0..n);
     result
 }
+
 
 pub fn bernoulli(p: f64) -> bool {
     let mut rng = rand::thread_rng();
     let dist = Bernoulli::new(p).unwrap();
-    dist.sample(&mut rand::thread_rng())
+    dist.sample(&mut rng)
+}
+
+
+pub fn cauchy(scale: f64) -> f64 {
+    let mut rng = rand::thread_rng();
+    let dist = Cauchy::new(0.0, scale).unwrap();
+    dist.sample(&mut rng)
 }
 
 

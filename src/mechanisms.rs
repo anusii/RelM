@@ -51,6 +51,13 @@ pub fn geometric_mechanism(data: Vec<i64>, epsilon: f64) -> Vec<i64> {
         .collect()
 }
 
+pub fn cauchy_mechanism(data: Vec<f64>, epsilon: f64) -> Vec<f64> {
+    let scale = 1.0 / epsilon;
+    data.par_iter()
+        .map(|&x| x + samplers::cauchy(scale))
+        .collect()
+}
+
 
 pub fn exponential_mechanism_weighted_index(
     utilities: Vec<f64>,
@@ -124,7 +131,7 @@ pub fn permute_and_flip_mechanism(
     let mut idx: usize = 0;
     let mut current: usize = 0;
     while !flag {
-        let temp = rng.gen_range(idx, n);
+        let temp = rng.gen_range(idx..n);
         indices.swap(idx, temp);
         current = indices[idx];
         flag = samplers::bernoulli_log_p(normalized_log_weights[current]);
@@ -152,7 +159,7 @@ pub fn small_db(
     let mut min_rounding_error: f64 = 0.5;
     let n = answers.len();
     for i in 0..n {
-        let temp = (answers[i] * (l1_norm as f64));
+        let temp = answers[i] * (l1_norm as f64);
         let rounding_error = (temp - temp.round()).abs() / (l1_norm as f64);
         if rounding_error < min_rounding_error{
             min_rounding_error = rounding_error;

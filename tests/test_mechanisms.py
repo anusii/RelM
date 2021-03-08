@@ -5,6 +5,7 @@ import pytest
 from relm.mechanisms import (
     LaplaceMechanism,
     GeometricMechanism,
+    CauchyMechanism,
     ExponentialMechanism,
     PermuteAndFlipMechanism,
     # SnappingMechanism,
@@ -17,16 +18,16 @@ from relm.mechanisms import (
 )
 
 
-def _test_mechanism(benchmark, mechanism, dtype=np.float64):
+def _test_mechanism(benchmark, mechanism, dtype, **args):
     data = np.random.random(100000).astype(dtype)
-    benchmark.pedantic(lambda: mechanism.release(data), iterations=1, rounds=1)
+    benchmark.pedantic(lambda: mechanism.release(data, **args), iterations=1, rounds=1)
     with pytest.raises(RuntimeError):
-        mechanism.release(data)
+        mechanism.release(data, **args)
 
 
 def test_LaplaceMechanism(benchmark):
     mechanism = LaplaceMechanism(epsilon=1, sensitivity=1, precision=35)
-    _test_mechanism(benchmark, mechanism)
+    _test_mechanism(benchmark, mechanism, np.float64)
     # Goodness of fit test
     mechanism = LaplaceMechanism(epsilon=1, sensitivity=1, precision=35)
     data = np.random.random(10000000) * 100
@@ -53,6 +54,23 @@ def test_GeometricMechanism(benchmark):
     assert pval > 0.001
 
 
+def test_CauchyMechanism(benchmark):
+    mechanism = CauchyMechanism(epsilon=1.0, beta=0.1)
+    _test_mechanism(benchmark, mechanism, np.float64, smooth_sensitivity=1.0)
+    # Goodness of fit test
+    epsilon = 1.0
+    beta = 0.1
+    smooth_sensitivity = 1.0
+    mechanism = CauchyMechanism(epsilon, beta)
+    data = 1000 * np.random.random(size=2 ** 16)
+    values = mechanism.release(data, smooth_sensitivity)
+    control = scipy.stats.cauchy.rvs(
+        scale=6.0 * smooth_sensitivity / epsilon, size=data.size
+    )
+    score, pval = scipy.stats.ks_2samp(values - data, control)
+    assert pval > 0.001
+
+
 def test_ExponentialMechanismWeightedIndex(benchmark):
     n = 8
     output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
@@ -64,7 +82,7 @@ def test_ExponentialMechanismWeightedIndex(benchmark):
         output_range=output_range,
         method="weighted_index",
     )
-    _test_mechanism(benchmark, mechanism)
+    _test_mechanism(benchmark, mechanism, np.float64)
     # Goodness of fit test
     n = 6
     output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
@@ -98,7 +116,7 @@ def test_ExponentialMechanismGumbelTrick(benchmark):
         output_range=output_range,
         method="gumbel_trick",
     )
-    _test_mechanism(benchmark, mechanism)
+    _test_mechanism(benchmark, mechanism, np.float64)
     # Goodness of fit test
     n = 6
     output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
@@ -132,7 +150,7 @@ def test_ExponentialMechanismSampleAndFlip(benchmark):
         output_range=output_range,
         method="sample_and_flip",
     )
-    _test_mechanism(benchmark, mechanism)
+    _test_mechanism(benchmark, mechanism, np.float64)
     # Goodness of fit test
     n = 6
     output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
@@ -165,7 +183,7 @@ def test_PermuteAndFlipMechanism(benchmark):
         sensitivity=1.0,
         output_range=output_range,
     )
-    _test_mechanism(benchmark, mechanism)
+    _test_mechanism(benchmark, mechanism, np.float64)
     # Goodness of fit test
     n = 6
     output_range = np.arange(-(2 ** (n - 1)), 2 ** (n - 1) - 1, 2 ** -10)
@@ -189,7 +207,7 @@ def test_PermuteAndFlipMechanism(benchmark):
 
 def test_above_threshold(benchmark):
     mechanism = AboveThreshold(epsilon=1, sensitivity=1.0, threshold=0.1)
-    _test_mechanism(benchmark, mechanism)
+    _test_mechanism(benchmark, mechanism, np.float64)
     mechanism = AboveThreshold(epsilon=1, sensitivity=1.0, threshold=0.01)
     data = np.random.random(1000)
     index = mechanism.release(data)
@@ -198,7 +216,7 @@ def test_above_threshold(benchmark):
 
 def test_sparse_indicator(benchmark):
     mechanism = SparseIndicator(epsilon=1, sensitivity=1.0, threshold=0.1, cutoff=100)
-    _test_mechanism(benchmark, mechanism)
+    _test_mechanism(benchmark, mechanism, np.float64)
     mechanism = SparseIndicator(epsilon=1, sensitivity=1.0, threshold=0.01, cutoff=100)
     data = np.random.random(1000)
     indices = mechanism.release(data)
@@ -207,7 +225,7 @@ def test_sparse_indicator(benchmark):
 
 def test_sparse_numeric(benchmark):
     mechanism = SparseNumeric(epsilon=1, sensitivity=1.0, threshold=0.1, cutoff=100)
-    _test_mechanism(benchmark, mechanism)
+    _test_mechanism(benchmark, mechanism, np.float64)
     mechanism = SparseNumeric(epsilon=1, sensitivity=1.0, threshold=0.01, cutoff=100)
     data = np.random.random(1000)
     indices, values = mechanism.release(data)
@@ -222,7 +240,7 @@ def test_sparse_numeric(benchmark):
 
 def test_ReportNoisyMax(benchmark):
     mechanism = ReportNoisyMax(epsilon=0.1, precision=35)
-    _test_mechanism(benchmark, mechanism)
+    _test_mechanism(benchmark, mechanism, np.float64)
 
 
 def test_SmallDB():
