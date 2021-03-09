@@ -28,19 +28,19 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         mechanisms::all_above_threshold(data, epsilon, threshold, precision).to_pyarray(py)
     }
 
-    // #[pyfn(m, "snapping")]
-    // fn py_snapping<'a>(
-    //     py: Python<'a>,
-    //     data: &'a PyArray1<f64>,
-    //     bound: f64,
-    //     lambda: f64,
-    //     quanta: f64,
-    // ) -> &'a PyArray1<f64> {
-    //     /// Simple python wrapper of the exponential function. Converts
-    //     /// the rust vector into a numpy array
-    //     let data = data.to_vec().unwrap();
-    //     mechanisms::snapping(data, bound, lambda, quanta).to_pyarray(py)
-    // }
+    #[pyfn(m, "snapping")]
+    fn py_snapping<'a>(
+        py: Python<'a>,
+        data: &'a PyArray1<f64>,
+        bound: f64,
+        lambda: f64,
+        quanta: f64,
+    ) -> &'a PyArray1<f64> {
+        /// Simple python wrapper of the exponential function. Converts
+        /// the rust vector into a numpy array
+        let data = data.to_vec().unwrap();
+        mechanisms::snapping(data, bound, lambda, quanta).to_pyarray(py)
+    }
 
     #[pyfn(m, "laplace_mechanism")]
     fn py_laplace_mechanism<'a>(

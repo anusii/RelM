@@ -8,7 +8,7 @@ from relm.mechanisms import (
     CauchyMechanism,
     ExponentialMechanism,
     PermuteAndFlipMechanism,
-    # SnappingMechanism,
+    SnappingMechanism,
     AboveThreshold,
     SparseIndicator,
     SparseNumeric,
@@ -233,9 +233,9 @@ def test_sparse_numeric(benchmark):
     assert len(values) == 100
 
 
-# def test_SnappingMechanism(benchmark):
-#     mechanism = SnappingMechanism(epsilon=1.0, B=10)
-#     _test_mechanism(benchmark, mechanism)
+def test_SnappingMechanism(benchmark):
+    mechanism = SnappingMechanism(epsilon=1.0, B=10)
+    _test_mechanism(benchmark, mechanism)
 
 
 def test_ReportNoisyMax(benchmark):
