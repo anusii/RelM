@@ -113,7 +113,8 @@ pub fn uniform(scale: f64) -> f64 {
         // scale is subnormal. No need to deal with exponents since [0, scale] has
         // even intervals. Generate random mantissa in [0, scale_mantissa). Also
         // generate an extra bit for rounding direction.
-        let mantissa_and_rounding: u64 = rng.gen_range(0, scale_mantissa << 1);
+        let scale_mantissa_x2 = scale_mantissa << 1;
+        let mantissa_and_rounding: u64 = rng.gen_range(0..scale_mantissa_x2);
         let mantissa: u64 = (mantissa_and_rounding >> 1) + (mantissa_and_rounding & 1);
         let res: f64 = f64::from_bits(mantissa).copysign(scale);
         debug_assert!(res.abs() <= scale.abs());
