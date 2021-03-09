@@ -235,7 +235,7 @@ def test_sparse_numeric(benchmark):
 
 def test_SnappingMechanism(benchmark):
     mechanism = SnappingMechanism(epsilon=1.0, B=10)
-    _test_mechanism(benchmark, mechanism)
+    _test_mechanism(benchmark, mechanism, np.float64)
 
 
 def test_ReportNoisyMax(benchmark):
