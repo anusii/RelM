@@ -7,13 +7,12 @@ import relm.backend
 
 
 def test_uniform_sampler():
-    SCALES = [1.0, -1.0, 2.0, -.5, -math.tau, 1/math.e,
-              1.2250738585072009e-308]
+    SCALES = [1.0, -1.0, 2.0, -0.5, -math.tau, 1 / math.e, 1.2250738585072009e-308]
     for scale in SCALES:
         samples = relm.backend.sample_uniform(scale, 1_000_000)
 
         # Make sure samples have the correct sign/
-        assert (np.copysign(1., samples) == math.copysign(1., scale)).all()
+        assert (np.copysign(1.0, samples) == math.copysign(1.0, scale)).all()
 
         # Take abs of scale and samples and verify it against
         # scipy.stats.uniform.
@@ -24,8 +23,8 @@ def test_uniform_sampler():
 
 
 def test_uniform_sampler_special_cases():
-    for scale in [0., -0., float('inf'), -float('inf'), float('NaN')]:
+    for scale in [0.0, -0.0, float("inf"), -float("inf"), float("NaN")]:
         sample = relm.backend.sample_uniform(scale, 1)[0]
         assert sample == scale or (math.isnan(scale) and np.isnan(sample))
         # Preserves sign of negative zero:
-        assert math.copysign(1., sample) == np.copysign(1., scale)
+        assert math.copysign(1.0, sample) == np.copysign(1.0, scale)
