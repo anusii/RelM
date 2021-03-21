@@ -23,7 +23,7 @@ def test_parallel_release():
     _ = [mechanism.release(values) for mechanism in mechanisms]
 
     assert accountant.privacy_consumed == 4
-    assert accountant._max_privacy_loss == 124
+    assert accountant.privacy_allocated == 124
     assert para_mechs.privacy_consumed == 4
     assert para_mechs.epsilon == 4
 
