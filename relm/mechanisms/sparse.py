@@ -1,111 +1,6 @@
-import math
+from .base import ReleaseMechanism
 import numpy as np
 from relm import backend
-
-
-class ReleaseMechanism:
-    def __init__(self, epsilon):
-        self.epsilon = epsilon
-        self._is_valid = True
-
-    def _check_valid(self):
-        if not self._is_valid:
-            raise RuntimeError(
-                "Mechanism has exhausted has exhausted its privacy budget."
-            )
-
-    def release(self, values):
-        """
-        Releases a differential private query response.
-
-        Args:
-            values: numpy array of the output of a query.
-
-        Returns:
-            A numpy array of perturbed values.
-        """
-        raise NotImplementedError()
-
-    def get_privacy_consumption(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        raise NotImplementedError()
-
-
-class LaplaceMechanism(ReleaseMechanism):
-    """
-    Secure implementation of the Laplace mechanism. This mechanism can be used once
-    after which its privacy budget will be exhausted and it can no longer be used.
-
-    Under the hood this mechanism samples exactly from a 64-bit fixed point
-    Laplace mechanism bit by bit.
-
-    Args:
-        epsilon: the maximum privacy loss of the mechanism.
-        sensitivity: the sensitivity of the query that this will be applied to
-        precision: number of fractional bits to use in the internal fixed point representation.
-
-    """
-
-    def __init__(self, epsilon, sensitivity, precision):
-        self.sensitivity = sensitivity
-        self.precision = precision
-        super(LaplaceMechanism, self).__init__(epsilon)
-
-    def release(self, values):
-        """
-        Releases a differential private query response.
-
-        Args:
-            values: numpy array of the output of a query.
-
-        Returns:
-            A numpy array of perturbed values.
-        """
-
-        self._check_valid()
-        self._is_valid = False
-        args = (values, self.sensitivity, self.epsilon, self.precision)
-        return backend.laplace_mechanism(*args)
-
-    def get_privacy_consumption(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon
-
-
-class GeometricMechanism(LaplaceMechanism):
-    """
-    Secure implementation of the Geometric mechanism. This mechanism can be used once
-    after which its privacy budget will be exhausted and it can no longer be used.
-
-    Args:
-        epsilon: the maximum privacy loss of the mechanism.
-        sensitivity: the sensitivity of the query that this will be applied to
-
-    """
-
-    def __init__(self, epsilon, sensitivity):
-        super(GeometricMechanism, self).__init__(epsilon, sensitivity, precision=0)
-
-    def release(self, values):
-        """
-        Releases a differential private query response.
-
-        Args:
-            values: numpy array of the output of a query.
-
-        Returns:
-            A numpy array of perturbed values.
-        """
-        self._check_valid()
-        self._is_valid = False
-        return backend.geometric_mechanism(values, self.sensitivity, self.epsilon)
 
 
 class SparseGeneric(ReleaseMechanism):
@@ -121,7 +16,8 @@ class SparseGeneric(ReleaseMechanism):
         precision=35,
     ):
         epsilon = epsilon1 + epsilon2 + epsilon3
-        self.epsilon = epsilon
+        super(SparseGeneric, self).__init__(epsilon)
+
         self.epsilon1 = epsilon1
         self.epsilon2 = epsilon2
         self.epsilon3 = epsilon3
@@ -132,18 +28,19 @@ class SparseGeneric(ReleaseMechanism):
         self.precision = precision
         self.current_count = 0
 
-        temp = np.array([threshold], dtype=np.float64)
-        args = (temp, sensitivity, epsilon1, precision)
+        self.effective_epsilon1 = self.epsilon1 / self.sensitivity
+        self.effective_epsilon2 = self.epsilon2 / (self.cutoff * self.sensitivity)
+        if not self.monotonic:
+            self.effective_epsilon2 /= 2.0
+        self.effective_epsilon3 = self.epsilon3 / (self.cutoff * self.sensitivity)
+
+        temp = np.array([self.threshold], dtype=np.float64)
+        args = (temp, self.effective_epsilon1, self.precision)
         self.perturbed_threshold = backend.laplace_mechanism(*args)[0]
-        super(SparseGeneric, self).__init__(epsilon)
 
     def all_above_threshold(self, values):
-        if self.monotonic:
-            b = (self.sensitivity * self.cutoff) / self.epsilon2
-        else:
-            b = (2.0 * self.sensitivity * self.cutoff) / self.epsilon2
         return backend.all_above_threshold(
-            values, b, self.perturbed_threshold, self.precision
+            values, self.effective_epsilon2, self.perturbed_threshold, self.precision
         )
 
     def release(self, values):
@@ -166,16 +63,22 @@ class SparseGeneric(ReleaseMechanism):
         if self.current_count == self.cutoff:
             self._is_valid = False
 
+        self._update_accountant()
+
         if self.epsilon3 > 0:
             sliced_values = values[indices]
-            temp = self.sensitivity * self.cutoff
-            args = (sliced_values, temp, self.epsilon3, self.precision)
+            args = (
+                sliced_values,
+                self.effective_epsilon3,
+                self.precision,
+            )
             release_values = backend.laplace_mechanism(*args)
             return indices, release_values
         else:
             return indices
 
-    def get_privacy_consumption(self):
+    @property
+    def privacy_consumed(self):
         """
         Computes the privacy budget consumed by the mechanism so far.
         """
@@ -340,51 +243,3 @@ class AboveThreshold(SparseIndicator):
         else:
             index = None
         return index
-
-
-class SnappingMechanism(ReleaseMechanism):
-    """
-    Secure implementation of the Snapping mechanism. This mechanism can be used once
-    after which its privacy budget will be exhausted and it can no longer be used.
-
-    Args:
-        epsilon: the maximum privacy loss of the mechanism.
-        B: the bound of the range to use for the snapping mechanism.
-            B should ideally be larger than the range of outputs expected but the larger B is
-            the less accurate the results.
-    """
-
-    def __init__(self, epsilon, B):
-        lam = (1 + 2 ** (-49) * B) / epsilon
-        if (B <= lam) or (B >= (2 ** 46 * lam)):
-            raise ValueError()
-        self.lam = lam
-        self.quanta = 2 ** math.ceil(math.log2(self.lam))
-        self.B = B
-        super(SnappingMechanism, self).__init__(epsilon)
-
-    def release(self, values):
-        """
-        Releases a differential private query response.
-
-        Args:
-            values: numpy array of the output of a query.
-
-        Returns:
-            A numpy array of perturbed values.
-        """
-        self._check_valid()
-        args = (values, self.B, self.lam, self.quanta)
-        release_values = backend.snapping(*args)
-        self._is_valid = False
-
-        return release_values
-
-    def get_privacy_consumption(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon

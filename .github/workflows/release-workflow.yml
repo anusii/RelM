@@ -3,12 +3,13 @@
 
 name: Python package
 
-on:
+"on":
   push:
-    branches: [ develop ]
+    branches: [ master ]
   pull_request:
-    branches: [ develop ]
-  workflow_dispatch:
+    branches: [ master ]
+  schedule:
+    - cron: "0 0 * * *"
 
 jobs:
   build:

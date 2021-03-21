@@ -14,7 +14,7 @@ Mechanisms
 ================================================
 
 .. automodule:: relm.mechanisms
-    :members: LaplaceMechanism, GeometricMechanism, SnappingMechanism, AboveThreshold, SparseIndicator, SparseNumeric
+    :members: LaplaceMechanism, GeometricMechanism, SnappingMechanism, AboveThreshold, SparseIndicator, SparseNumeric, ReportNoisyMax, ExponentialMechanism
 
 
 Indices and tables
