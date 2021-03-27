@@ -12,7 +12,7 @@ class ReleaseMechanism:
 
         if not self._is_valid:
             raise RuntimeError(
-                "Mechanism has exhausted has exhausted its privacy budget."
+                "Mechanism has exhausted its privacy budget."
             )
 
     def _update_accountant(self):
