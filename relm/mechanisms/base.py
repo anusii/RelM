@@ -11,9 +11,7 @@ class ReleaseMechanism:
     def _check_valid(self):
 
         if not self._is_valid:
-            raise RuntimeError(
-                "Mechanism has exhausted its privacy budget."
-            )
+            raise RuntimeError("Mechanism has exhausted its privacy budget.")
 
     def _update_accountant(self):
         if self.accountant is not None:
