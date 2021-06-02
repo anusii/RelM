@@ -15,13 +15,13 @@ def median_smooth_sensitivity_naive(x, epsilon, lower_bound, upper_bound):
             ret = temp
     return ret
 
-def j_star_func(y, i, L, U):
+def j_star_func(y, i, L, U, epsilon):
     n = len(y) - 2
     m = (n+1)//2
     j = np.arange(L, U+1)
     return np.argmax((y[j] - y[i]) * np.exp(-epsilon * (j - (i+1)))) + L
 
-def j_list_func(y, a, c, L, U):
+def j_list_func(y, a, c, L, U, epsilon):
     if c < a:
         return []
     else:
@@ -34,7 +34,7 @@ def median_smooth_sensitivity(x, epsilon, lower_bound, upper_bound):
     m = (n+1)//2
     y = np.concatenate((np.array([lower_bound]), np.sort(x), np.array([upper_bound])))
     j = np.arange(m+1, n+2)
-    j_star = j_star_func(y, m, m+1, n+1)
+    j_star = j_star_func(y, m, m+1, n+1, epsilon)
     ret = (y[j_star] - y[m]) * np.exp(-epsilon * (j_star - (m+1)))
     j_list = np.array(j_list_func(y, 0, m-1, m, n+1))
     i = np.arange(m, 0, -1)
