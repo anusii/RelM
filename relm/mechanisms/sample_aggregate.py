@@ -1,6 +1,19 @@
 import numpy as np
 
 def median_smooth_sensitivity_naive(x, epsilon, lower_bound, upper_bound):
+    """
+    Compute the smooth sensitivity of the median function.
+    This is a naive implementation that is easy to understand but
+    much slower than the improved algorithm implemented by the function
+    median_smooth_sensitivity() below.
+
+    Args:
+        x: a vector of floating point numbers
+        epsilon: the maximum privacy loss of the mechanism
+        lower_bound: the smallest possible value for any component of x
+        upper_bound: the largest possible value for any compnent of x
+    """
+
     n = len(x)
     m = (n+1)//2
     y = np.concatenate((np.array([lower_bound]), np.sort(x), np.array([upper_bound])))
@@ -32,6 +45,19 @@ def j_list_func(y, a, c, L, U, epsilon):
         return first_half + [j_star_b] + second_half
 
 def median_smooth_sensitivity(x, epsilon, lower_bound, upper_bound):
+    """
+    Compute the smooth sensitivity of the median function.
+    This is an efficient implementation that uses Algorithm 1 given
+    in "Smooth Sensitivity and Sampling in Private Data Analysis" to
+    compute the sensitivity exactly in time O(n log n).
+
+
+    Args:
+        x: a vector of floating point numbers
+        epsilon: the maximum privacy loss of the mechanism
+        lower_bound: the smallest possible value for any component of x
+        upper_bound: the largest possible value for any compnent of x
+    """
     n = len(x)
     m = (n+1)//2
     y = np.concatenate((np.array([lower_bound]), np.sort(x), np.array([upper_bound])))
@@ -44,8 +70,19 @@ def median_smooth_sensitivity(x, epsilon, lower_bound, upper_bound):
     return max(ret, np.max(temp))
 
 def median_smooth_sensitivity_boolean(x, epsilon):
+    """
+    Compute the smooth sensitivity of the median on boolean inputs.
+    This is much faster than the algorithm that computes the smooth
+    sensitivity for the median on floating point inputs.
+
+    Args:
+        x: a vector of booleans
+        epsilon: the maximum privacy loss of the mechanism
+    """
     n = len(x)
     m_low = n//2
     m_high = m_low + 1
     temp = min(np.abs(x.sum() - m_low), np.abs(x.sum() - m_high))
     return np.exp(-epsilon*temp)
+
+    
