@@ -85,4 +85,33 @@ def median_smooth_sensitivity_boolean(x, epsilon):
     temp = min(np.abs(x.sum() - m_low), np.abs(x.sum() - m_high))
     return np.exp(-epsilon*temp)
 
-    
+
+class SampleAggregate(ReleaseMechanism):
+    def __init__(self, epsilon, lower_bound, upper_bound, method="median"):
+        super(SampleAggregate, self).__init__(epsilon)
+        self.lower_bound = lower_bound
+        self.upper_bound = upper_bound
+
+    def release(self, values):
+        self._check_valid()
+        self._is_valid = False
+        self._update_accountant()
+
+        smooth_sensitivity = compute_smooth_sensitivity(values,
+                                                        self.epsilon,
+                                                        self.lower_bound,
+                                                        self.upper_bound)
+        beta = self.epsilon / 6.0
+        mechanism = CauchyMechanism(epsilon, beta)
+        query_response = mechanism.release(np.median(values), smooth_sensitivity)
+        return query_response
+
+    @property
+    def privacy_consumed(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
