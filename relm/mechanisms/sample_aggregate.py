@@ -26,8 +26,10 @@ def j_list_func(y, a, c, L, U, epsilon):
         return []
     else:
         b = (a+c)//2
-        j_star_b = j_star_func(y, b, L, U)
-        return j_list_func(y, a, b-1, L, j_star_b) + [j_star_b] + j_list_func(y, b+1, c, j_star_b, U)
+        j_star_b = j_star_func(y, b, L, U, epsilon)
+        first_half = j_list_func(y, a, b-1, L, j_star_b, epsilon)
+        second_half = j_list_func(y, b+1, c, j_star_b, U, epsilon)
+        return first_half + [j_star_b] + second_half
 
 def median_smooth_sensitivity(x, epsilon, lower_bound, upper_bound):
     n = len(x)
@@ -36,7 +38,7 @@ def median_smooth_sensitivity(x, epsilon, lower_bound, upper_bound):
     j = np.arange(m+1, n+2)
     j_star = j_star_func(y, m, m+1, n+1, epsilon)
     ret = (y[j_star] - y[m]) * np.exp(-epsilon * (j_star - (m+1)))
-    j_list = np.array(j_list_func(y, 0, m-1, m, n+1))
+    j_list = np.array(j_list_func(y, 0, m-1, m, n+1, epsilon))
     i = np.arange(m, 0, -1)
     temp = (y[j_list] - y[m-i]) * np.exp(-epsilon * (j_list - m + (i-1)))
     return max(ret, np.max(temp))
