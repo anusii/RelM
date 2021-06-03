@@ -245,7 +245,7 @@ def test_ReportNoisyMax(benchmark):
 
 def test_SampleAggregate(benchmark):
     mechanism = SampleAggregate(
-        epsilon=1, lower_bound=0, upper_bound=1, method="median_float"
+        epsilon=1, lower_bound=0, upper_bound=1, method="median_approx"
     )
     _test_mechanism(benchmark, mechanism, np.float64)
 

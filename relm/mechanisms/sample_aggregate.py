@@ -34,6 +34,37 @@ def median_smooth_sensitivity_naive(x, epsilon, lower_bound, upper_bound):
     return ret
 
 
+def median_smooth_sensitivity_approx(x, epsilon, lower_bound, upper_bound):
+    """
+    Compute the smooth sensitivity of the median function.
+    This is a naive implementation that is easy to understand but
+    much slower than the improved algorithm implemented by the function
+    median_smooth_sensitivity() below.
+
+    Args:
+        x: a vector of floating point numbers
+        epsilon: the maximum privacy loss of the mechanism
+        lower_bound: the smallest possible value for any component of x
+        upper_bound: the largest possible value for any compnent of x
+    """
+
+    n = len(x)
+    m = (n + 1) // 2
+    y = np.concatenate((np.array([lower_bound]), np.sort(x), np.array([upper_bound])))
+    ret = 0
+    k0 = int(np.ceil(np.log(n) / epsilon))
+    for k in range(k0):
+        t = np.arange(k + 2)
+        high = np.minimum(m + t, n + 1)
+        low = np.maximum(m + t - (k + 1), 0)
+        y_diff = y[high] - y[low]
+        temp = np.max(np.exp(-k * epsilon) * y_diff)
+        if temp > ret:
+            ret = temp
+    temp = (upper_bound - lower_bound) * np.exp(-k0 * epsilon)
+    return max(ret, temp)
+
+
 def j_star_func(y, i, L, U, epsilon):
     n = len(y) - 2
     m = (n + 1) // 2
@@ -96,11 +127,18 @@ def median_smooth_sensitivity_bool(x, epsilon):
 
 
 class SampleAggregate(ReleaseMechanism):
-    def __init__(self, epsilon, lower_bound, upper_bound, method="median_float"):
+    def __init__(self, epsilon, lower_bound, upper_bound, method="median_approx"):
         super(SampleAggregate, self).__init__(epsilon)
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
-        if method == "median_float":
+        if method == "median_approx":
+
+            def compute_smooth_sensitivity(x, epsilon):
+                return median_smooth_sensitivity_approx(
+                    x, epsilon, self.lower_bound, self.upper_bound
+                )
+
+        elif method == "median_float":
 
             def compute_smooth_sensitivity(x, epsilon):
                 return median_smooth_sensitivity_float(
@@ -113,7 +151,8 @@ class SampleAggregate(ReleaseMechanism):
                 return median_smooth_sensitivity_bool(x, epsilon)
 
         else:
-            err_mess = "Expected method in {'median_float', 'median_bool'},"
+            err_mess = "Expected method in"
+            err_mess += " {'median_approx', 'median_float', 'median_bool'},"
             err_mess += " got method = '%s'." % method
             raise ValueError(err_mess)
 
