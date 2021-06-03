@@ -15,6 +15,7 @@ from relm.mechanisms import (
     ReportNoisyMax,
     SmallDB,
     PrivateMultiplicativeWeights,
+    SampleAggregate,
 )
 
 
@@ -55,17 +56,16 @@ def test_GeometricMechanism(benchmark):
 
 
 def test_CauchyMechanism(benchmark):
-    mechanism = CauchyMechanism(epsilon=1.0, beta=0.1)
+    mechanism = CauchyMechanism(epsilon=1.0)
     _test_mechanism(benchmark, mechanism, np.float64, smooth_sensitivity=1.0)
     # Goodness of fit test
     epsilon = 1.0
-    beta = 0.1
     smooth_sensitivity = 1.0
-    mechanism = CauchyMechanism(epsilon, beta)
+    mechanism = CauchyMechanism(epsilon)
     data = 1000 * np.random.random(size=2 ** 16)
     values = mechanism.release(data, smooth_sensitivity)
     control = scipy.stats.cauchy.rvs(
-        scale=6.0 * smooth_sensitivity / epsilon, size=data.size
+        scale=smooth_sensitivity / (6.0 * epsilon), size=data.size
     )
     score, pval = scipy.stats.ks_2samp(values - data, control)
     assert pval > 0.001
@@ -240,6 +240,13 @@ def test_SnappingMechanism(benchmark):
 
 def test_ReportNoisyMax(benchmark):
     mechanism = ReportNoisyMax(epsilon=0.1, precision=35)
+    _test_mechanism(benchmark, mechanism, np.float64)
+
+
+def test_SampleAggregate(benchmark):
+    mechanism = SampleAggregate(
+        epsilon=1, lower_bound=0, upper_bound=1, method="median_float"
+    )
     _test_mechanism(benchmark, mechanism, np.float64)
 
 
