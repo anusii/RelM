@@ -235,6 +235,21 @@ pub fn gumbel(scale: f64) -> f64 {
 }
 
 
+pub fn discrete_gaussian(biases: &Vec<u64>, sigma: f64, t: f64) -> i64 {
+    let mut laplace_bits: i64 = 0;
+    let mut Y: i64 = 0;
+    let mut log_p: f64 = 0.0f64;
+    let mut C: bool = false;
+    loop {
+        Y = fixed_point_laplace(&biases, t, 0);
+        log_p = -0.5f64 * ((Y.abs() as f64 - sigma.powi(2) / t) / sigma).powi(2);
+        C = bernoulli_log_p(log_p);
+        if C {break;}
+    }
+    Y
+}
+
+
 pub fn fixed_point_exponential(biases: &Vec<u64>, scale: f64, precision: i32) -> i64 {
     /// this function computes the fixed point exponential distribution
     ///

@@ -4,6 +4,8 @@ from relm import backend
 import secrets
 import math
 
+import scipy.stats
+
 
 class LaplaceMechanism(ReleaseMechanism):
     """
@@ -84,6 +86,155 @@ class GeometricMechanism(ReleaseMechanism):
         self._is_valid = False
         self._update_accountant()
         return backend.geometric_mechanism(values, self.effective_epsilon)
+
+    @property
+    def privacy_consumed(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
+
+
+class DiscreteGaussianMechanism(ReleaseMechanism):
+    """
+    Secure implementation of the Discrete Gaussian mechanism. This mechanism can
+    be used once after which its privacy budget will be exhausted and it can no
+    longer be used.
+
+    Under the hood this mechanism samples a from a discrete Laplace distribution
+    supported on the integers and then uses rejectino sampling to produce samples
+    from the desired Discrete Gaussian distribution.
+
+    Args:
+        epsilon: the maximum multiplicative privacy loss of the mechanism.
+        delta: the maximum additive privacy loss of the mechanism.
+        sensitivity: the sensitivity of the query to which this mechanism will be applied.
+    """
+
+    def __init__(self, epsilon, delta, sensitivity):
+        super(DiscreteGaussianMechanism, self).__init__(epsilon)
+        self.delta = delta
+        self.sensitivity = sensitivity
+        self.effective_epsilon = self.epsilon / self.sensitivity
+
+        # self.effective_epsilon = self.epsilon / (
+        #     self.sensitivity + 2.0 ** -self.precision
+        # )
+
+    # def discrete_gaussian_sampler(self, query_responses, sigma):
+    #     t = np.floor(sigma) + 1
+    #
+    #     geometric_mechanism = GeometricMechanism(1.0 / t, 1.0)
+    #     Y = geometric_mechanism.release(query_responses)
+    #     # Watch out for funky overflow problems with an exponent this big!
+    #     # You can avoid them by performing the division operation before
+    #     # performing the squaring operation when computing the exponent.
+    #     p = np.exp(-(1 / 2) * ((np.abs(Y) - sigma ** 2 / t) / (sigma)) ** 2)
+    #     C = scipy.stats.bernoulli.rvs(p, size=len(p)).astype(np.bool)
+    #     mask = C ^ True
+    #     if mask.sum() > 0:
+    #         Y[mask] = self.discrete_gaussian_sampler(query_responses[mask], sigma)
+    #     return Y
+
+    def release(self, values):
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy array of the output of a query.
+
+        Returns:
+            A numpy array of perturbed values.
+        """
+
+        self._check_valid()
+        self._is_valid = False
+        self._update_accountant()
+
+        return backend.discrete_gaussian_mechanism(
+            values, self.effective_epsilon, self.delta
+        )
+
+        # c = np.sqrt(2 * np.log(1.26 / self.delta))
+        # sigma = c * self.effective_epsilon
+        #
+        # X = self.discrete_gaussian_sampler(np.zeros(len(values), dtype=np.int), sigma)
+        # return values + X * 2 ** -self.precision
+
+    @property
+    def privacy_consumed(self):
+        """
+        Computes the privacy budget consumed by the mechanism so far.
+        """
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
+
+
+class GaussianMechanism(ReleaseMechanism):
+    """
+    Secure implementation of the Gaussian mechanism. This mechanism can be used once
+    after which its privacy budget will be exhausted and it can no longer be used.
+
+    Under the hood this mechanism samples a from a discrete Gaussian distribution
+    supported on the integers and then rescales the result to get a fixed-point
+    approximation to the real-valued Gaussian distribution.
+
+    Args:
+        epsilon: the maximum multiplicative privacy loss of the mechanism.
+        delta: the maximum additive privacy loss of the mechanism.
+        sensitivity: the sensitivity of the query to which this mechanism will be applied.
+        precision: number of fractional bits to use in the internal fixed point representation.
+    """
+
+    def __init__(self, epsilon, delta, sensitivity, precision=35):
+        super(GaussianMechanism, self).__init__(epsilon)
+        self.delta = delta
+        self.sensitivity = sensitivity
+        self.precision = precision
+        self.effective_epsilon = self.epsilon / (
+            self.sensitivity + 2.0 ** -self.precision
+        )
+
+    def discrete_gaussian_sampler(self, query_responses, sigma):
+        t = np.floor(sigma) + 1
+
+        geometric_mechanism = GeometricMechanism(1.0 / t, 1.0)
+        Y = geometric_mechanism.release(query_responses)
+        # Watch out for funky overflow problems with an exponent this big!
+        # You can avoid them by performing the division operation before
+        # performing the squaring operation when computing the exponent.
+        p = np.exp(-(1 / 2) * ((np.abs(Y) - sigma ** 2 / t) / (sigma)) ** 2)
+        C = scipy.stats.bernoulli.rvs(p, size=len(p)).astype(np.bool)
+        mask = C ^ True
+        if mask.sum() > 0:
+            Y[mask] = self.discrete_gaussian_sampler(query_responses[mask], sigma)
+        return Y
+
+    def release(self, values):
+        """
+        Releases a differential private query response.
+
+        Args:
+            values: numpy array of the output of a query.
+
+        Returns:
+            A numpy array of perturbed values.
+        """
+
+        self._check_valid()
+        self._is_valid = False
+        self._update_accountant()
+
+        c = np.sqrt(2 * np.log(1.26 / self.delta))
+        sigma = c * self.effective_epsilon * 2 ** self.precision
+
+        X = self.discrete_gaussian_sampler(np.zeros(len(values), dtype=np.int), sigma)
+        return values + X * 2 ** -self.precision
 
     @property
     def privacy_consumed(self):

@@ -51,6 +51,17 @@ pub fn geometric_mechanism(data: Vec<i64>, epsilon: f64) -> Vec<i64> {
         .collect()
 }
 
+pub fn discrete_gaussian_mechanism(data: Vec<i64>, epsilon: f64, delta: f64) -> Vec<i64> {
+    let c = (2.0f64 * (1.26f64 / delta).ln()).sqrt();
+    let sigma = c / epsilon;
+    let t = sigma.floor() + 1.0f64;
+    let biases: Vec<u64> = utils::fp_laplace_bit_biases(t, 0);
+    data.par_iter()
+        .map(|&x| x + samplers::discrete_gaussian(&biases, sigma, t))
+        .collect()
+}
+
+
 pub fn cauchy_mechanism(data: Vec<f64>, epsilon: f64) -> Vec<f64> {
     let scale = 1.0 / epsilon;
     data.par_iter()
