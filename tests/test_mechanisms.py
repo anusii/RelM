@@ -5,6 +5,7 @@ import pytest
 from relm.mechanisms import (
     LaplaceMechanism,
     GeometricMechanism,
+    GaussianMechanism,
     CauchyMechanism,
     ExponentialMechanism,
     PermuteAndFlipMechanism,
@@ -51,6 +52,26 @@ def test_GeometricMechanism(benchmark):
     y = scipy.stats.geom.rvs(p=1 - q, size=n)
     z = x - y
     score, pval = scipy.stats.ks_2samp(values - data, z)
+    assert pval > 0.001
+
+
+def test_GaussianMechanism(benchmark):
+    mechanism = GaussianMechanism(epsilon=0.5, delta=2 ** -16, sensitivity=1)
+    _test_mechanism(benchmark, mechanism, np.float64)
+    # Goodness of fit test
+    epsilon = 0.5
+    delta = 2 ** -16
+    sensitivity = 1.0
+    precision = 35
+    mechanism = GaussianMechanism(epsilon, delta, sensitivity, precision)
+    data = np.random.random(10000000) * 100
+    values = mechanism.release(data)
+
+    c = np.sqrt(2.0 * np.log(1.26 / delta))
+    sigma = c * (sensitivity + 2 ** -precision) / epsilon
+
+    control = scipy.stats.norm.rvs(scale=sigma, size=data.size)
+    score, pval = scipy.stats.ks_2samp(values - data, control)
     assert pval > 0.001
 
 

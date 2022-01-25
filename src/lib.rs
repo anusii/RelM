@@ -74,6 +74,17 @@ fn backend(_py: Python, m: &PyModule) -> PyResult<()> {
         mechanisms::discrete_gaussian_mechanism(data, epsilon, delta).to_pyarray(py)
     }
 
+    #[pyfn(m, "gaussian_mechanism")]
+    fn py_gaussian_mechanism<'a>(
+        py: Python<'a>,
+        data: &'a PyArray1<f64>,
+        epsilon: f64,
+        delta: f64,
+        precision: i32,
+    ) -> &'a PyArray1<f64> {
+        let data = data.to_vec().unwrap();
+        mechanisms::gaussian_mechanism(data, epsilon, delta, precision).to_pyarray(py)
+    }
 
     #[pyfn(m, "cauchy_mechanism")]
     fn py_cauchy_mechanism<'a>(

@@ -61,6 +61,20 @@ pub fn discrete_gaussian_mechanism(data: Vec<i64>, epsilon: f64, delta: f64) -> 
         .collect()
 }
 
+pub fn gaussian_mechanism(data: Vec<f64>, epsilon: f64, delta: f64, precision: i32) -> Vec<f64> {
+    let c = (2.0f64 * (1.26f64 / delta).ln()).sqrt();
+    let sigma = c * 2.0f64.powi(precision) / epsilon;
+    let t = sigma.floor() + 1.0f64;
+    /// We compute the biases of a Laplace distribution here because
+    /// we generate gaussian samples via rejection sampling where the
+    /// proposal distribution is Laplace.
+    let biases: Vec<u64> = utils::fp_laplace_bit_biases(t, 0);
+    data.par_iter()
+        .map(|&x| (x * 2.0f64.powi(precision)).round())
+        .map(|x| (x as i64) + samplers::discrete_gaussian(&biases, sigma, t))
+        .map(|x| (x as f64) * 2.0f64.powi(-precision))
+        .collect()
+}
 
 pub fn cauchy_mechanism(data: Vec<f64>, epsilon: f64) -> Vec<f64> {
     let scale = 1.0 / epsilon;

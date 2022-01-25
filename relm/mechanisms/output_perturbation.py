@@ -120,25 +120,6 @@ class DiscreteGaussianMechanism(ReleaseMechanism):
         self.sensitivity = sensitivity
         self.effective_epsilon = self.epsilon / self.sensitivity
 
-        # self.effective_epsilon = self.epsilon / (
-        #     self.sensitivity + 2.0 ** -self.precision
-        # )
-
-    # def discrete_gaussian_sampler(self, query_responses, sigma):
-    #     t = np.floor(sigma) + 1
-    #
-    #     geometric_mechanism = GeometricMechanism(1.0 / t, 1.0)
-    #     Y = geometric_mechanism.release(query_responses)
-    #     # Watch out for funky overflow problems with an exponent this big!
-    #     # You can avoid them by performing the division operation before
-    #     # performing the squaring operation when computing the exponent.
-    #     p = np.exp(-(1 / 2) * ((np.abs(Y) - sigma ** 2 / t) / (sigma)) ** 2)
-    #     C = scipy.stats.bernoulli.rvs(p, size=len(p)).astype(np.bool)
-    #     mask = C ^ True
-    #     if mask.sum() > 0:
-    #         Y[mask] = self.discrete_gaussian_sampler(query_responses[mask], sigma)
-    #     return Y
-
     def release(self, values):
         """
         Releases a differential private query response.
@@ -157,12 +138,6 @@ class DiscreteGaussianMechanism(ReleaseMechanism):
         return backend.discrete_gaussian_mechanism(
             values, self.effective_epsilon, self.delta
         )
-
-        # c = np.sqrt(2 * np.log(1.26 / self.delta))
-        # sigma = c * self.effective_epsilon
-        #
-        # X = self.discrete_gaussian_sampler(np.zeros(len(values), dtype=np.int), sigma)
-        # return values + X * 2 ** -self.precision
 
     @property
     def privacy_consumed(self):
@@ -200,21 +175,6 @@ class GaussianMechanism(ReleaseMechanism):
             self.sensitivity + 2.0 ** -self.precision
         )
 
-    def discrete_gaussian_sampler(self, query_responses, sigma):
-        t = np.floor(sigma) + 1
-
-        geometric_mechanism = GeometricMechanism(1.0 / t, 1.0)
-        Y = geometric_mechanism.release(query_responses)
-        # Watch out for funky overflow problems with an exponent this big!
-        # You can avoid them by performing the division operation before
-        # performing the squaring operation when computing the exponent.
-        p = np.exp(-(1 / 2) * ((np.abs(Y) - sigma ** 2 / t) / (sigma)) ** 2)
-        C = scipy.stats.bernoulli.rvs(p, size=len(p)).astype(np.bool)
-        mask = C ^ True
-        if mask.sum() > 0:
-            Y[mask] = self.discrete_gaussian_sampler(query_responses[mask], sigma)
-        return Y
-
     def release(self, values):
         """
         Releases a differential private query response.
@@ -230,11 +190,9 @@ class GaussianMechanism(ReleaseMechanism):
         self._is_valid = False
         self._update_accountant()
 
-        c = np.sqrt(2 * np.log(1.26 / self.delta))
-        sigma = c * self.effective_epsilon * 2 ** self.precision
-
-        X = self.discrete_gaussian_sampler(np.zeros(len(values), dtype=np.int), sigma)
-        return values + X * 2 ** -self.precision
+        return backend.gaussian_mechanism(
+            values, self.effective_epsilon, self.delta, self.precision
+        )
 
     @property
     def privacy_consumed(self):
