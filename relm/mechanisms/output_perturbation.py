@@ -46,16 +46,6 @@ class LaplaceMechanism(ReleaseMechanism):
         args = (values, self.effective_epsilon, self.precision)
         return backend.laplace_mechanism(*args)
 
-    @property
-    def privacy_consumed(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon
-
 
 class GeometricMechanism(ReleaseMechanism):
     """
@@ -86,16 +76,6 @@ class GeometricMechanism(ReleaseMechanism):
         self._is_valid = False
         self._update_accountant()
         return backend.geometric_mechanism(values, self.effective_epsilon)
-
-    @property
-    def privacy_consumed(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon
 
 
 class DiscreteGaussianMechanism(ReleaseMechanism):
@@ -138,16 +118,6 @@ class DiscreteGaussianMechanism(ReleaseMechanism):
         return backend.discrete_gaussian_mechanism(
             values, self.effective_epsilon, self.delta
         )
-
-    @property
-    def privacy_consumed(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon
 
 
 class GaussianMechanism(ReleaseMechanism):
@@ -194,16 +164,6 @@ class GaussianMechanism(ReleaseMechanism):
             values, self.effective_epsilon, self.delta, self.precision
         )
 
-    @property
-    def privacy_consumed(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon
-
 
 class SnappingMechanism(ReleaseMechanism):
     """
@@ -243,16 +203,6 @@ class SnappingMechanism(ReleaseMechanism):
         self._update_accountant()
         return release_values
 
-    @property
-    def privacy_consumed(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon
-
 
 class CauchyMechanism(ReleaseMechanism):
     """
@@ -289,16 +239,6 @@ class CauchyMechanism(ReleaseMechanism):
         self._update_accountant()
         effective_epsilon = self.epsilon / (6.0 * smooth_sensitivity)
         return backend.cauchy_mechanism(values, effective_epsilon)
-
-    @property
-    def privacy_consumed(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon
 
 
 class ReportNoisyMax(ReleaseMechanism):
@@ -339,13 +279,3 @@ class ReportNoisyMax(ReleaseMechanism):
         valmax = np.max(perturbed_values)
         argmax = secrets.choice(np.where(perturbed_values == valmax)[0])
         return (argmax, valmax)
-
-    @property
-    def privacy_consumed(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon

@@ -56,16 +56,6 @@ class ExponentialMechanism(ReleaseMechanism):
         return self.output_range[index]
 
     @property
-    def privacy_consumed(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon
-
-    @property
     def method(self):
         return self._method
 
@@ -105,11 +95,7 @@ class PermuteAndFlipMechanism(ReleaseMechanism):
     """
 
     def __init__(
-        self,
-        epsilon,
-        utility_function,
-        sensitivity,
-        output_range,
+        self, epsilon, utility_function, sensitivity, output_range,
     ):
         super(PermuteAndFlipMechanism, self).__init__(epsilon)
         self.utility_function = utility_function
@@ -136,13 +122,3 @@ class PermuteAndFlipMechanism(ReleaseMechanism):
         utilities = self.utility_function(values)
         index = backend.permute_and_flip_mechanism(utilities, self.effective_epsilon)
         return self.output_range[index]
-
-    @property
-    def privacy_consumed(self):
-        """
-        Computes the privacy budget consumed by the mechanism so far.
-        """
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon

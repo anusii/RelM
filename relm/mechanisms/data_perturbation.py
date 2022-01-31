@@ -29,13 +29,6 @@ class SmallDB(ReleaseMechanism):
         self.db_l1_norm = db_l1_norm
 
     @property
-    def privacy_consumed(self):
-        if self._is_valid:
-            return 0
-        else:
-            return self.epsilon
-
-    @property
     def alpha(self):
         return self._alpha
 

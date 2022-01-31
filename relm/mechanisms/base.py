@@ -39,4 +39,7 @@ class ReleaseMechanism:
         """
         Computes the privacy budget consumed by the mechanism so far.
         """
-        raise NotImplementedError()
+        if self._is_valid:
+            return 0
+        else:
+            return self.epsilon
