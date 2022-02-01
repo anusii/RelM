@@ -6,14 +6,18 @@ class PrivacyAccountant:
         privacy_budget: the maximum privacy loss allowed across all mechanisms
     """
 
-    def __init__(self, privacy_budget):
-        self.privacy_budget = privacy_budget
+    def __init__(self, epsilon_budget, delta_budget=0):
+        self.epsilon_budget = epsilon_budget
+        self.delta_budget = delta_budget
         self._privacy_losses = dict()
-        self.privacy_allocated = 0
+        self.epsilon_allocated = 0
+        self.delta_allocated = 0
 
     @property
     def privacy_consumed(self):
-        return sum(p for _, p in self._privacy_losses.items())
+        epsilon_consumed = sum(p[0] for _, p in self._privacy_losses.items())
+        delta_consumed = sum(p[1] for _, p in self._privacy_losses.items())
+        return (epsilon_consumed, delta_consumed)
 
     def update(self, mechanism):
         self._privacy_losses[hash(mechanism)] = mechanism.privacy_consumed
@@ -32,11 +36,17 @@ class PrivacyAccountant:
                 "mechanism: attempted to add a mechanism to two accountants."
             )
 
-        if self.privacy_allocated + mechanism.epsilon > self.privacy_budget:
+        if self.epsilon_allocated + mechanism.epsilon > self.epsilon_budget:
             raise ValueError(
-                f"mechanism: using this mechanism could exceed the privacy budget of {self.privacy_budget}"
-                f" with a total privacy alocated of {self.privacy_allocated + mechanism.epsilon}"
+                f"mechanism: using this mechanism could exceed the privacy budget of {self.epsilon_budget}"
+                f" with a total privacy alocated of {self.epsilon_allocated + mechanism.epsilon}"
+            )
+        if self.delta_allocated + mechanism.delta > self.delta_budget:
+            raise ValueError(
+                f"mechanism: using this mechanism could exceed the privacy budget of {self.delta_budget}"
+                f" with a total privacy alocated of {self.delta_allocated + mechanism.delta}"
             )
         mechanism.accountant = self
         self._privacy_losses[hash(mechanism)] = mechanism.privacy_consumed
-        self.privacy_allocated += mechanism.epsilon
+        self.epsilon_allocated += mechanism.epsilon
+        self.delta_allocated += mechanism.delta

@@ -95,8 +95,7 @@ class DiscreteGaussianMechanism(ReleaseMechanism):
     """
 
     def __init__(self, epsilon, delta, sensitivity):
-        super(DiscreteGaussianMechanism, self).__init__(epsilon)
-        self.delta = delta
+        super(DiscreteGaussianMechanism, self).__init__(epsilon, delta)
         self.sensitivity = sensitivity
         self.effective_epsilon = self.epsilon / self.sensitivity
 
@@ -137,8 +136,7 @@ class GaussianMechanism(ReleaseMechanism):
     """
 
     def __init__(self, epsilon, delta, sensitivity, precision=35):
-        super(GaussianMechanism, self).__init__(epsilon)
-        self.delta = delta
+        super(GaussianMechanism, self).__init__(epsilon, delta)
         self.sensitivity = sensitivity
         self.precision = precision
         self.effective_epsilon = self.epsilon / (

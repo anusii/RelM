@@ -83,11 +83,12 @@ class SparseGeneric(ReleaseMechanism):
         Computes the privacy budget consumed by the mechanism so far.
         """
         if self._is_valid:
-            return self.epsilon1 + (self.current_count / self.cutoff) * (
-                self.epsilon2 + self.epsilon3
-            )
+            current_epsilon_consumed = self.epsilon1 + (
+                self.current_count / self.cutoff
+            ) * (self.epsilon2 + self.epsilon3)
+            return [current_epsilon_consumed, self.delta]
         else:
-            return self.epsilon
+            return [self.epsilon, self.delta]
 
 
 class SparseNumeric(SparseGeneric):

@@ -9,8 +9,9 @@ class ComposedRelease:
 
     def __init__(self, mechanisms):
         # set the privacy losses to be the epsilon for each mechanism to calculate the upper limit of privacy loss
-        self._privacy_losses = dict((hash(m), m.epsilon) for m in mechanisms)
-        self.epsilon = self.privacy_consumed
+        self._privacy_losses = dict((hash(m), (m.epsilon, m.delta)) for m in mechanisms)
+        self.epsilon = self.privacy_consumed[0]
+        self.delta = self.privacy_consumed[1]
         # set the privacy losses to the true values
         self._privacy_losses = dict((hash(m), m.privacy_consumed) for m in mechanisms)
 
@@ -46,7 +47,9 @@ class ParallelRelease(ComposedRelease):
 
     @property
     def privacy_consumed(self):
-        return max(p for _, p in self._privacy_losses.items())
+        epsilon_consumed = max(p[0] for _, p in self._privacy_losses.items())
+        delta_consumed = max(p[1] for _, p in self._privacy_losses.items())
+        return (epsilon_consumed, delta_consumed)
 
 
 class SequentialRelease(ComposedRelease):
@@ -65,4 +68,6 @@ class SequentialRelease(ComposedRelease):
 
     @property
     def privacy_consumed(self):
-        return sum(p for _, p in self._privacy_losses.items())
+        epsilon_consumed = sum(p[0] for _, p in self._privacy_losses.items())
+        delta_consumed = sum(p[1] for _, p in self._privacy_losses.items())
+        return (epsilon_consumed, delta_consumed)

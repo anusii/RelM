@@ -27,4 +27,4 @@ def test_privacy_consumed():
         mechanism = LaplaceMechanism(e, precision=20, sensitivity=1)
         accountant.add_mechanism(mechanism)
         _ = mechanism.release(vals)
-        assert np.isclose(accountant.privacy_consumed, epsilons[: i + 1].sum())
+        assert np.isclose(accountant.privacy_consumed[0], epsilons[: i + 1].sum())

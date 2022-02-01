@@ -22,9 +22,10 @@ def test_parallel_release():
     values = np.zeros(1)
     _ = [mechanism.release(values) for mechanism in mechanisms]
 
-    assert accountant.privacy_consumed == 4
-    assert accountant.privacy_allocated == 124
-    assert para_mechs.privacy_consumed == 4
+    assert accountant.privacy_consumed == (4, 0)
+    assert accountant.epsilon_allocated == 124
+    assert accountant.delta_allocated == 0
+    assert para_mechs.privacy_consumed == (4, 0)
     assert para_mechs.epsilon == 4
 
 
@@ -40,6 +41,6 @@ def test_sequential_release():
     values = np.zeros(1)
     _ = [mechanism.release(values) for mechanism in mechanisms]
 
-    assert accountant.privacy_consumed == 20000
-    assert seq_mechs.privacy_consumed == 20000
+    assert accountant.privacy_consumed == (20000, 0)
+    assert seq_mechs.privacy_consumed == (20000, 0)
     assert seq_mechs.epsilon == 20000

@@ -2,8 +2,9 @@ import numpy as np
 
 
 class ReleaseMechanism:
-    def __init__(self, epsilon):
+    def __init__(self, epsilon, delta=0):
         self.epsilon = epsilon
+        self.delta = delta
         self._is_valid = True
         self.accountant = None
         self._id = np.random.randint(low=0, high=2 ** 60)
@@ -40,6 +41,6 @@ class ReleaseMechanism:
         Computes the privacy budget consumed by the mechanism so far.
         """
         if self._is_valid:
-            return 0
+            return [0, 0]
         else:
-            return self.epsilon
+            return [self.epsilon, self.delta]
