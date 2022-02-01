@@ -1,5 +1,5 @@
 import numpy as np
-from relm.mechanisms import LaplaceMechanism
+from relm.mechanisms import LaplaceMechanism, GaussianMechanism
 from relm.accountant import PrivacyAccountant
 import pytest
 
@@ -28,3 +28,16 @@ def test_privacy_consumed():
         accountant.add_mechanism(mechanism)
         _ = mechanism.release(vals)
         assert np.isclose(accountant.privacy_consumed[0], epsilons[: i + 1].sum())
+        assert np.isclose(accountant.privacy_consumed[1], 0)
+
+    accountant = PrivacyAccountant(epsilon_budget=1000000, delta_budget=1000000)
+    epsilons = np.random.random(10)
+    deltas = np.random.random(10)
+
+    vals = np.zeros(10)
+    for i, (e, d) in enumerate(zip(epsilons, deltas)):
+        mechanism = GaussianMechanism(epsilon=e, delta=d, precision=20, sensitivity=1)
+        accountant.add_mechanism(mechanism)
+        _ = mechanism.release(vals)
+        assert np.isclose(accountant.privacy_consumed[0], epsilons[: i + 1].sum())
+        assert np.isclose(accountant.privacy_consumed[1], deltas[: i + 1].sum())
