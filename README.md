@@ -5,7 +5,7 @@ Implementations of differentially private Rel(ease) M(echanisms).
 ## Update Rust Packages
 
 ```bash
-cargo upgrade
+cargo update
 ```
 
 ## Install
